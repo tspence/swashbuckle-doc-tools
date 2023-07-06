@@ -27,12 +27,12 @@ public static class TypescriptSdk
                + " */\n";
     }
 
-    private static string FixupType(ApiSchema api, string typeName, bool isArray, bool nullable)
+    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
     {
         var s = typeName;
-        if (api.IsEnum(typeName))
+        if (context.Api.IsEnum(typeName))
         {
-            s = api.FindSchema(typeName).EnumType;
+            s = context.Api.FindSchema(typeName).EnumType;
         }
 
         switch (s)
@@ -74,9 +74,12 @@ public static class TypescriptSdk
             s += "[]";
         }
 
-        if (s.EndsWith("FetchResult") && !s.EndsWith("SummaryFetchResult"))
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            s = $"FetchResult<{s[..^11]}>";
+            if (s.EndsWith(genericName))
+            {
+                s = $"{genericName}<{s.Substring(0, s.Length - genericName.Length)}";
+            }
         }
 
         if (nullable)
@@ -87,20 +90,20 @@ public static class TypescriptSdk
         return s;
     }
 
-    private static async Task ExportSchemas(ProjectSchema project, ApiSchema api)
+    private static async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(project.Typescript.Folder, "src", "models");
+        var modelsDir = Path.Combine(context.Project.Typescript.Folder, "src", "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.ts"))
         {
             File.Delete(modelFile);
         }
 
-        foreach (var item in api.Schemas)
+        foreach (var item in context.Api.Schemas)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(FileHeader(project));
-            foreach (var import in GetImports(api, item))
+            sb.AppendLine(FileHeader(context.Project));
+            foreach (var import in GetImports(context, item))
             {
                 sb.AppendLine(import);
             }
@@ -117,7 +120,7 @@ public static class TypescriptSdk
                         sb.AppendLine();
                         sb.Append(field.DescriptionMarkdown.ToJavaDoc(2));
                         sb.AppendLine(
-                            $"  {field.Name}: {FixupType(api, field.DataType, field.IsArray, field.Nullable)};");
+                            $"  {field.Name}: {FixupType(context, field.DataType, field.IsArray, field.Nullable)};");
                     }
                 }
 
@@ -129,9 +132,9 @@ public static class TypescriptSdk
         }
     }
 
-    private static async Task ExportEndpoints(ProjectSchema project, ApiSchema api)
+    private static async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(project.Typescript.Folder, "src", "clients");
+        var clientsDir = Path.Combine(context.Project.Typescript.Folder, "src", "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.ts"))
         {
@@ -139,33 +142,33 @@ public static class TypescriptSdk
         }
 
         // Gather a list of unique categories
-        var categories = (from e in api.Endpoints where !e.Deprecated select e.Category).Distinct().ToList();
+        var categories = (from e in context.Api.Endpoints where !e.Deprecated select e.Category).Distinct().ToList();
         foreach (var cat in categories)
         {
             var sb = new StringBuilder();
 
             // Construct header
-            sb.AppendLine(FileHeader(project));
-            sb.AppendLine($"import {{ {project.Typescript.ClassName} }} from \"..\";");
-            sb.AppendLine($"import {{ {project.Typescript.ResponseClass} }} from \"..\";");
-            foreach (var import in GetImports(api, cat))
+            sb.AppendLine(FileHeader(context.Project));
+            sb.AppendLine($"import {{ {context.Project.Typescript.ClassName} }} from \"..\";");
+            sb.AppendLine($"import {{ {context.Project.Typescript.ResponseClass} }} from \"..\";");
+            foreach (var import in GetImports(context, cat))
             {
                 sb.AppendLine(import);
             }
 
             sb.AppendLine();
             sb.AppendLine($"export class {cat}Client {{");
-            sb.AppendLine($"  private readonly client: {project.Typescript.ClassName};");
+            sb.AppendLine($"  private readonly client: {context.Project.Typescript.ClassName};");
             sb.AppendLine();
             sb.AppendLine("  /**");
             sb.AppendLine("   * Internal constructor for this client library");
             sb.AppendLine("   */");
-            sb.AppendLine($"  public constructor(client: {project.Typescript.ClassName}) {{");
+            sb.AppendLine($"  public constructor(client: {context.Project.Typescript.ClassName}) {{");
             sb.AppendLine("    this.client = client;");
             sb.AppendLine("  }");
 
             // Run through all APIs
-            foreach (var endpoint in api.Endpoints)
+            foreach (var endpoint in context.Api.Endpoints)
             {
                 if (endpoint.Category == cat && !endpoint.Deprecated)
                 {
@@ -175,13 +178,13 @@ public static class TypescriptSdk
                     // Figure out the parameter list. For parameters, we'll use ? to indicate nullability.
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters
                         orderby p.Required descending
-                        select $"{p.Name}{(p.Required ? "" : "?")}: {FixupType(api, p.DataType, p.IsArray, false)}");
+                        select $"{p.Name}{(p.Required ? "" : "?")}: {FixupType(context, p.DataType, p.IsArray, false)}");
 
                     // Do we need to specify options?
                     var options = (from p in endpoint.Parameters where p.Location == "query" select p).ToList();
 
                     // What is our return type?
-                    var returnType = FixupType(api, endpoint.ReturnDataType.DataType,
+                    var returnType = FixupType(context, endpoint.ReturnDataType.DataType,
                         endpoint.ReturnDataType.IsArray, false);
                     var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
 
@@ -193,7 +196,7 @@ public static class TypescriptSdk
                     }
 
                     // Write the method
-                    sb.AppendLine($"  {endpoint.Name.ToCamelCase()}({paramListStr}): Promise<{project.Typescript.ResponseClass}<{returnType}>> {{");
+                    sb.AppendLine($"  {endpoint.Name.ToCamelCase()}({paramListStr}): Promise<{context.Project.Typescript.ResponseClass}<{returnType}>> {{");
                     sb.AppendLine($"    const url = `{endpoint.Path.Replace("{", "${")}`;");
                     if (options.Count > 0)
                     {
@@ -225,72 +228,81 @@ public static class TypescriptSdk
         }
     }
 
-    private static void AddImport(ApiSchema api, string name, List<string> list)
+    private static void AddImport(GeneratorContext context, string name, List<string> list)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             return;
         }
 
-        if (name.EndsWith("FetchResult") && !name.EndsWith("SummaryFetchResult"))
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            if (!list.Contains("FetchResult"))
+            
+            if (name.EndsWith(genericName))
             {
-                list.Add("FetchResult");
-            }
+                if (!list.Contains(genericName))
+                {
+                    list.Add(genericName);
+                }
 
-            var innerType = name[..^11];
-            AddImport(api, innerType, list);
+                var innerType = name[..^11];
+                AddImport(context, innerType, list);
+            }
         }
-        else if (!api.IsEnum(name) && !list.Contains(name))
+        
+        if (!context.Api.IsEnum(name) && !list.Contains(name))
         {
             list.Add(name);
         }
     }
 
-    private static List<string> GetImports(ApiSchema api, string category)
+    private static List<string> GetImports(GeneratorContext context, string category)
     {
         var types = new List<string>();
-        foreach (var endpoint in api.Endpoints)
+        foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == category && !endpoint.Deprecated)
             {
-                AddImport(api, endpoint.ReturnDataType.DataType, types);
+                AddImport(context, endpoint.ReturnDataType.DataType, types);
                 foreach (var p in endpoint.Parameters)
                 {
-                    AddImport(api, p.DataType, types);
+                    AddImport(context, p.DataType, types);
                 }
             }
         }
 
-        return GenerateImportsFromList(types);
+        return GenerateImportsFromList(context, types);
     }
 
-    private static List<string> GetImports(ApiSchema api, SchemaItem item)
+    private static List<string> GetImports(GeneratorContext context, SchemaItem item)
     {
         var types = new List<string>();
         foreach (var field in (item?.Fields).EmptyIfNull())
         {
             if (field?.DataType != item?.Name)
             {
-                AddImport(api, field?.DataType, types);
+                AddImport(context, field?.DataType, types);
             }
         }
 
-        return GenerateImportsFromList(types);
+        return GenerateImportsFromList(context, types);
     }
 
-    private static List<string> GenerateImportsFromList(List<string> types)
+    private static List<string> GenerateImportsFromList(GeneratorContext context, List<string> types)
     {
+        var suffixList = (context.Project.GenericSuffixes ?? Enumerable.Empty<string>()).ToList();
+        
         // Deduplicate the list and generate import statements
         var imports = new List<string>();
         foreach (var t in types)
         {
+            if (suffixList.Contains(t))
+            {
+                imports.Add($"import {{ {t} }} from \"..\";");
+                break;
+            } 
             switch (t)
             {
-                case "FetchResult":
-                    imports.Add("import { FetchResult } from \"..\";");
-                    break;
                 case "ActionResultModel":
                     imports.Add("import { ActionResultModel } from \"..\";");
                     break;
@@ -330,8 +342,8 @@ public static class TypescriptSdk
             return;
         }
 
-        await ExportSchemas(context.Project, context.Api);
-        await ExportEndpoints(context.Project, context.Api);
+        await ExportSchemas(context);
+        await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
