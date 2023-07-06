@@ -26,7 +26,7 @@ public static class MarkdownGenerator
                     var markdownText = format switch
                     {
                         "table" => MakeMarkdownTable(schema, context.Api),
-                        "list" => MakeMarkdownBulletList(schema, context.Api),
+                        "list" => MakeMarkdownBulletList(context, schema),
                         _ => ""
                     };
 
@@ -49,7 +49,7 @@ public static class MarkdownGenerator
                 var markdownText = format switch
                 {
                     "table" => MakeMarkdownTable(schema, context.Api),
-                    "list" => MakeMarkdownBulletList(schema, context.Api),
+                    "list" => MakeMarkdownBulletList(context, schema),
                     _ => ""
                 };
 
@@ -128,7 +128,7 @@ public static class MarkdownGenerator
         return (str ?? "").Replace(Environment.NewLine, "<br />");
     }
 
-    private static string MakeMarkdownBulletList(SchemaItem item, ApiSchema api)
+    private static string MakeMarkdownBulletList(GeneratorContext context, SchemaItem item)
     {
         var sb = new StringBuilder();
         sb.AppendLine(item.DescriptionMarkdown);
@@ -136,9 +136,13 @@ public static class MarkdownGenerator
 
         // Link all the API endpoints that work with this model
         var methods = new List<string>();
-        foreach (var endpoint in api.Endpoints)
+        foreach (var endpoint in context.Api.Endpoints)
         {
-            var endpointDataType = endpoint.ReturnDataType.DataType.Replace("FetchResult", "");
+            var endpointDataType = endpoint.ReturnDataType.DataType;
+            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+            {
+                endpointDataType = endpointDataType.Replace(genericName, "");   
+            }
             if (endpointDataType == item.Name)
             {
                 var fixedPath = endpoint.Path.Substring(1).ToLower().Replace('/', '-').Replace("{", "").Replace("}", "");

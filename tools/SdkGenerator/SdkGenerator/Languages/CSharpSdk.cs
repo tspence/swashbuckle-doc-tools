@@ -62,12 +62,12 @@ public static class CSharpSdk
         return typeName;
     }
 
-    private static string FixupType(ApiSchema api, string typeName, bool isArray, bool isNullable)
+    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
     {
         var s = typeName;
-        if (api.IsEnum(typeName))
+        if (context.Api.IsEnum(typeName))
         {
-            s = api.FindSchema(typeName).EnumType;
+            s = context.Api.FindSchema(typeName).EnumType;
         }
 
         switch (s)
@@ -113,32 +113,35 @@ public static class CSharpSdk
             s += "[]";
         }
 
-        if (s.EndsWith("FetchResult") && !s.EndsWith("SummaryFetchResult"))
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            s = $"FetchResult<{s[..^11]}>";
+            if (s.EndsWith(genericName))
+            {
+                s = $"{genericName}<{s.Substring(0, s.Length - genericName.Length)}";
+            }
         }
 
         return NullableFixup(s, isNullable);
     }
 
-    private static async Task ExportSchemas(ProjectSchema project, ApiSchema api)
+    private static async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(project.Csharp.Folder, "src", "Models");
+        var modelsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.cs"))
         {
             File.Delete(modelFile);
         }
 
-        foreach (var item in api.Schemas)
+        foreach (var item in context.Api.Schemas)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(FileHeader(project));
+            sb.AppendLine(FileHeader(context.Project));
             sb.AppendLine("#pragma warning disable CS8618");
             sb.AppendLine();
             sb.AppendLine("using System;");
             sb.AppendLine();
-            sb.AppendLine($"namespace {project.Csharp.Namespace}.Models");
+            sb.AppendLine($"namespace {context.Project.Csharp.Namespace}.Models");
             sb.AppendLine("{");
             if (item.Fields != null)
             {
@@ -150,7 +153,7 @@ public static class CSharpSdk
                 {
                     if (!field.Deprecated)
                     {
-                        var fieldType = FixupType(api, field.DataType, field.IsArray, field.Nullable);
+                        var fieldType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
                         // Add commentary for date-only fields
                         var markdown = field.DescriptionMarkdown;
                         if (field.DataType == "date" && fieldType == "string")
@@ -212,9 +215,9 @@ public static class CSharpSdk
         return sb.ToString();
     }
 
-    private static async Task ExportEndpoints(ProjectSchema project, ApiSchema api)
+    private static async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(project.Csharp.Folder, "src", "Clients");
+        var clientsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientFile in Directory.EnumerateFiles(clientsDir, "*.cs"))
         {
@@ -222,38 +225,38 @@ public static class CSharpSdk
         }
 
         // Gather a list of unique categories
-        foreach (var cat in api.Categories)
+        foreach (var cat in context.Api.Categories)
         {
             var sb = new StringBuilder();
 
             // Construct header
-            sb.AppendLine(FileHeader(project));
+            sb.AppendLine(FileHeader(context.Project));
             sb.AppendLine("using System;");
             sb.AppendLine("using System.Collections.Generic;");
             sb.AppendLine("using System.Net.Http;");
             sb.AppendLine("using System.Threading.Tasks;");
-            sb.AppendLine($"using {project.Csharp.Namespace}.Models;");
+            sb.AppendLine($"using {context.Project.Csharp.Namespace}.Models;");
             sb.AppendLine();
             sb.AppendLine();
-            sb.AppendLine($"namespace {project.Csharp.Namespace}.Clients");
+            sb.AppendLine($"namespace {context.Project.Csharp.Namespace}.Clients");
             sb.AppendLine("{");
             sb.AppendLine("    /// <summary>");
             sb.AppendLine($"    /// API methods related to {cat}");
             sb.AppendLine("    /// </summary>");
             sb.AppendLine($"    public class {cat}Client");
             sb.AppendLine("    {");
-            sb.AppendLine($"        private readonly {project.Csharp.ClassName} _client;");
+            sb.AppendLine($"        private readonly {context.Project.Csharp.ClassName} _client;");
             sb.AppendLine();
             sb.AppendLine("        /// <summary>");
             sb.AppendLine("        /// Constructor");
             sb.AppendLine("        /// </summary>");
-            sb.AppendLine($"        public {cat}Client({project.Csharp.ClassName} client)");
+            sb.AppendLine($"        public {cat}Client({context.Project.Csharp.ClassName} client)");
             sb.AppendLine("        {");
             sb.AppendLine("            _client = client;");
             sb.AppendLine("        }");
 
             // Run through all APIs
-            foreach (var endpoint in api.Endpoints)
+            foreach (var endpoint in context.Api.Endpoints)
             {
                 if (endpoint.Category == cat && !endpoint.Deprecated)
                 {
@@ -265,7 +268,7 @@ public static class CSharpSdk
                     foreach (var p in from p in endpoint.Parameters orderby p.Required descending select p)
                     {
                         var isNullable = !p.Required || p.Nullable;
-                        var typeName = FixupType(api, p.DataType, p.IsArray, isNullable);
+                        var typeName = FixupType(context, p.DataType, p.IsArray, isNullable);
                         var paramText = $"{typeName} {p.Name}{(isNullable ? " = null" : "")}";
                         paramList.Add(paramText);
                     }
@@ -276,12 +279,12 @@ public static class CSharpSdk
 
                     // What is our return type?  Note that we're assuming this can be non-nullable since the
                     // response class already handles the case where the value ends up being null.
-                    var returnType = FixupType(api, endpoint.ReturnDataType.DataType, endpoint.ReturnDataType.IsArray,
+                    var returnType = FixupType(context, endpoint.ReturnDataType.DataType, endpoint.ReturnDataType.IsArray,
                         false);
 
                     // Write the method
                     var modernSignature =
-                        $"        public async Task<{project.Csharp.ResponseClass}<{returnType}>> {endpoint.Name.ToProperCase()}({string.Join(", ", paramList)})";
+                        $"        public async Task<{context.Project.Csharp.ResponseClass}<{returnType}>> {endpoint.Name.ToProperCase()}({string.Join(", ", paramList)})";
                     sb.AppendLine(modernSignature);
 
                     sb.AppendLine("        {");
@@ -335,8 +338,8 @@ public static class CSharpSdk
             return;
         }
 
-        await ExportSchemas(context.Project, context.Api);
-        await ExportEndpoints(context.Project, context.Api);
+        await ExportSchemas(context);
+        await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 

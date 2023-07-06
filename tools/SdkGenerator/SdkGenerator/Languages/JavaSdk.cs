@@ -81,14 +81,11 @@ public static class JavaSdk
         }
         
         // Is this a generic class?
-        if (context.Project.GenericSuffixes != null)
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            foreach (var genericName in context.Project.GenericSuffixes)
+            if (s.EndsWith(genericName))
             {
-                if (s.EndsWith(genericName))
-                {
-                    s = $"{genericName}<{s.Substring(0, s.Length - genericName.Length)}";
-                }
+                s = $"{genericName}<{s.Substring(0, s.Length - genericName.Length)}";
             }
         }
 
@@ -273,18 +270,29 @@ public static class JavaSdk
                         }
                     }
 
-                    // Execute the request
-                    if (returnType.Contains("FetchResult") && !returnType.EndsWith("SummaryFetchResult"))
+                    // Check if this is a generic
+                    bool isGeneric = false;
+                    foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
                     {
-                        sb.AppendLine($"        return r.Call(new TypeToken<{returnType}>() {{}}.getType());");
+                        if (returnType.Contains(genericName))
+                        {
+                            sb.AppendLine($"        return r.Call(new TypeToken<{returnType}>() {{}}.getType());");
+                            isGeneric = true;
+                            break;
+                        }
                     }
-                    else if (returnType == "byte[]")
+                    
+                    // Other non-generic types
+                    if (!isGeneric)
                     {
-                        sb.AppendLine("        return r.Call();");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"        return r.Call({returnType}.class);");
+                        if (returnType == "byte[]")
+                        {
+                            sb.AppendLine("        return r.Call();");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"        return r.Call({returnType}.class);");
+                        }
                     }
 
                     sb.AppendLine("    }");
@@ -300,23 +308,32 @@ public static class JavaSdk
         }
     }
 
-    private static void AddImport(ApiSchema api, string name, HashSet<string> list)
+    private static void AddImport(GeneratorContext context, string name, HashSet<string> list)
     {
-        if (name.EndsWith("FetchResult") && !name.EndsWith("SummaryFetchResult"))
+        bool isGeneric = false;
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            list.Add("FetchResult");
-            list.Add("type-token");
+            if (name.EndsWith(genericName))
+            {
+                isGeneric = true;
+                list.Add(genericName);
+                list.Add("type-token");
+                var innerType = name[..^11];
+                AddImport(context, innerType, list);
+                break;
+            }
+        }
 
-            var innerType = name[..^11];
-            AddImport(api, innerType, list);
-        }
-        else if (name.Equals("TestTimeoutException"))
+        if (!isGeneric)
         {
-            list.Add("ErrorResult");
-        }
-        else if (!api.IsEnum(name))
-        {
-            list.Add(name);
+            if (name.Equals("TestTimeoutException"))
+            {
+                list.Add("ErrorResult");
+            }
+            else if (!context.Api.IsEnum(name))
+            {
+                list.Add(name);
+            }
         }
     }
 
@@ -327,16 +344,16 @@ public static class JavaSdk
         {
             if (endpoint.Category == category && !endpoint.Deprecated)
             {
-                AddImport(context.Api, endpoint.ReturnDataType.DataType, types);
+                AddImport(context, endpoint.ReturnDataType.DataType, types);
                 foreach (var p in endpoint.Parameters)
                 {
-                    AddImport(context.Api, p.DataType, types);
+                    AddImport(context, p.DataType, types);
                 }
             }
         }
 
         // Deduplicate the list and generate import statements
-        return (from t in types select GetImportForType(context.Project, t)).Distinct().ToList();
+        return (from t in types select GetImportForType(context, t)).Distinct().ToList();
     }
 
     private static List<string> GetImports(GeneratorContext context, SchemaItem schema)
@@ -346,16 +363,24 @@ public static class JavaSdk
         {
             if (!field.Deprecated)
             {
-                AddImport(context.Api, field.DataType, types);
+                AddImport(context, field.DataType, types);
             }
         }
 
         // Deduplicate the list and generate import statements
-        return (from t in types select GetImportForType(context.Project, t)).Distinct().ToList();
+        return (from t in types select GetImportForType(context, t)).Distinct().ToList();
     }
 
-    private static string GetImportForType(ProjectSchema project, string type)
+    private static string GetImportForType(GeneratorContext context, string type)
     {
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            if (type == genericName)
+            {
+                return $"import {context.Project.Java.Namespace}.{type};";
+            }
+        }
+        
         switch (type)
         {
             case "string":
@@ -376,11 +401,9 @@ public static class JavaSdk
             case "binary":
             case "File":
             case "byte[]":
-                return $"import {project.Java.Namespace}.BlobRequest;";
-            case "FetchResult":
-                return $"import {project.Java.Namespace}.{type};";
+                return $"import {context.Project.Java.Namespace}.BlobRequest;";
             default:
-                return $"import {project.Java.Namespace}.models.{type};";
+                return $"import {context.Project.Java.Namespace}.models.{type};";
         }
     }
 

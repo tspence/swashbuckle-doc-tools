@@ -146,8 +146,11 @@ public static class DownloadFile
                             if (token != null)
                             {
                                 var cleanModelName = token.ToString();
-                                cleanModelName = cleanModelName.Substring(cleanModelName.LastIndexOf('/') + 1)
-                                    .Replace("FetchResult", "");
+                                cleanModelName = cleanModelName.Substring(cleanModelName.LastIndexOf('/') + 1);
+                                foreach (var genericName in project.GenericSuffixes ?? Enumerable.Empty<string>())
+                                {
+                                    cleanModelName = cleanModelName.Replace(genericName, "");
+                                }
                                 if (methodObj.SelectToken("description") is JValue desc &&
                                     cleanModelName != "ActionResultModel")
                                 {
