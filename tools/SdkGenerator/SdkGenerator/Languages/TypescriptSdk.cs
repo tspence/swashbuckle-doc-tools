@@ -78,7 +78,7 @@ public static class TypescriptSdk
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s.Substring(0, s.Length - genericName.Length)}";
+                s = $"{genericName}<{s[..^genericName.Length]}";
             }
         }
 

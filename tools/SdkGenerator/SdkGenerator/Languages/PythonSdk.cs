@@ -27,12 +27,12 @@ public static class PythonSdk
                + "#\n\n";
     }
 
-    private static string FixupType(ApiSchema api, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
+    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
     {
         var s = typeName;
-        if (api.IsEnum(typeName))
+        if (context.Api.IsEnum(typeName))
         {
-            s = api.FindSchema(typeName).EnumType;
+            s = context.Api.FindSchema(typeName).EnumType;
         }
 
         switch (s)
@@ -69,10 +69,13 @@ public static class PythonSdk
                 break;
         }
 
-        if (s.EndsWith("FetchResult") && !s.EndsWith("SummaryFetchResult"))
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            s = $"FetchResult[{s[..^11]}]";
-            return s;
+            if (s.EndsWith(genericName))
+            {
+                s = $"{genericName}[{s[..^genericName.Length]}]";
+                return s;
+            }
         }
 
         if (!isParamHint && !isReturnHint)
@@ -95,17 +98,17 @@ public static class PythonSdk
         return s;
     }
 
-    private static async Task ExportSchemas(ProjectSchema project, ApiSchema api)
+    private static async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(project.Python.Folder, "src", project.Python.Namespace, "models");
+        var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(modelsDir);
 
-        foreach (var item in api.Schemas)
+        foreach (var item in context.Api.Schemas)
         {
             if (item.Fields != null)
             {
                 var sb = new StringBuilder();
-                sb.AppendLine(FileHeader(project));
+                sb.AppendLine(FileHeader(context.Project));
 
                 // The "Future" import apparently must be the very first one in the file
                 if (item.Fields.Any(f => f.DataType == item.Name))
@@ -118,11 +121,11 @@ public static class PythonSdk
                 sb.AppendLine();
                 sb.AppendLine("@dataclass");
                 sb.AppendLine($"class {item.Name}:");
-                sb.Append(MakePythonDoc(api, item.DescriptionMarkdown, 4, null));
+                sb.Append(MakePythonDoc(context, item.DescriptionMarkdown, 4, null));
                 sb.AppendLine();
                 foreach (var f in item.Fields)
                 {
-                    sb.AppendLine($"    {f.Name}: {FixupType(api, f.DataType, f.IsArray)} | None = None");
+                    sb.AppendLine($"    {f.Name}: {FixupType(context, f.DataType, f.IsArray)} | None = None");
                 }
 
                 sb.AppendLine();
@@ -175,7 +178,7 @@ public static class PythonSdk
             var sb = new StringBuilder();
 
             // Let's see if we have to do any imports
-            var imports = BuildImports(context.Project, context.Api, cat);
+            var imports = BuildImports(context, cat);
 
             // Construct header
             sb.Append(FileHeader(context.Project));
@@ -207,7 +210,7 @@ public static class PythonSdk
 
                     // Is this a file download API?
                     var isFileDownload = endpoint.ReturnDataType.DataType is "byte[]" or "binary" or "File";
-                    var originalReturnDataType = FixupType(context.Api, endpoint.ReturnDataType.DataType,
+                    var originalReturnDataType = FixupType(context, endpoint.ReturnDataType.DataType,
                         endpoint.ReturnDataType.IsArray, isReturnHint: true);
                     string returnDataType;
                     if (!isFileDownload)
@@ -221,13 +224,13 @@ public static class PythonSdk
 
                     // Figure out the parameter list
                     var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
-                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name}: {FixupType(context.Api, p.DataType, p.IsArray, isParamHint: true)}");
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
                     var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
                     // Write the method
                     sb.AppendLine($"    def {endpoint.Name.ToSnakeCase()}(self, {paramListStr}) -> {returnDataType}:");
-                    sb.Append(MakePythonDoc(context.Api, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+                    sb.Append(MakePythonDoc(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
                     sb.AppendLine(endpoint.Path.Contains('{')
                         ? $"        path = f\"{endpoint.Path}\""
                         : $"        path = \"{endpoint.Path}\"");
@@ -239,21 +242,31 @@ public static class PythonSdk
                     }
                     else
                     {
+                        bool isHandled = false;
                         sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                         if (originalReturnDataType.StartsWith("list", StringComparison.OrdinalIgnoreCase))
                         {
                             // Use a list comprehension to unpack array responses
                             sb.AppendLine(
                                 $"            return {context.Project.Python.ResponseClass}(True, result.status_code, [{endpoint.ReturnDataType.DataType}(**item) for item in result.json()], None)");
+                            isHandled = true;
                         }
-                        else if (originalReturnDataType.StartsWith("FetchResult", StringComparison.OrdinalIgnoreCase))
+
+                        if (!isHandled)
                         {
-                            // Fetch results don't unpack as expected, use from_json helper method
-                            sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(True, result.status_code, FetchResult.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^11]}), None)");                            
-                            context.Log("halp");
+                            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+                            {
+                                if (originalReturnDataType.StartsWith(genericName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    // Fetch results don't unpack as expected, use from_json helper method
+                                    sb.AppendLine(
+                                        $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {genericName}.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^genericName.Length]}), None)");                            
+                                    context.Log("halp");
+                                    isHandled = true;
+                                }
+                            }
                         }
-                        else
+                        if (!isHandled)
                         {
                             sb.AppendLine(
                                 $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {originalReturnDataType}(**result.json()), None)");
@@ -272,10 +285,10 @@ public static class PythonSdk
         }
     }
 
-    private static List<string> BuildImports(ProjectSchema project, ApiSchema api, string cat)
+    private static List<string> BuildImports(GeneratorContext context, string cat)
     {
         var imports = new List<string>();
-        foreach (var endpoint in api.Endpoints)
+        foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
             {
@@ -283,7 +296,7 @@ public static class PythonSdk
                 {
                     if (p.DataTypeRef != null)
                     {
-                        AddImport(project, api, imports, p.DataType);
+                        AddImport(context, imports, p.DataType);
                     }
                 }
 
@@ -294,7 +307,7 @@ public static class PythonSdk
                 }
                 else
                 {
-                    AddImport(project, api, imports, endpoint.ReturnDataType.DataType);
+                    AddImport(context, imports, endpoint.ReturnDataType.DataType);
                 }
             }
         }
@@ -303,30 +316,33 @@ public static class PythonSdk
         return imports.Distinct().ToList();
     }
 
-    private static void AddImport(ProjectSchema project, ApiSchema api, List<string> imports, string dataType)
+    private static void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
-        if (api.IsEnum(dataType) || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
+        if (context.Api.IsEnum(dataType) || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
         {
             return;
         }
 
         if (dataType is "ActionResultModel")
         {
-            imports.Add($"from {project.Python.Namespace}.models.actionresultmodel import ActionResultModel");
+            imports.Add($"from {context.Project.Python.Namespace}.models.actionresultmodel import ActionResultModel");
         }
         else
         {
-            if (dataType.EndsWith("FetchResult") && !dataType.EndsWith("SummaryFetchResult"))
+            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
             {
-                imports.Add($"from {project.Python.Namespace}.fetch_result import FetchResult");
-                dataType = dataType[..^11];
+                if (dataType.EndsWith(genericName))
+                {
+                    imports.Add($"from {context.Project.Python.Namespace}.{genericName.ToSnakeCase()} import {genericName}");
+                    dataType = dataType[..^genericName.Length];
+                }
             }
 
-            imports.Add($"from {project.Python.Namespace}.models.{dataType.ToSnakeCase()} import {dataType}");
+            imports.Add($"from {context.Project.Python.Namespace}.models.{dataType.ToSnakeCase()} import {dataType}");
         }
     }
 
-    private static string MakePythonDoc(ApiSchema api, string description, int indent, List<ParameterField> parameters)
+    private static string MakePythonDoc(GeneratorContext context, string description, int indent, List<ParameterField> parameters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -358,7 +374,7 @@ public static class PythonSdk
             sb.AppendLine($"{prefix}----------");
             foreach (var p in parameters)
             {
-                sb.AppendLine($"{prefix}{p.Name} : {FixupType(api, p.DataType, p.IsArray, isParamHint: true)}");
+                sb.AppendLine($"{prefix}{p.Name} : {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
                 sb.AppendLine(p.DescriptionMarkdown.WrapMarkdown(72, $"{prefix}    "));
             }
         }
@@ -375,7 +391,7 @@ public static class PythonSdk
             return;
         }
 
-        await ExportSchemas(context.Project, context.Api);
+        await ExportSchemas(context);
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
