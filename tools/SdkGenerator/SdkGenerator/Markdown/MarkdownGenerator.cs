@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Polly;
 using RestSharp;
 using SdkGenerator.Project;
+using SdkGenerator.Readme;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Markdown;
@@ -17,8 +18,18 @@ public static class MarkdownGenerator
     public static async Task UploadSchemas(GeneratorContext context, string format)
     {
         var order = 1;
+        
         if (!string.IsNullOrWhiteSpace(context.Project?.Readme?.ApiKey))
         {
+            // Find the category
+            var categories = await ReadmeTools.GetCategories(context);
+            var cat = categories.FirstOrDefault(item => String.Equals(item.Title, context.Project.Readme.ModelCategory, StringComparison.OrdinalIgnoreCase));
+            if (cat == null)
+            {
+                cat = await ReadmeTools.CreateCategory(context, context.Project.Readme.ModelCategory);
+            }
+        
+            // Upload each API as a guide within that category
             foreach (var schema in context.Api.Schemas.Where(schema => schema.Fields != null))
             {
                 try
@@ -30,7 +41,7 @@ public static class MarkdownGenerator
                         _ => ""
                     };
 
-                    await UploadToReadme(context, schema.Name, order++, markdownText);
+                    await ReadmeTools.UploadGuideToReadme(context, cat.Id, schema.Name, order++, markdownText);
                 }
                 catch (Exception e)
                 {
@@ -297,67 +308,5 @@ public static class MarkdownGenerator
         sb.AppendLine(field.DescriptionMarkdown);
         sb.AppendLine();
         return sb.ToString();
-    }
-
-    private static async Task<RestResponse> CallReadme(string readmeApiKey, string resource, Method method, string body = null)
-    {
-        var client = new RestClient("https://dash.readme.com");
-        var request = new RestRequest(resource, method);
-        request.AddHeader("Accept", "application/json");
-        request.AddHeader("Authorization", $"Basic {readmeApiKey}");
-        if (body != null)
-        {
-            request.AddHeader("Content-Type", "application/json");
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
-        }
-
-        return await client.ExecuteAsync(request);
-    }
-
-    private class ReadmeDocModel
-    {
-        [JsonProperty("hidden")]
-        public bool Hidden { get; set; }
-
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
-        [JsonProperty("body")]
-        public string Body { get; set; }
-
-        [JsonProperty("category")]
-        public string Category { get; set; }
-
-        [JsonProperty("order")]
-        public int Order { get; set; }
-    }
-
-    private static async Task UploadToReadme(GeneratorContext context, string schemaName, int order, string markdown)
-    {
-        var docName = $"/api/v1/docs/{schemaName.ToLower()}";
-        var doc = new ReadmeDocModel
-        {
-            Hidden = true,
-            Order = order,
-            Title = schemaName,
-            Body = markdown,
-            Category = context.Project.Readme.ModelCategory,
-        };
-
-        // Check to see if the model exists
-        var modelExists = await CallReadme(context.Project.Readme.ApiKey, docName, Method.Get);
-        if (modelExists.IsSuccessful)
-        {
-            // Preserve the "hidden" status - only a human being can approve the doc and make it visible
-            var existingDoc = JsonConvert.DeserializeObject<ReadmeDocModel>(modelExists.Content);
-            doc.Hidden = existingDoc.Hidden;
-            var result = await CallReadme(context.Project.Readme.ApiKey, docName, Method.Put, JsonConvert.SerializeObject(doc));
-            context.Log($"Updated {schemaName}: {result.StatusCode}");
-        }
-        else
-        {
-            var result = await CallReadme(context.Project.Readme.ApiKey, "/api/v1/docs", Method.Post, JsonConvert.SerializeObject(doc));
-            context.Log($"Created {schemaName}: {result.StatusCode}");
-        }
     }
 }

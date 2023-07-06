@@ -86,6 +86,11 @@ public class ReadmeSiteSchema
     /// Should also allow us to specify a readme "version number"
     /// </summary>
     public string ModelCategory { get; set; }
+    
+    /// <summary>
+    /// The x-readme-version to use when making API calls
+    /// </summary>
+    public string ReadmeVersionCode { get; set; }
 }
 
 public class LanguageSchema
