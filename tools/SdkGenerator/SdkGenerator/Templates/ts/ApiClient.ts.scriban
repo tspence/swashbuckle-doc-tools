@@ -1,0 +1,233 @@
+/***
+ * {{ project.project_name }} for TypeScript
+ *
+ * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * @author     {{ project.author_name }} <{{ project.author_email }}>
+ * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * @version    {{ api.semver3 }}
+ * @link       {{ project.typescript.github_url }}
+ */
+
+{{~ for cat in api.categories ~}}
+import { {{ cat }}Client } from ".";
+{{~ end ~}}
+import { {{ project.typescript.response_class }} } from ".";
+
+import * as axios from "axios";
+import * as blob from "buffer";
+import * as FormData from "form-data";
+import * as fs from "fs";
+import * as os from "os";
+import * as url from "url";
+
+/**
+ * List of headers used by the API
+ */
+export type ApiHeaders =
+  {
+    SdkName?: string,
+    SdkVersion?: string,
+    MachineName?: string,
+    ApplicationName?: string,
+    Authorization?: string,
+    ApiKey?: string 
+  };
+
+/**
+ * Client object used to communicate with the API
+ */
+export class {{ project.typescript.class_name }} {
+
+  // The URL of the environment we will use
+  private readonly serverUrl: string;
+  private readonly version: string = "{{ api.semver3 }}";
+  private bearerToken: string | null = null;
+  private apiKey: string | null = null;
+  private sdkName = "TypeScript";
+  private appName: string | null = null;
+  private customHeaderFunc: ((headers: unknown) => Promise<unknown>) | null = null;
+
+{{~ for cat in api.categories ~}}
+  public readonly {{ cat }}: {{ cat }}Client;
+{{~ end ~}}
+
+  /** 
+   * Internal constructor for the API client
+   */
+  private constructor(customUrl: string) {
+    this.serverUrl = customUrl;
+
+{{~ for cat in api.categories ~}}
+    this.{{ cat }} = new {{ cat }}Client(this);
+{{~ end ~}}
+  }
+
+  /**
+   * Construct a new API client to target the specific environment.
+   *
+{{~ for env in project.environments ~}}
+   *   * {{ env.name }} - {{ env.url }}
+{{~ end ~}}
+   * 
+   * @param env The name of the environment to use
+   * @returns The API client to use
+   */
+  public static withEnvironment(env: string): {{ project.typescript.class_name }} {
+{{~ 
+for env in project.environments
+    if env.default 
+~}}
+    let url = "{{ env.url }}";
+{{~
+    end 
+end 
+~}}
+    switch (env) {
+{{~ for env in project.environments ~}}
+      case "{{ env.name }}": url = "{{ env.url }}"; break;
+{{~ end ~}}
+    }
+    return new {{ project.typescript.class_name }}(url);
+  }
+
+  /**
+   * Construct an unsafe client that uses a non-standard server; this can be necessary
+   * when using proxy servers or an API gateway.  Please be careful when using this
+   * mode.  You should prefer to use `withEnvironment()` instead wherever possible.
+   * 
+   * @param unsafeUrl The custom environment URL to use for this client
+   * @returns The API client to use
+   */
+  public static withCustomEnvironment(unsafeUrl: string): {{ project.typescript.class_name }} {
+    return new {{ project.typescript.class_name }}(unsafeUrl);
+  }
+
+  /**
+   * Configure this API client to use a JWT bearer token.
+   *
+   * {{ project.authentication_help }}
+   * 
+   * @param token The JWT bearer token to use for this API session
+   */
+  public withBearerToken(token: string): {{ project.typescript.class_name }} {
+    this.bearerToken = token;
+    this.apiKey = null;
+    return this;
+  }
+
+  /**
+   * Configures this API client to use an API Key.
+   *
+   * {{ project.authentication_help }}
+   * 
+   * @param apiKey The API key to use for this API session
+   */
+  public withApiKey(apiKey: string): {{ project.typescript.class_name }} {
+    this.apiKey = apiKey;
+    this.bearerToken = null;
+    return this;
+  }
+  
+  /**
+   * Configure a custom header function that will be called before all requests.
+   * 
+   * This function can modify the request headers.
+   * 
+   * @param func The async function to be called to modify headers before any request
+   * @returns The API client for function chaining
+   */
+  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): LockstepApi
+  {
+    this.customHeaderFunc = func;
+    return this;
+  }
+  
+  /**
+   * Configures this API client to use an application name
+   * 
+   * @param appName The Application Name to use for this API session
+   */
+  public withApplicationName(appName: string): {{ project.typescript.class_name }} {
+    this.appName = appName;
+    return this;
+  }
+  
+  /**
+   * Construct headers for a request
+   */
+  private async getHeaders(): Promise<ApiHeaders> {
+    const headers: ApiHeaders = {
+      SdkName: this.sdkName,
+      SdkVersion: this.version, 
+      MachineName: os.hostname(), 
+    };
+    if (this.appName !== null) {
+      headers["ApplicationName"] = this.appName;
+    } 
+    if (this.bearerToken !== null) {
+      headers["Authorization"] = `Bearer ${this.bearerToken}`;
+    } 
+    if (this.apiKey !== null) {
+      headers["ApiKey"] = this.apiKey;
+    }
+    if (this.customHeaderFunc != null) {
+      return (await this.customHeaderFunc(headers)) as ApiHeaders;
+    } else {
+      return headers;
+    }
+  }
+
+  /**
+   * Make a GET request using this client
+   */
+  public async request<T>(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<T>> {
+    const requestConfig = {
+      url: new url.URL(path, this.serverUrl).href,
+      method,
+      params: options,
+      data: body,
+      headers: await this.getHeaders(),
+    };
+    const result = await axios.default.request(requestConfig);
+    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+  }
+
+  /**
+   * Upload a file to a REST endpoint and retrieve results as JSON
+   */
+  public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<{{ project.typescript.response_class }}<T>> {
+    const fileBuffer = fs.readFileSync(filename);
+    const formData = new FormData();
+    formData.append("file", fileBuffer);
+    const requestConfig: axios.AxiosRequestConfig = {
+      url: new url.URL(path, this.serverUrl).href,
+      method,
+      data: formData,
+      params: options,
+      headers: await this.getHeaders(),
+    };
+    const result = await axios.default.request(requestConfig);
+    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+  }
+
+  /**
+   * Make a GET request using this client and download the results as a blob
+   */
+  public async requestBlob(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
+    const responseType: axios.ResponseType = "blob";
+    const requestConfig: axios.AxiosRequestConfig = {
+      url: new url.URL(path, this.serverUrl).href,
+      method,
+      params: options,
+      data: body,
+      headers: await this.getHeaders(),
+      responseType,
+    };
+    const result = await axios.default.request(requestConfig);
+    return new {{ project.typescript.response_class }}<Blob>(result.status, new blob.Blob(result.data));
+  }
+}

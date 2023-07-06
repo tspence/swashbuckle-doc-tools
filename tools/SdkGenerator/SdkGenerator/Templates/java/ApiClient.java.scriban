@@ -1,0 +1,174 @@
+/***
+ * {{ project.project_name }} for Java
+ *
+ * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * @author     {{ project.author_name }} <{{ project.author_email }}>
+ *             {{ project.java.extra_credit }}
+ * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * @version    {{ api.semver3 }}
+ * @link       {{ project.java.github_url }}
+ */
+
+
+package {{ project.java.namespace }};
+
+{{~ for cat in api.categories ~}}
+import {{ project.java.namespace }}.clients.{{ cat }}Client;
+{{~ end ~}}
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * A client object that can be used to work with the API
+ */
+public class {{ project.java.class_name }} {
+    private String serverUri;
+    private String apiKey;
+    private String bearerToken;
+    private String appName;
+
+{{~ for cat in api.categories ~}}
+    private {{ cat }}Client {{ cat | to_camel_case }};
+{{~ end ~}}
+
+    private {{ project.java.class_name }}(@NotNull String serverUri)
+    {
+        this.serverUri = serverUri;
+
+{{~ for cat in api.categories ~}}
+        this.{{ cat | to_camel_case }} = new {{ cat }}Client(this);
+{{~ end ~}}
+    }
+
+{{~ for cat in api.categories ~}}
+    /**
+     * A collection of API methods relating to {{ cat }}
+     *
+     * @return A collection containing the {@link {{ project.java.namespace }}.clients.{{ cat }}Client client} methods in the API.
+     */
+    public @NotNull {{ cat }}Client get{{ cat }}Client() { return this.{{ cat | to_camel_case }}; }
+{{~ end ~}}
+  
+    /**
+     * Construct a new API client to target the specific environment.
+     *
+     * @param env The environment to use, either "prd" for production or "sbx" for sandbox.
+     * @return The API client to use
+     */
+    public static @NotNull {{ project.java.class_name }} withEnvironment(@NotNull String env)
+    {
+{{~ 
+for env in project.environments
+    if env.default 
+~}}
+        String url = "{{ env.url }}";
+{{~
+    end 
+end 
+~}}
+        switch (env)
+        {
+{{~ for env in project.environments ~}}
+            case "{{ env.name }}":
+                url = "{{ env.url }}";
+                break;
+{{~ end ~}}
+        }
+        return new {{ project.java.class_name }}(url);
+    }
+
+    /**
+     * Construct an unsafe client that uses a non-standard server; this can be necessary
+     * when using proxy servers or an API gateway.  Please be careful when using this
+     * mode.  You should prefer to use `withEnvironment()` instead wherever possible.
+     *
+     * @param unsafeUrl The custom environment URL to use for this client
+     * @return The API client to use
+     */
+    public static @NotNull {{ project.java.class_name }} withCustomEnvironment(@NotNull String unsafeUrl)
+    {
+        return new {{ project.java.class_name }}(unsafeUrl);
+    }
+
+    /**
+     * Configure this API client to use a JWT bearer token.
+     *
+     * {{ project.authentication_help }}
+     *
+     * @param token The JWT bearer token to use for this API session
+     * @return The API client to use
+     */
+    public @NotNull {{ project.java.class_name }} withBearerToken(@NotNull String token)
+    {
+        this.bearerToken = token;
+        this.apiKey = null;
+        return this;
+    }
+
+    /**
+     * Configures this API client to use an API Key.
+     *
+     * {{ project.authentication_help }}
+     *
+     * @param apiKey The API key to use for this API session
+     * @return The API client to use
+     */
+    public @NotNull {{ project.java.class_name }} withApiKey(@NotNull String apiKey)
+    {
+        this.apiKey = apiKey;
+        this.bearerToken = null;
+        return this;
+    }
+
+    /**
+     * Configures this API client to use an application name.
+     * 
+     * @param appName The Application name to use for this API session
+     * @return The API client to use
+     */
+    public @NotNull {{ project.java.class_name }} withApplicationName(@NotNull String appName) {
+        this.appName = appName;
+        return this;
+    }
+
+    /**
+     * The server URI to which this client connects
+     *
+     * @return The server URI
+     */
+    public @NotNull String getServerUri() {
+        return this.serverUri;
+    }
+
+    /**
+     * Returns the currently selected API key
+     *
+     * @return The API Key
+     */
+    public @Nullable String getApiKey() {
+        return this.apiKey;
+    }
+
+    /**
+     * Returns the currently selected bearer token
+     *
+     * @return The bearer token
+     */
+    public @Nullable String getBearerToken() {
+        return this.bearerToken;
+    }
+
+    /**
+     * Returns the currently selected application name
+     * 
+     * @return The application name
+     */
+    public @Nullable String getAppName() {
+        return this.appName;
+    }
+}

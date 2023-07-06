@@ -1,0 +1,301 @@
+/***
+ * {{ project.project_name }} for C#
+ *
+ * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * @author     {{ project.author_name }} <{{ project.author_email }}>
+ *             {{ project.csharp.extra_credit }}
+ * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * @version    {{ api.semver3 }}
+ * @link       {{ project.csharp.github_url }}
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using System.Web;
+using {{ project.csharp.namespace }}.Clients;
+using {{ project.csharp.namespace }}.Models;
+
+
+namespace {{ project.csharp.namespace }} 
+{
+    /// <summary>
+    /// A client object that connects to the {{ project.project_name }}
+    /// </summary>
+    public class {{ project.csharp.class_name }}
+    {
+        /// <summary>
+        /// The version of the SDK
+        /// </summary>
+        public const string SdkVersion = "{{ api.semver3 }}";
+        
+        private readonly string _apiUrl;
+        private readonly HttpClient _client;
+        private readonly JsonSerializerOptions _options;
+        
+        private string _appName;
+        private string _bearerToken;
+        private string _apiKey;
+    
+    {{~ for cat in api.categories ~}}
+        /// <summary>
+        /// API methods related to {{ cat }}
+        /// </summary>
+        public {{ cat }}Client {{ cat }} { get; }
+
+    {{~ end ~}}
+
+        /// <summary>
+        /// Internal constructor for the client. You should always begin with `WithEnvironment()` or `WithCustomEnvironment`.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="clientHandler">Handler for the HTTP client, when null the default handler will be used</param>
+        private {{ project.csharp.class_name }}(string url, HttpClientHandler clientHandler)
+        {
+            // Add support for HTTP compression
+            var handler = clientHandler ?? new HttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip;
+            
+            // We intentionally use a single HttpClient object for the lifetime of this API connection.
+            // Best practices: https://bytedev.medium.com/net-core-httpclient-best-practices-4c1b20e32c6
+            _client = new HttpClient(handler);
+            
+            _apiUrl = url;
+    {{~ for cat in api.categories ~}}
+            {{ cat }} = new {{ cat }}Client(this);
+    {{~ end ~}}
+                
+            // Configure JSON serializer options
+            _options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, 
+            };
+        }
+    
+        /// <summary>
+        /// Construct a new API client to target the specific environment.
+        /// </summary>
+        /// <param name="env">The environment to use, either "prd" for production or "sbx" for sandbox.</param>
+        /// <param name="clientHandler">Optional handler for the HTTP client</param>
+        /// <returns>The API client to use</returns>
+        public static {{ project.csharp.class_name }} WithEnvironment(string env, HttpClientHandler clientHandler = null)
+        {
+            switch (env)
+            {
+{{~ for env in project.environments ~}}
+                case "{{ env.name }}":
+                    return new {{ project.csharp.class_name }}("{{ env.url }}", clientHandler);
+{{~ end ~}}
+            }
+    
+            throw new InvalidOperationException($"Unknown environment: {env}");
+        }
+    
+        /// <summary>
+        /// Construct a client that uses a non-standard environment; this can be necessary when using proxy servers or
+        /// an API gateway.  Please be careful when using this mode.
+        /// You should prefer to use `WithEnvironment()` instead wherever possible.
+        /// </summary>
+        /// <param name="url">The custom URL to use for this client</param>
+        /// <param name="clientHandler">Optional handler to set specific settings for the HTTP client</param>
+        /// <returns>The API client to use</returns>
+        public static {{ project.csharp.class_name }} WithCustomEnvironment(string url, HttpClientHandler clientHandler = null)
+        {
+            return new {{ project.csharp.class_name }}(url, clientHandler);
+        }
+        
+        /// <summary>
+        /// Set the application name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public {{ project.csharp.class_name }} WithAppName(string name)
+        {
+            _appName = name;
+            return this;
+        }
+    
+        /// <summary>
+        /// Configure this API client to use a JWT bearer token.
+        ///
+        /// {{ project.authentication_help }}
+        /// </summary>
+        /// <param name="token">The JWT bearer token to use for this API session</param>
+        /// <returns></returns>
+        public {{ project.csharp.class_name }} WithBearerToken(string token)
+        {
+            _bearerToken = token;
+            _apiKey = null;
+            return this;
+        }
+    
+        /// <summary>
+        /// Configures this API client to use an API Key.
+        ///
+        /// {{ project.authentication_help }}
+        /// </summary>
+        /// <param name="apiKey">The API key to use for this API session</param>
+        /// <returns></returns>
+        public {{ project.csharp.class_name }} WithApiKey(string apiKey)
+        {
+            _apiKey = apiKey;
+            _bearerToken = null;
+            return this;
+        }
+    
+        /// <summary>
+        /// Make a request using this API client
+        /// </summary>
+        /// <param name="method">The HTTP method to send</param>
+        /// <param name="path">The URL path fragment relative to this environment</param>
+        /// <param name="query">The list of parameters and options to send</param>
+        /// <param name="body">The request body to send</param>
+        /// <param name="filename">The filename of a file attachment to upload</param>
+        /// <typeparam name="T">The type of the expected response</typeparam>
+        /// <returns>The response object including success/failure codes and error messages as appropriate</returns>
+        public async Task<{{ project.csharp.response_class }}<T>> Request<T>(HttpMethod method, string path,
+            Dictionary<string, object> query, object body, string filename) where T: class
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var request = new HttpRequestMessage();
+            request.Method = method;
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("SdkName", "DotNet");
+            request.Headers.Add("SdkVersion", SdkVersion);
+            request.Headers.Add("MachineName", Environment.MachineName);
+            if (_appName != null)
+            {
+                request.Headers.Add("ApplicationName", _appName);
+            }
+    
+            // Add authentication headers, if any
+            if (!string.IsNullOrWhiteSpace(_bearerToken))
+            {
+                request.Headers.Add("Authorization", "Bearer " + _bearerToken);
+            }
+            else if (!string.IsNullOrWhiteSpace(_apiKey))
+            {
+                request.Headers.Add("Api-Key", _apiKey);
+            }
+    
+            // Construct the request URI and query string
+            var uriBuilder = new UriBuilder(_apiUrl)
+            {
+                Path = path
+            };
+            var sb = new StringBuilder();
+            if (query != null)
+            {
+                foreach (var kvp in query)
+                {
+                    if (kvp.Value != null)
+                    {
+                        sb.Append($"{kvp.Key}={HttpUtility.UrlEncode(kvp.Value.ToString())}&");
+                    }
+                }
+            }
+            uriBuilder.Query = sb.ToString();
+            request.RequestUri = uriBuilder.Uri;
+    
+            // Add request body content, if any
+            if (body != null)
+            {
+                var content = JsonSerializer.Serialize(body, _options);
+                request.Content = new StringContent(content, Encoding.UTF8, "application/json");
+            }
+            else if (filename != null)
+            {
+                var bytesFile = File.ReadAllBytes(filename);
+                var fileContent = new ByteArrayContent(bytesFile);
+                var form = new MultipartFormDataContent(Guid.NewGuid().ToString());
+                form.Add(fileContent, "file", Path.GetFileName(filename));
+                request.Content = form;
+            }
+            
+            // Send the request and convert the response into a success or failure
+            using (var response = await _client.SendAsync(request))
+            {
+                var result = new {{ project.csharp.response_class }}<T>
+                {
+                    Success = response.IsSuccessStatusCode,
+                    Status = response.StatusCode,
+                };
+                if (response.Headers.TryGetValues("Server-Duration", out var durations))
+                {
+                    var durationStr = durations.FirstOrDefault();
+                    if (int.TryParse(durationStr, out var duration))
+                    {
+                        result.ServerDuration = duration;
+                    }
+                }
+                if (result.Success)
+                {
+                    // Handle file downloads
+                    if (typeof(T) == typeof(byte[]))
+                    {
+                        result.FileData = await response.Content.ReadAsByteArrayAsync();
+                    }
+                    else
+                    {
+                        // Successful API responses can be very large, so let's stream them
+                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        {
+                            result.Value = await JsonSerializer.DeserializeAsync<T>(stream, _options);
+                        }
+                    }
+                }
+                else
+                {
+                    // Error responses tend to be very short, and issues such as proxy errors
+                    // or "server down" can fail to provide valid JSON in the response.  If
+                    // we fail to parse the response as JSON, just create a simulated error
+                    // object with as much information as is available.
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(errorContent))
+                    {
+                        try
+                        {
+                            result.Error = JsonSerializer.Deserialize<ErrorResult>(errorContent, _options);
+                            if (result.Error != null)
+                            {
+                                result.Error.Content = errorContent;
+                            }
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                    }
+
+                    if (result.Error == null)
+                    {
+                        result.Error = new ErrorResult()
+                        {
+                            Title = $"{(int)response.StatusCode} {response.StatusCode}",
+                            Content = errorContent
+                        };
+                    }
+                }
+
+                // Calculate length of time it took including JSON processing
+                sw.Stop();
+                result.TotalRoundtrip = sw.ElapsedMilliseconds;
+                return result;
+            }
+        }
+    }
+}

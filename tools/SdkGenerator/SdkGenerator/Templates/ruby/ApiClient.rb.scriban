@@ -1,0 +1,146 @@
+#
+# {{ project.project_name }} for Ruby
+#
+# (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+#
+# For the full copyright and license information, please view the LICENSE
+# file that was distributed with this source code.
+#
+# @author     {{ project.author_name }} <{{ project.author_email }}>
+#             {{ project.ruby.extra_credit }}
+# @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+# @version    {{ api.semver3 }}
+# @link       {{ project.ruby.github_url }}
+#
+
+require 'net/http'
+require 'openssl'
+require 'uri'
+require 'socket'
+
+project_root = File.dirname(File.absolute_path(__FILE__))
+Dir.glob(project_root + '/clients/*') {|file| require file}
+
+module {{ project.ruby.namespace }}
+    class {{ project.ruby.class_name }}
+    
+        ##
+        # @return [String] The version number of this API client
+        attr_accessor :version
+
+        ##
+        # @return [String] The name or URL of the environment
+        attr_accessor :env 
+
+{{~ for cat in api.categories ~}}
+        ##
+        # @return [{{ cat | to_proper_case }}Client] Client object for {{ cat }} endpoints
+        attr_accessor :{{ cat | proper_case_to_snake_case }}
+
+{{~ end ~}}
+
+        ##
+        # Construct a new API client targeting the specified server.
+        #
+        # @param env [string] Either "sbx", "prd", or the URI of the server, ending in a slash (/)
+        def initialize(env)
+            @version = "{{ api.semver4 }}"
+            @env = case env
+{{~ for env in project.environments ~}}
+                when "{{ env.name }}"
+                    "{{ env.url }}"
+{{~ end ~}}
+                else
+                    env
+                end
+                
+            # Construct all the clients
+{{~ for cat in api.categories ~}}
+            @{{ cat | proper_case_to_snake_case }} = {{ cat | to_proper_case }}Client.new(self)
+{{~ end ~}}
+        end
+
+        ##
+        # Configure this API client to use API key authentication
+        #
+        # {{ project.authentication_help }}
+        #
+        # @param api_key [string] The API Key to use for authentication
+        def with_api_key(api_key)
+            @bearer_token = nil
+            @api_key = api_key
+        end
+
+        ##
+        # Configure this API client to use JWT Bearer Token authentication
+        #
+        # {{ project.authentication_help }}
+        #
+        # @param bearer_token [string] The Bearer Token to use for authentication
+        def with_bearer_token(bearer_token)
+            @api_key = nil
+            @bearer_token = bearer_token
+        end
+
+        ##
+        # Configure this API to use an application name
+        #
+        # @param app_name [string] The name of the application
+        def with_app_name(app_name)
+            @app_name = app_name
+        end
+
+        ##
+        # Send a request to the API and return the results
+        #
+        # Sends a request to the 
+        def request(method, path, body, params)
+        
+            url = URI(@env + path)
+            if !params.nil?  
+                url.query = URI.encode_www_form(params)
+            end
+            
+            http = Net::HTTP.new(url.host, url.port)
+            http.use_ssl = true
+            
+            request = case method
+                when :get
+                    Net::HTTP::Get.new(url)
+                when :post
+                    Net::HTTP::Post.new(url)
+                when :patch
+                    Net::HTTP::Patch.new(url)
+                when :put
+                    Net::HTTP::Put.new(url)
+                when :delete
+                    Net::HTTP::Delete.new(url)
+                end
+                
+            # Set headers and body for request
+            request["Accept"] = 'application/json'
+            request["Content-Type"] = 'application/*+json'
+            request["SdkType"] = 'Ruby'
+            request["SdkVersion"] = '{{ api.semver4 }}'
+            request["MachineName"] = Socket.gethostname
+            request.body = body
+
+            # If there is an application name
+            if @app_name != nil
+                request["ApplicationName"] = @app_name
+            end
+
+            # Which authentication are we using?
+            if @api_key != nil 
+              request["Api-Key"] = @api_key
+            end
+            if @bearer_token != nil 
+              request["Authorization"] = 'Bearer ' + @bearer_token
+            end
+            
+            # Send the request
+            response = http.request(request)
+            response.read_body
+        end
+    end   
+end  

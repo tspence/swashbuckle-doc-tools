@@ -1,0 +1,126 @@
+#
+# {{ project.project_name }} for Python
+#
+# (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+#
+# For the full copyright and license information, please view the LICENSE
+# file that was distributed with this source code.
+#
+# @author     {{ project.author_name }} <{{ project.author_email }}>
+#             {{ project.python.extra_credit }}
+# @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+# @version    {{ api.semver3 }}
+# @link       {{ project.python.github_url }}
+#
+
+import platform
+import requests
+import typing
+import urllib.parse
+
+from requests.models import Response
+
+class {{ project.python.class_name }}:
+    """
+    {{ project.project_name }} API Client object
+    
+    Use this object to connect to the API.
+    """
+    apiKey: str | None
+    bearerToken: str | None
+
+    def __init__(self, env: str, appname: str):
+        """Construct a new {{ project.python.class_name }} client object
+        
+        Parameters
+        ----------
+        env : str
+            Select the environment to use for this client. You may either 
+            provide an environment name or a full URL of a custom environment.
+        appname : str
+            Provide a name for your application for logging and debugging. This
+            name will be recorded alongside API calls so that you can identify
+            the source of errors. 
+        """
+{{~ for cat in api.categories ~}}
+        from {{ project.python.namespace }}.clients.{{ cat | to_snake_case }}_client import {{ cat }}Client
+{{~ end ~}}
+{{~ for cat in api.categories ~}}
+        self.{{ cat | to_camel_case }} = {{ cat }}Client(self)
+{{~ end ~}}
+        self.serverUrl = env
+{{~ for env in project.environments ~}}
+        if env == "{{ env.name }}":
+            self.serverUrl = "{{ env.url }}"
+{{~ end ~}}
+        self.sdkName = "Python"
+        self.sdkVersion = "{{ api.semver3 }}"
+        self.machineName = platform.uname().node
+        self.applicationName = appname
+        self.apiKey = None
+        self.bearerToken = None
+    
+    def with_api_key(self, apiKey: str):
+        """Configure this API client to use API Key authentication
+        
+        {{ project.authentication_help }}
+        
+        Parameters
+        ----------
+        apiKey : str
+            The API Key to use for authentication.
+        """
+        self.apiKey = apiKey
+        self.bearerToken = None
+    
+    def with_bearer_token(self, bearerToken: str):
+        """Configure this API client to use Bearer Token authentication
+        
+        {{ project.authentication_help }}
+
+        Parameters
+        ----------
+        bearerToken : str
+            The Bearer Token to use for authentication.
+        """
+        self.apiKey = None
+        self.bearerToken = bearerToken
+    
+    def send_request(self, method: str, path: str, body: object, 
+        query_params: typing.Dict[str, typing.Any] | None, filename: str | None) -> Response:
+        """Send a request and parse the result
+        
+        Parameters
+        ----------
+        method : str
+            The HTTP method for this request
+        path : str
+            The path of the API endpoint for this request
+        body : object
+            For POST, PUT, or PATCH, represents the body of the request. For other
+            requests, this value should be nil.
+        query_params : object
+            The list of query parameters for the request
+        """
+        if query_params:
+            url = urllib.parse.urljoin(self.serverUrl, path) + "?" + urllib.parse.urlencode(query_params)
+        else:
+            url = urllib.parse.urljoin(self.serverUrl, path)
+
+        # Determine if we're uploading a file
+        files = None
+        if filename:
+            files = { "files": open(filename, "rb") }
+
+        headers = {"Accept": "application/json",
+                   "SdkName": self.sdkName,
+                   "SdkVersion": self.sdkVersion,
+                   "MachineName": self.machineName,
+                   "ApplicationName": self.applicationName}
+        if self.apiKey:
+            headers["Api-Key"] = self.apiKey
+        elif self.bearerToken:
+            headers["Authorization"] = "Bearer " + self.bearerToken
+    
+        return requests.request(method, url, headers=headers, json=body, files=files)
+        

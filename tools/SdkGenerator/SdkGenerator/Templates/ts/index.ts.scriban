@@ -1,0 +1,31 @@
+/***
+ * {{ project.project_name }} for TypeScript
+ *
+ * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * @author     {{ project.author_name }} <{{ project.author_email }}>
+ *             {{ project.typescript.extra_credit }}
+ * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * @version    {{ api.semver3 }}
+ * @link       {{ project.typescript.github_url }}
+ */
+
+export { {{ project.typescript.class_name }} } from "./{{ project.typescript.class_name }}";
+export { {{ project.typescript.response_class }} } from "./{{ project.typescript.response_class }}";
+
+{{~ for cat in api.categories ~}}
+export { {{ cat }}Client } from "./clients/{{ cat }}Client";
+{{~ end ~}}
+
+{{~ 
+for schema in api.schemas 
+  if schema.fields
+~}}
+export { {{ schema.name }} } from "./models/{{ schema.name }}";
+{{~ 
+  end
+end 
+~}}
