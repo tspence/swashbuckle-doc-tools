@@ -126,7 +126,13 @@ public static class CSharpSdk
             s = s[..^4] + "[]";
         }
 
-        return NullableFixup(s, isNullable);
+        s = NullableFixup(s, isNullable);
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            s = "string";
+        }
+
+        return s;
     }
 
     private static async Task ExportSchemas(GeneratorContext context)
