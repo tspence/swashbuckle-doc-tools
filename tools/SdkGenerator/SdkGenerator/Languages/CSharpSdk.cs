@@ -117,8 +117,13 @@ public static class CSharpSdk
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s[..^genericName.Length]}";
+                s = s[..^genericName.Length];
             }
+        }
+
+        if (s.EndsWith("List"))
+        {
+            s = s[..^4] + "[]";
         }
 
         return NullableFixup(s, isNullable);
@@ -135,6 +140,14 @@ public static class CSharpSdk
 
         foreach (var item in context.Api.Schemas)
         {
+            // Is this one of the handwritten schemas?  If so, skip it
+            var handwritten = (context.Project.Csharp.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
+            handwritten.Add(context.Project.Csharp.ResponseClass);
+            handwritten.Add(context.Project.Csharp.error)
+            if (handwritten.Contains(item.Name))
+            {
+                continue;
+            }
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
             sb.AppendLine("#pragma warning disable CS8618");

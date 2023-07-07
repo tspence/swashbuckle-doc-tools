@@ -1,4 +1,6 @@
-﻿namespace SdkGenerator.Project;
+﻿using System.Collections.Generic;
+
+namespace SdkGenerator.Project;
 
 public class ProjectSchema
 {
@@ -107,4 +109,5 @@ public class LanguageSchema
     public string ResponseClass { get; set; }
     public string Namespace { get; set; }
     public string GithubUrl { get; set; }
+    public List<string> HandwrittenClasses { get; set; }
 }
