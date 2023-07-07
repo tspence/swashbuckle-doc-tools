@@ -159,6 +159,40 @@ public static class Extensions
     }
 
     /// <summary>
+    /// Take markdown text in which a single newline or crlf is considered a "flow point" rather than a new line, and
+    /// a double newline or double crlf is considered a double newline or crlf.
+    ///
+    /// This function cleanses text that is captured from XMLDOC which necessarily has single newlines in it
+    /// to be readable within the original source code.
+    ///
+    /// Example:
+    /// * "This is\na test" -> "This is a test"
+    /// * "This is a test.\n\nNext paragraph" -> unchanged 
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    public static string ReflowMarkdown(this string text)
+    {
+        var sb = new StringBuilder();
+        foreach (var line in text.Split("\n".ToCharArray()))
+        {
+            // Whenever we get a fully blank or whitespace line, trim and add a real markdown line break
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                sb.TrimEnd();
+                sb.Append("\n\n");
+            }
+            else
+            {
+                sb.Append(line.Trim());
+                sb.Append(" ");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// Wraps text as best as possible taking into consideration markdown behavior.
     ///
     /// Slightly modified from source: https://www.programmingnotes.org/7392/cs-word-wrap-how-to-split-a-string-text-into-lines-with-maximum-length-using-cs/

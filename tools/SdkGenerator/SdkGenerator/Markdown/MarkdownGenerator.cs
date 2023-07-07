@@ -150,18 +150,13 @@ public static class MarkdownGenerator
 
         // Link all the API endpoints that work with this model
         var methods = new List<string>();
-        foreach (var endpoint in context.Api.Endpoints)
+        var matchingEndpoints = context.Api.Endpoints.Where(endpoint =>
+            IsMatchingDataType(context, endpoint.ReturnDataType.DataType, item.Name)
+            || endpoint.Parameters.Any(parameter => IsMatchingDataType(context, parameter.DataType, item.Name))).ToList();
+        foreach (var endpoint in matchingEndpoints)
         {
-            var endpointDataType = endpoint.ReturnDataType.DataType;
-            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-            {
-                endpointDataType = endpointDataType.Replace(genericName, "");   
-            }
-            if (endpointDataType == item.Name)
-            {
-                var fixedPath = endpoint.Path.Substring(1).ToLower().Replace('/', '-').Replace("{", "").Replace("}", "");
-                methods.Add($"* [{endpoint.Name}](/reference/{endpoint.Method.ToLower()}_{fixedPath})");
-            }
+            var fixedPath = endpoint.Path[1..].ToLower().Replace('/', '-').Replace("{", "").Replace("}", "");
+            methods.Add($"* [{endpoint.Name}](/reference/{endpoint.Method.ToLower()}_{fixedPath})");
         }
 
         if (methods.Count > 0)
@@ -265,6 +260,17 @@ public static class MarkdownGenerator
         }
 
         return sb.ToString();
+    }
+
+    private static bool IsMatchingDataType(GeneratorContext context, string dataType, string itemName)
+    {
+        var resolvedDataType = dataType;
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            resolvedDataType = resolvedDataType.Replace(genericName, "");   
+        }
+
+        return String.Equals(resolvedDataType, itemName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FieldMarkdown(SchemaField field)

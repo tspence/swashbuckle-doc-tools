@@ -140,9 +140,11 @@ public class ReadmeTools
     public static async Task<bool> UploadSwagger(GeneratorContext context)
     {
         var client = new RestClient();
-        var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme.ReadmeApiDefinitionId}");
-        request.AlwaysMultipartFormData = true;
-        request.FormBoundary = "----------" + Guid.NewGuid();
+        var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme.ReadmeApiDefinitionId}")
+        {
+            AlwaysMultipartFormData = true,
+            FormBoundary = "----------" + Guid.NewGuid()
+        };
         request.AddHeader("Accept", "application/json");
         request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
         if (context.Project.Readme.ReadmeVersionCode != null)
@@ -151,7 +153,7 @@ public class ReadmeTools
         }
         request.AddFile("spec", context.SwaggerJsonPath);
 
-        var result =  await client.PostAsync(request);
+        var result =  await client.PutAsync(request);
         return result.IsSuccessful;
     }
 }

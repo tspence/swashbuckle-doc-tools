@@ -140,11 +140,10 @@ public static class DownloadFile
                                 {
                                     cleanModelName = cleanModelName.Replace(genericName, "");
                                 }
-                                if (methodObj.SelectToken("description") is JValue desc &&
-                                    cleanModelName != "ActionResultModel")
+                                if (methodObj.SelectToken("description") is JValue desc)
                                 {
-                                    desc.Value = desc.Value + "\r\n\r\n" +
-                                                 $"### Data Definition\r\n\r\nSee [{cleanModelName}]({project.Readme.Url}/docs/{cleanModelName.ToLower()}) for the complete data definition.";
+                                    desc.Value = desc.Value?.ToString().ReflowMarkdown() + "\r\n\r\n" +
+                                                 $"### Data Definition\r\n\r\nSee [{cleanModelName}](../docs/{cleanModelName.ToLower()}) for the complete data definition.";
                                 }
                             }
                         }
