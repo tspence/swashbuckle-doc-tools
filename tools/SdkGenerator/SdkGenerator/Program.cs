@@ -67,9 +67,9 @@ public static class Program
         // Where do we want to send the documentation? 
         if (context.Project?.Readme?.ApiKey != null)
         {
-            Console.WriteLine("Uploading data models to Readme...");
+            Console.WriteLine("Uploading to Readme...");
             await MarkdownGenerator.UploadSchemas(context, "list");
-            Console.WriteLine("Uploaded data models to Readme.");
+            Console.WriteLine("Uploaded to Readme.");
         }
         else if (context.Project?.SwaggerSchemaFolder != null)
         {

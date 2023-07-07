@@ -91,6 +91,11 @@ public class ReadmeSiteSchema
     /// The x-readme-version to use when making API calls
     /// </summary>
     public string ReadmeVersionCode { get; set; }
+    
+    /// <summary>
+    /// Set this value to avoid uploading API references multiple times
+    /// </summary>
+    public string ReadmeApiDefinitionId { get; set; }
 }
 
 public class LanguageSchema

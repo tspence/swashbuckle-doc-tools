@@ -11,16 +11,21 @@ namespace SdkGenerator.Readme;
 public class ReadmeTools
 {
     
-    private static async Task<RestResponse> CallReadme(string readmeApiKey, string resource, Method method, string body, List<Tuple<string, string>> extraHeaders)
+    private static async Task<RestResponse> CallReadme(GeneratorContext context, string resource, Method method, string body, List<Tuple<string, string>> extraHeaders)
     {
         var client = new RestClient("https://dash.readme.com");
         var request = new RestRequest(resource, method);
         request.AddHeader("Accept", "application/json");
-        request.AddHeader("Authorization", $"Basic {readmeApiKey}");
+        request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
         foreach (var item in extraHeaders ?? Enumerable.Empty<Tuple<string, string>>())
         {
             request.AddHeader(item.Item1, item.Item2);
         }
+        if (context.Project.Readme.ReadmeVersionCode != null)
+        {
+            request.AddHeader("x-readme-version", context.Project.Readme.ReadmeVersionCode);
+        }
+
         if (body != null)
         {
             request.AddHeader("Content-Type", "application/json");
@@ -65,16 +70,11 @@ public class ReadmeTools
         var results = new List<ReadmeCategoryModel>();
         int page = 1;
         int perPage = 100;
-        var extraHeaders = new List<Tuple<string, string>>();
-        if (context.Project.Readme.ReadmeVersionCode != null)
-        {
-            extraHeaders.Add(new("x-readme-version", context.Project.Readme.ReadmeVersionCode));
-        }
 
         while (true)
         {
             var resource = $"/api/v1/categories?page={page}&perPage={perPage}";
-            var response = await CallReadme(context.Project.Readme.ApiKey, resource, Method.Get, null, extraHeaders);
+            var response = await CallReadme(context, resource, Method.Get, null, null);
             if (response.IsSuccessful)
             {
                 // Preserve the "hidden" status - only a human being can approve the doc and make it visible
@@ -95,7 +95,7 @@ public class ReadmeTools
         var docName = $"/api/v1/docs/{schemaName.ToLower()}";
         var doc = new ReadmeDocModel
         {
-            Hidden = true,
+            Hidden = false,
             Order = order,
             Title = schemaName,
             Body = markdown,
@@ -103,37 +103,30 @@ public class ReadmeTools
         };
 
         // Check to see if the model exists
-        var modelExists = await CallReadme(context.Project.Readme.ApiKey, docName, Method.Get, null, null);
+        var modelExists = await CallReadme(context, docName, Method.Get, null, null);
         if (modelExists.IsSuccessful)
         {
             // Preserve the "hidden" status - only a human being can approve the doc and make it visible
             var existingDoc = JsonConvert.DeserializeObject<ReadmeDocModel>(modelExists.Content);
-            doc.Hidden = existingDoc.Hidden;
-            var result = await CallReadme(context.Project.Readme.ApiKey, docName, Method.Put, JsonConvert.SerializeObject(doc), null);
+            var result = await CallReadme(context, docName, Method.Put, JsonConvert.SerializeObject(doc), null);
             context.Log($"Updated {schemaName}: {result.StatusCode}");
         }
         else
         {
-            var result = await CallReadme(context.Project.Readme.ApiKey, "/api/v1/docs", Method.Post, JsonConvert.SerializeObject(doc), null);
+            var result = await CallReadme(context, "/api/v1/docs", Method.Post, JsonConvert.SerializeObject(doc), null);
             context.Log($"Created {schemaName}: {result.StatusCode}");
         }
     }
 
     public static async Task<ReadmeCategoryModel> CreateCategory(GeneratorContext context, string readmeModelCategory)
     {
-        var extraHeaders = new List<Tuple<string, string>>();
-        if (context.Project.Readme.ReadmeVersionCode != null)
-        {
-            extraHeaders.Add(new("x-readme-version", context.Project.Readme.ReadmeVersionCode));
-        }
-
         var newCategory = new ReadmeCategoryModel()
         {
             Title = readmeModelCategory,
             Type = "guide",
         };
         var resource = $"/api/v1/categories";
-        var response = await CallReadme(context.Project.Readme.ApiKey, resource, Method.Post, JsonConvert.SerializeObject(newCategory), extraHeaders);
+        var response = await CallReadme(context, resource, Method.Post, JsonConvert.SerializeObject(newCategory), null);
         if (response.IsSuccessful)
         {
             // Preserve the "hidden" status - only a human being can approve the doc and make it visible
@@ -142,5 +135,23 @@ public class ReadmeTools
         }
 
         return null;
+    }
+
+    public static async Task<bool> UploadSwagger(GeneratorContext context)
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme.ReadmeApiDefinitionId}");
+        request.AlwaysMultipartFormData = true;
+        request.FormBoundary = "----------" + Guid.NewGuid();
+        request.AddHeader("Accept", "application/json");
+        request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
+        if (context.Project.Readme.ReadmeVersionCode != null)
+        {
+            request.AddHeader("x-readme-version", context.Project.Readme.ReadmeVersionCode);
+        }
+        request.AddFile("spec", context.SwaggerJsonPath);
+
+        var result =  await client.PostAsync(request);
+        return result.IsSuccessful;
     }
 }

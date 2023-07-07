@@ -4,9 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Polly;
-using RestSharp;
 using SdkGenerator.Project;
 using SdkGenerator.Readme;
 using SdkGenerator.Schema;
@@ -47,6 +44,12 @@ public static class MarkdownGenerator
                 {
                     context.Log($"Exception while parsing model for {schema.Name}: {e}");
                 }
+            }
+            
+            // Upload the swagger specification
+            if (!await ReadmeTools.UploadSwagger(context))
+            {
+                context.Log("Swagger JSON file not uploaded");
             }
         }
     }

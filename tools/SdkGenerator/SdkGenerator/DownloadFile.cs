@@ -10,8 +10,6 @@ using System.Threading.Tasks;
 using JsonDiffPatchDotNet;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Polly;
-using Polly.Retry;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
@@ -20,14 +18,6 @@ namespace SdkGenerator;
 public static class DownloadFile
 {
     private static readonly HttpClient HttpClient = new();
-
-    private static readonly AsyncRetryPolicy HttpRetryPolicy = Policy.Handle<HttpRequestException>()
-        .WaitAndRetryAsync(new[]
-        {
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(4)
-        });
 
     /// <summary>
     /// Download the swagger file
@@ -75,8 +65,7 @@ public static class DownloadFile
         // Attempt to retrieve this page and scan for the version number
         try
         {
-            var contents = await HttpRetryPolicy.ExecuteAsync(async ct =>
-                await HttpClient.GetStringAsync(context.Project.VersionNumberUrl, ct), CancellationToken.None);
+            var contents = await HttpClient.GetStringAsync(context.Project.VersionNumberUrl);
             var r = new Regex(context.Project.VersionNumberRegex);
             var match = r.Match(contents);
             if (match.Success)
@@ -284,8 +273,8 @@ public static class DownloadFile
         // Save to the swagger folder
         if (Directory.Exists(context.Project.SwaggerSchemaFolder))
         {
-            var swaggerFilePath = Path.Combine(context.Project.SwaggerSchemaFolder, $"swagger-{context.OfficialVersion}.json");
-            await File.WriteAllTextAsync(swaggerFilePath, context.SwaggerJson);
+            context.SwaggerJsonPath = Path.Combine(context.Project.SwaggerSchemaFolder, $"swagger-{context.OfficialVersion}.json");
+            await File.WriteAllTextAsync(context.SwaggerJsonPath, context.SwaggerJson);
         }
 
         // Export data definitions to markdown files

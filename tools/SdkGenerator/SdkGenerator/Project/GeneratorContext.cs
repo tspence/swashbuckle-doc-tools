@@ -16,6 +16,7 @@ public class GeneratorContext : IDisposable
     public string Version4 { get; set; }
     public string OfficialVersion { get; set; }
     public string SwaggerJson { get; set; }
+    public string SwaggerJsonPath { get; set; }
 
     private GeneratorContext()
     {
