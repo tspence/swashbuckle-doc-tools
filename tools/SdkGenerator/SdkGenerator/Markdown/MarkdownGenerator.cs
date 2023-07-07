@@ -270,7 +270,8 @@ public static class MarkdownGenerator
             resolvedDataType = resolvedDataType.Replace(genericName, "");   
         }
 
-        return String.Equals(resolvedDataType, itemName, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(resolvedDataType, itemName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(resolvedDataType, itemName + "List", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FieldMarkdown(SchemaField field)

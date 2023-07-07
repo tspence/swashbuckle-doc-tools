@@ -140,6 +140,12 @@ public static class DownloadFile
                                 {
                                     cleanModelName = cleanModelName.Replace(genericName, "");
                                 }
+
+                                // Special case for how Swashbuckle handles arrays
+                                if (cleanModelName.EndsWith("List"))
+                                {
+                                    cleanModelName = cleanModelName[..^4];
+                                }
                                 if (methodObj.SelectToken("description") is JValue desc)
                                 {
                                     desc.Value = desc.Value?.ToString().ReflowMarkdown() + "\r\n\r\n" +
