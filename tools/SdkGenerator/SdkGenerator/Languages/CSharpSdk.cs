@@ -143,7 +143,6 @@ public static class CSharpSdk
             // Is this one of the handwritten schemas?  If so, skip it
             var handwritten = (context.Project.Csharp.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
             handwritten.Add(context.Project.Csharp.ResponseClass);
-            handwritten.Add(context.Project.Csharp.error)
             if (handwritten.Contains(item.Name))
             {
                 continue;
@@ -221,7 +220,7 @@ public static class CSharpSdk
             foreach (var p in parameterList)
             {
                 sb.AppendLine(
-                    $"{prefix} <param name=\"{p.Name}\">{p.DescriptionMarkdown.ToSingleLineMarkdown()}</param>");
+                    $"{prefix} <param name=\"{p.Name.ToVariableName()}\">{p.DescriptionMarkdown.ToSingleLineMarkdown()}</param>");
             }
         }
 
@@ -282,7 +281,7 @@ public static class CSharpSdk
                     {
                         var isNullable = !p.Required || p.Nullable;
                         var typeName = FixupType(context, p.DataType, p.IsArray, isNullable);
-                        var paramText = $"{typeName} {p.Name}{(isNullable ? " = null" : "")}";
+                        var paramText = $"{typeName} {p.Name.ToVariableName()}{(isNullable ? " = null" : "")}";
                         paramList.Add(paramText);
                     }
 
@@ -311,8 +310,8 @@ public static class CSharpSdk
                         {
                             sb.AppendLine(
                                 !o.Required
-                                    ? $"            if ({o.Name} != null) {{ options[\"{o.Name}\"] = {o.Name}; }}"
-                                    : $"            options[\"{o.Name}\"] = {o.Name};");
+                                    ? $"            if ({o.Name.ToVariableName()} != null) {{ options[\"{o.Name}\"] = {o.Name.ToVariableName()}; }}"
+                                    : $"            options[\"{o.Name}\"] = {o.Name.ToVariableName()};");
                         }
                     }
 

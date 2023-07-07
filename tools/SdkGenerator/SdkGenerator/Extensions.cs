@@ -13,6 +13,29 @@ namespace SdkGenerator;
 public static class Extensions
 {
     /// <summary>
+    /// Make this Swagger parameter a safe variable name
+    ///
+    /// Examples:
+    /// * $top -> top
+    /// * name -> name
+    /// </summary>
+    /// <param name="swaggerParameterName">A swagger parameter name</param>
+    /// <returns></returns>
+    public static string ToVariableName(this string swaggerParameterName)
+    {
+        var sb = new StringBuilder();
+        foreach (var c in swaggerParameterName)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
+    }
+    
+    /// <summary>
     /// camelCase: First character lowercase, all other word segments start with a capital letter
     /// </summary>
     /// <param name="s"></param>

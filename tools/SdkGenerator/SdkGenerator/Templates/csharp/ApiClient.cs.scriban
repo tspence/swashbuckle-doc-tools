@@ -43,7 +43,7 @@ namespace {{ project.csharp.namespace }}
         
         private readonly string _apiUrl;
         private readonly HttpClient _client;
-        private readonly JsonSerializerOptions _options;
+        internal readonly JsonSerializerOptions _options;
         
         private string _appName;
         private string _bearerToken;
@@ -264,31 +264,7 @@ namespace {{ project.csharp.namespace }}
                     // or "server down" can fail to provide valid JSON in the response.  If
                     // we fail to parse the response as JSON, just create a simulated error
                     // object with as much information as is available.
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(errorContent))
-                    {
-                        try
-                        {
-                            result.Error = JsonSerializer.Deserialize<ErrorResult>(errorContent, _options);
-                            if (result.Error != null)
-                            {
-                                result.Error.Content = errorContent;
-                            }
-                        }
-                        catch
-                        {
-                            // ignored
-                        }
-                    }
-
-                    if (result.Error == null)
-                    {
-                        result.Error = new ErrorResult()
-                        {
-                            Title = $"{(int)response.StatusCode} {response.StatusCode}",
-                            Content = errorContent
-                        };
-                    }
+                    result.ParseError(this, response.StatusCode, await response.Content.ReadAsStringAsync());
                 }
 
                 // Calculate length of time it took including JSON processing
