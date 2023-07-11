@@ -43,7 +43,7 @@ public class WorkatoSdk
                 sb.AppendLine("      [");
                 foreach (var field in item.Fields.Where(field => !field.Deprecated))
                 {
-                    sb.AppendLine($"        {{name: \"{field.Name}\", label: \"{field.Name}\", control_type: \"{RubySdk.DataTypeHint(field.DataType)}\", type: {MakeWorkatoType(field)} }},");
+                    sb.AppendLine($"        {{name: \"{field.Name}\", label: \"{field.Name}\", control_type: \"{WorkatoControlType(field)}\", type: {MakeWorkatoType(field)} }},");
                 }
 
                 sb.AppendLine("      ],");
@@ -56,20 +56,63 @@ public class WorkatoSdk
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
-    private static string MakeWorkatoType(SchemaField field)
+    private static string WorkatoControlType(SchemaField field)
     {
-        if (field.IsArray)
-        {
-            return $":array, of: \"object\", properties: object_definitions[\"{field.DataType.CamelCaseToSnakeCase()}\"]";
-        }
+        // Reference: https://docs.workato.com/developing-connectors/sdk/sdk-reference/schema.html#control-types
+        // Control type is the UX displayed when someone fills in a field
         switch (field.DataType)
         {
+            case "string":
+                if (field.Name.Contains("Description", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "text-area";
+                }
+                return "text";
+            case "uuid":
+                return "text";
+            case "int32":
+            case "integer":
+                return "integer";
+            case "double":
+            case "float":
+                return "number";
+            case "date":
+                return "date";
+            case "datetime":
+                return "date_time";
+            default:
+                if (field.IsArray)
+                {
+                    return $":array, of: \"object\", properties: object_definitions[\"{field.DataType.CamelCaseToSnakeCase()}\"]";
+                }
+                return $"\"{RubySdk.DataTypeHint(field.DataType)}\"";
+        }
+    }
+
+    private static string MakeWorkatoType(SchemaField field)
+    {
+        switch (field.DataType)
+        {
+            case "string":
+                if (field.IsArray)
+                {
+                    return $":array, of: \"string\"";
+                }
+                return "\"string\"";
             case "int32":
             case "integer":
             case "double":
             case "float":
+                if (field.IsArray)
+                {
+                    return $":array, of: :number";
+                }
                 return ":number";
             default:
+                if (field.IsArray)
+                {
+                    return $":array, of: \"object\", properties: object_definitions[\"{field.DataType.CamelCaseToSnakeCase()}\"]";
+                }
                 return $"\"{RubySdk.DataTypeHint(field.DataType)}\"";
         }
     }
