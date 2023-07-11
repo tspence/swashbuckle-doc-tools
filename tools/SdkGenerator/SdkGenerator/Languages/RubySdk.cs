@@ -183,7 +183,7 @@ public static class RubySdk
     /// </summary>
     /// <param name="dataType"></param>
     /// <returns></returns>
-    private static string DataTypeHint(string dataType)
+    public static string DataTypeHint(string dataType)
     {
         switch (dataType)
         {
@@ -191,7 +191,6 @@ public static class RubySdk
             case "object":
             case "string":
             case "int":
-            case "date-time":
             case "date":
             case "uri":
             case "email":
@@ -201,12 +200,14 @@ public static class RubySdk
             case "float":
             case "boolean":
                 return dataType;
+            case "date-time":
+                return "date_time";
             default:
                 return dataType.ToProperCase();
         }
     }
 
-    private static string MakeRubyDoc(string description, int indent, List<ParameterField> parameters)
+    public static string MakeRubyDoc(string description, int indent, List<ParameterField> parameters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -232,13 +233,10 @@ public static class RubySdk
 
 
         // Add documentation for parameters
-        if (parameters != null)
+        foreach (var p in parameters ?? Enumerable.Empty<ParameterField>())
         {
-            foreach (var p in parameters)
-            {
-                sb.AppendLine(
-                    $"{prefix} @param {FixupVariableName(p.Name)} [{DataTypeHint(p.DataType)}] {p.DescriptionMarkdown.ToSingleLineMarkdown()}");
-            }
+            sb.AppendLine(
+                $"{prefix} @param {FixupVariableName(p.Name)} [{DataTypeHint(p.DataType)}] {p.DescriptionMarkdown.ToSingleLineMarkdown()}");
         }
 
         return sb.ToString();

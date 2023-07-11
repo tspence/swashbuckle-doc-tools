@@ -54,6 +54,7 @@ public class ProjectSchema
     public LanguageSchema Python { get; set; }
     public LanguageSchema Ruby { get; set; }
     public LanguageSchema Typescript { get; set; }
+    public LanguageSchema Workato { get; set; }
 }
 
 /// <summary>

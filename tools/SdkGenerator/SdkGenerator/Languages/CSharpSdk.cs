@@ -410,7 +410,7 @@ public static class CSharpSdk
         sb.AppendLine("}");
 
         // Write this category to a file
-        var modulePath = Path.Combine(interfacesDir, $"{cat}Client.cs");
+        var modulePath = Path.Combine(interfacesDir, $"I{cat}Client.cs");
         await File.WriteAllTextAsync(modulePath, sb.ToString());
     }
     
