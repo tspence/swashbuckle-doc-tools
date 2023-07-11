@@ -145,7 +145,7 @@ public static class PythonSdk
                 sb.AppendLine($"    def to_dict(self) -> dict:");
                 sb.AppendLine($"        return dataclass.asdict(self)");
 
-                var modelPath = Path.Combine(modelsDir, item.Name.ToSnakeCase() + ".py");
+                var modelPath = Path.Combine(modelsDir, item.Name.WordsToSnakeCase() + ".py");
                 await File.WriteAllTextAsync(modelPath, sb.ToString());
             }
         }
@@ -229,7 +229,7 @@ public static class PythonSdk
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
                     // Write the method
-                    sb.AppendLine($"    def {endpoint.Name.ToSnakeCase()}(self, {paramListStr}) -> {returnDataType}:");
+                    sb.AppendLine($"    def {endpoint.Name.WordsToSnakeCase()}(self, {paramListStr}) -> {returnDataType}:");
                     sb.Append(MakePythonDoc(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
                     sb.AppendLine(endpoint.Path.Contains('{')
                         ? $"        path = f\"{endpoint.Path}\""
@@ -280,7 +280,7 @@ public static class PythonSdk
             }
 
             // Write this category to a file
-            var classPath = Path.Combine(clientsDir, cat.ToSnakeCase() + "_client.py");
+            var classPath = Path.Combine(clientsDir, cat.WordsToSnakeCase() + "_client.py");
             await File.WriteAllTextAsync(classPath, sb.ToString());
         }
     }
@@ -333,12 +333,12 @@ public static class PythonSdk
             {
                 if (dataType.EndsWith(genericName))
                 {
-                    imports.Add($"from {context.Project.Python.Namespace}.{genericName.ToSnakeCase()} import {genericName}");
+                    imports.Add($"from {context.Project.Python.Namespace}.{genericName.WordsToSnakeCase()} import {genericName}");
                     dataType = dataType[..^genericName.Length];
                 }
             }
 
-            imports.Add($"from {context.Project.Python.Namespace}.models.{dataType.ToSnakeCase()} import {dataType}");
+            imports.Add($"from {context.Project.Python.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}");
         }
     }
 

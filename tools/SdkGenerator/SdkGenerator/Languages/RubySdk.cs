@@ -138,7 +138,7 @@ public static class RubySdk
                 var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{FixupVariableName(p.Name)}:");
 
                 // Write the method
-                sb.AppendLine($"    def {endpoint.Name.ToSnakeCase()}({paramListStr})");
+                sb.AppendLine($"    def {endpoint.Name.WordsToSnakeCase()}({paramListStr})");
                 sb.AppendLine($"        path = \"{endpoint.Path.Replace("{", "#{")}\"");
                 if (hasQueryParams)
                 {
