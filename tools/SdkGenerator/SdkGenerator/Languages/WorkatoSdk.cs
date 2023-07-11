@@ -24,17 +24,17 @@ public class WorkatoSdk
 
     private static async Task ExportSchemas(GeneratorContext context)
     {
+        var sb = new StringBuilder();
         foreach (var item in context.Api.Schemas)
         {
             // Is this one of the handwritten schemas?  If so, skip it
-            var handwritten = (context.Project.Csharp.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
-            handwritten.Add(context.Project.Csharp.ResponseClass);
+            var handwritten = (context.Project.Workato.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
+            handwritten.Add(context.Project.Workato.ResponseClass);
             if (handwritten.Contains(item.Name))
             {
                 continue;
             }
 
-            var sb = new StringBuilder();
             if (item.Fields != null)
             {
                 sb.AppendLine();
@@ -52,10 +52,10 @@ public class WorkatoSdk
 
                 sb.AppendLine("    }");
             }
-
-            var schemasPath = Path.Combine(context.Project.Workato.Folder, "schemas.rb");
-            await File.WriteAllTextAsync(schemasPath, sb.ToString());
         }
+
+        var schemasPath = Path.Combine(context.Project.Workato.Folder, "schemas.rb");
+        await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
     private static string MakeWorkatoType(SchemaField field)
@@ -88,7 +88,7 @@ public class WorkatoSdk
             sb.Append(RubySdk.MakeRubyDoc(endpoint.DescriptionMarkdown, 6, endpoint.Parameters));
             sb.AppendLine($"      {endpoint.Name.ToSnakeCase()}: {{");
             sb.AppendLine($"        title: \"{endpoint.Name}\",");
-            sb.AppendLine($"        subtitle: \"{endpoint.DescriptionMarkdown}\",");
+            sb.AppendLine($"        subtitle: \"{endpoint.DescriptionMarkdown.Split(Environment.NewLine).FirstOrDefault()}\",");
             sb.AppendLine($"        display_priority: \"{displayPriority++}\",");
             sb.AppendLine($"        input_fields: lambda do |object_definitions|");
             sb.AppendLine($"          object_definitions['{endpoint.ReturnDataType.DataType}']");
