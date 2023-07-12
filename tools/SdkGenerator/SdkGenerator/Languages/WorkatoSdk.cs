@@ -47,7 +47,8 @@ public class WorkatoSdk
                 }
 
                 sb.AppendLine("      ],");
-                sb.AppendLine("    },");
+                sb.AppendLine("    end");
+                sb.AppendLine("  },");
                 sb.AppendLine();
             }
         }
@@ -80,8 +81,10 @@ public class WorkatoSdk
                 return "date";
             case "datetime":
                 return "date_time";
+            case "boolean":
+                return "checkbox";
             default:
-                return $"\"{RubySdk.DataTypeHint(field.DataType)}\"";
+                return $"{RubySdk.DataTypeHint(field.DataType)}";
         }
     }
 
@@ -128,9 +131,25 @@ public class WorkatoSdk
             sb.AppendLine($"        subtitle: \"{endpoint.DescriptionMarkdown.Split(Environment.NewLine).FirstOrDefault()}\",");
             sb.AppendLine($"        display_priority: \"{displayPriority++}\",");
             sb.AppendLine($"        input_fields: lambda do |object_definitions|");
-            sb.AppendLine($"          object_definitions['{endpoint.ReturnDataType.DataType.CamelCaseToSnakeCase()}']");
+            
+            // Add input parameters
+            foreach (var parameter in endpoint.Parameters)
+            {
+                sb.AppendLine($"          {{ name: \"{parameter.Name}\", label: \"{parameter.Name}\", control_type: \"{WorkatoControlType(parameter)}\", type: {MakeWorkatoType(parameter)} }},");
+            }
+
+            // Ruby code to send the web request
             sb.AppendLine($"        end,");
             sb.AppendLine($"        execute: lambda do |connection, input|");
+            foreach (var parameter in endpoint.Parameters)
+            {
+                sb.AppendLine($"          {parameter.Name} = input[\"{parameter.Name}\"]");
+            }
+            var method = endpoint.Method.ToLower();
+            var url = endpoint.Path.Replace("{", "#{");
+            sb.AppendLine($"          result = {method}(\"{url}\", params).after_response do |code, body, headers|");
+            sb.AppendLine($"          end");
+            
             sb.AppendLine($"        end,");
             sb.AppendLine($"        output_fields: lambda do |object_definitions|");
             sb.AppendLine($"          object_definitions['{endpoint.ReturnDataType.DataType.CamelCaseToSnakeCase()}']");
