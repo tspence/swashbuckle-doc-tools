@@ -34,19 +34,9 @@ public class SchemaItem
     public List<int> Enums { get; set; }
 }
 
-public class ParameterField
+public class ParameterField : SchemaField
 {
-    public string Name { get; set; }
     public string Location { get; set; }
-    public string DataType { get; set; }
-    public string DataTypeRef { get; set; }
-    public string DescriptionMarkdown { get; set; }
-    public bool IsArray { get; set; }
-    public bool Nullable { get; set; }
-    public bool ReadOnly { get; set; }
-    public bool Deprecated { get; set; }
-    public int? MinLength { get; set; }
-    public int? MaxLength { get; set; }
     public bool Required { get; set; }
 }
 

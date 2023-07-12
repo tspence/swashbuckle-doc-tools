@@ -410,7 +410,7 @@ public static class CSharpSdk
         sb.AppendLine("}");
 
         // Write this category to a file
-        var modulePath = Path.Combine(interfacesDir, $"{cat}Client.cs");
+        var modulePath = Path.Combine(interfacesDir, $"I{cat}Client.cs");
         await File.WriteAllTextAsync(modulePath, sb.ToString());
     }
     
@@ -430,7 +430,7 @@ public static class CSharpSdk
             Path.Combine(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "csharp", "ApiInterface.cs.scriban"),
-            Path.Combine(context.Project.Csharp.Folder, "src", "Interfaces", context.Project.Csharp.ClassName + ".cs"));
+            Path.Combine(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "csharp", "sdk.nuspec.scriban"),
             Path.Combine(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));

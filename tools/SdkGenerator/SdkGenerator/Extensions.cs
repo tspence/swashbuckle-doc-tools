@@ -60,9 +60,32 @@ public static class Extensions
     /// </summary>
     /// <param name="s"></param>
     /// <returns></returns>
-    public static string ToSnakeCase(this string s)
+    public static string WordsToSnakeCase(this string s)
     {
         return s.ToLower().Replace(" ", "_");
+    }
+
+    public static string CamelCaseToSnakeCase(this string s)
+    {
+        var sb = new StringBuilder();
+        foreach (var c in s)
+        {
+            if (char.IsUpper(c))
+            {
+                if (sb.Length != 0)
+                {
+                    sb.Append('_');
+                }
+
+                sb.Append(char.ToLower(c));
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>

@@ -26,7 +26,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 using {{ project.csharp.namespace }}.Clients;
-using {{ project.csharp.namespace }}.Models;
+using {{ project.csharp.namespace }}.Interfaces;
 
 
 namespace {{ project.csharp.namespace }} 
@@ -34,7 +34,7 @@ namespace {{ project.csharp.namespace }}
     /// <summary>
     /// A client object that connects to the {{ project.project_name }}
     /// </summary>
-    public class {{ project.csharp.class_name }}
+    public class {{ project.csharp.class_name }} : I{{ project.csharp.class_name }}
     {
         /// <summary>
         /// The version of the SDK
@@ -53,7 +53,7 @@ namespace {{ project.csharp.namespace }}
         /// <summary>
         /// API methods related to {{ cat }}
         /// </summary>
-        public {{ cat }}Client {{ cat }} { get; }
+        public I{{ cat }}Client {{ cat }} { get; }
 
     {{~ end ~}}
 

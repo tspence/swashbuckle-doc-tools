@@ -63,6 +63,7 @@ public static class Program
         await JavaSdk.Export(context);
         await RubySdk.Export(context);
         await PythonSdk.Export(context);
+        await WorkatoSdk.Export(context);
 
         // Where do we want to send the documentation? 
         if (context.Project?.Readme?.ApiKey != null)
