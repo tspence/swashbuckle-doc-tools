@@ -13,7 +13,7 @@
  * @link       {{ project.csharp.github_url }}
  */
 
-using {{ project.csharp.namespace }}.Clients;
+using {{ project.csharp.namespace }}.Interfaces;
 
 
 namespace {{ project.csharp.namespace }} 
@@ -27,7 +27,7 @@ namespace {{ project.csharp.namespace }}
         /// <summary>
         /// API methods related to {{ cat }}
         /// </summary>
-        {{ cat }}Client {{ cat }} { get; }
+        I{{ cat }}Client {{ cat }} { get; }
     {{~ end ~}}
     }
 }

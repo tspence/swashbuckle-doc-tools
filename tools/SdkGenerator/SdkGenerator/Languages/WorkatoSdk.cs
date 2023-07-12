@@ -81,10 +81,6 @@ public class WorkatoSdk
             case "datetime":
                 return "date_time";
             default:
-                if (field.IsArray)
-                {
-                    return $":array, of: \"object\", properties: object_definitions[\"{field.DataType.CamelCaseToSnakeCase()}\"]";
-                }
                 return $"\"{RubySdk.DataTypeHint(field.DataType)}\"";
         }
     }
@@ -96,9 +92,9 @@ public class WorkatoSdk
             case "string":
                 if (field.IsArray)
                 {
-                    return $":array, of: \"string\"";
+                    return $":array, of: :string";
                 }
-                return "\"string\"";
+                return ":string";
             case "int32":
             case "integer":
             case "double":
