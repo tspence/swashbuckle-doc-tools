@@ -141,15 +141,31 @@ public class WorkatoSdk
             // Ruby code to send the web request
             sb.AppendLine($"        end,");
             sb.AppendLine($"        execute: lambda do |connection, input|");
-            foreach (var parameter in endpoint.Parameters)
+            foreach (var parameter in endpoint.Parameters.Where(p => p.Location != "body"))
             {
                 sb.AppendLine($"          {parameter.Name} = input[\"{parameter.Name}\"]");
             }
+            
+            // If this is a GET, don't do parameters
             var method = endpoint.Method.ToLower();
             var url = endpoint.Path.Replace("{", "#{");
-            sb.AppendLine($"          result = {method}(\"{url}\", params).after_response do |code, body, headers|");
-            sb.AppendLine($"          end");
+            var bodyParam = endpoint.Parameters.FirstOrDefault(p => p.Location == "body");
+            if (bodyParam == null) {
+                sb.AppendLine($"          result = {method}(\"{url}\").after_response do |code, body, headers|");
+            }
+            else
+            {
+                sb.AppendLine($"          params = {{");
+                var schema = context.Api.FindSchema(bodyParam.DataType);
+                foreach (var field in schema.Fields)
+                {
+                    sb.AppendLine($"            {field.Name} => input[\"{field.Name}\"],");
+                }
+                sb.AppendLine($"          }}");
+                sb.AppendLine($"          result = {method}(\"{url}\", params).after_response do |code, body, headers|");
+            }
             
+            sb.AppendLine($"          end");
             sb.AppendLine($"        end,");
             sb.AppendLine($"        output_fields: lambda do |object_definitions|");
             sb.AppendLine($"          object_definitions['{endpoint.ReturnDataType.DataType.CamelCaseToSnakeCase()}']");
