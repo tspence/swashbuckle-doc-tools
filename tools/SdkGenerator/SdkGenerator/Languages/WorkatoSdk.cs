@@ -171,7 +171,8 @@ public class WorkatoSdk
                 sb.AppendLine($"          }}");
                 sb.AppendLine($"          result = {method}(\"{url}\", params).after_response do |code, body, headers|");
             }
-            
+
+            sb.AppendLine($"            body");
             sb.AppendLine($"          end");
             sb.AppendLine($"        end,");
             sb.AppendLine($"        output_fields: lambda do |object_definitions|");
