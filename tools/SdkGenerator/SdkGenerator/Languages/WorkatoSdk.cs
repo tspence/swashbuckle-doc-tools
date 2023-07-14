@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -141,7 +142,7 @@ public class WorkatoSdk
             // Ruby code to send the web request
             sb.AppendLine($"        end,");
             sb.AppendLine($"        execute: lambda do |connection, input|");
-            foreach (var parameter in endpoint.Parameters.Where(p => p.Location != "body"))
+            foreach (var parameter in endpoint.Parameters.Where(p => p.Location == "path"))
             {
                 sb.AppendLine($"          {parameter.Name} = input[\"{parameter.Name}\"]");
             }
@@ -149,6 +150,12 @@ public class WorkatoSdk
             // If this is a GET, don't do parameters
             var method = endpoint.Method.ToLower();
             var url = endpoint.Path.Replace("{", "#{");
+            var queryString = MakeWorkatoQueryString(endpoint.Parameters);
+            if (!string.IsNullOrWhiteSpace(queryString))
+            {
+                sb.Append(queryString);
+                url = url + "?#{queryString}";
+            }
             var bodyParam = endpoint.Parameters.FirstOrDefault(p => p.Location == "body");
             if (bodyParam == null) {
                 sb.AppendLine($"          result = {method}(\"{url}\").after_response do |code, body, headers|");
@@ -176,5 +183,24 @@ public class WorkatoSdk
         // Write this category to a file
         var schemasPath = Path.Combine(context.Project.Workato.Folder, "endpoints.rb");
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
+    }
+
+    private static string MakeWorkatoQueryString(List<ParameterField> endpointParameters)
+    {
+        var queryParams = endpointParameters.Where(p => p.Location == "query").ToList();
+        if (queryParams.Count == 0)
+        {
+            return string.Empty;
+        }
+        
+        // Assemble query parameter string using ruby
+        var sb = new StringBuilder();
+        sb.AppendLine("          queryString = {");
+        foreach (var qp in queryParams)
+        {
+            sb.AppendLine($"            {qp.Name}: input[\"{qp.Name}\"],");
+        }
+        sb.AppendLine("          }.to_query");
+        return sb.ToString();
     }
 }
