@@ -3,6 +3,8 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>SdkGenerator</ToolCommandName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,32 +19,31 @@
 
     <ItemGroup>
         <None Update="Templates\csharp\ApiClient.cs.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Templates\ruby\ApiClient.rb.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Templates\java\ApiClient.java.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Templates\ts\ApiClient.ts.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Templates\python\ApiClient.py.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="Templates\csharp\sdk.nuspec.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Remove="Templates\ts\package.json.scriban" />
-        <None Update="Templates\python\__init__.py.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Templates\ts\index.ts.scriban">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="Templates\csharp\ApiInterface.cs.scriban">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\java\ApiClient.java.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\python\ApiClient.py.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\python\__init__.py.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\ruby\ApiClient.rb.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\ts\ApiClient.ts.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\ts\index.ts.scriban">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 </Project>
