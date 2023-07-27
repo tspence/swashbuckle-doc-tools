@@ -67,23 +67,46 @@ public class DartSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters
-                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name}");
+                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {FixupVariableName(p.Name)}");
 
                     // What is our return type?
                     var returnType = FixupType(context, endpoint.ReturnDataType.DataType,
                         endpoint.ReturnDataType.IsArray, false);
-                    var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
 
-                    // Cleanse path
-                    var cleansedPath  = endpoint.Path.Replace("{", "${");
+                    // Do we have query or body parameters?
+                    var hasQueryParams = (from p in endpoint.Parameters where p.Location == "query" select p).Any();
+                    var hasBodyParams = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
                     
                     // Write the method
+                    var cleansedPath  = endpoint.Path.Replace("{", "${");
+                    if (hasQueryParams)
+                    {
+                        cleansedPath += "?${queryString}";
+                    }
                     sb.AppendLine(
                         $"  Future<{returnType}> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
-                    sb.AppendLine(
-                        $"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\").then((value) {{");
-                    sb.AppendLine($"      return {context.Project.Dart.ResponseClass}.fromContent(value);");
-                    sb.AppendLine("    });");
+                    if (hasQueryParams)
+                    {
+                        sb.AppendLine($"    Map queryParameters = {{");
+                        sb.Append(string.Join("",
+                            from p in endpoint.Parameters
+                            where p.Location == "query"
+                            select $"      '{FixupStringLiteral(p.Name)}': {FixupVariableName(p.Name)},\n"));
+                        sb.AppendLine($"    }};");
+                        sb.AppendLine("    String queryString = Uri(queryParameters).query;");
+                    }
+
+                    if (hasBodyParams)
+                    {
+                        sb.AppendLine($"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", body)");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\")");
+                    }
+                    sb.AppendLine("      .then((value) {");
+                    sb.AppendLine($"        return {context.Project.Dart.ResponseClass}.fromContent(value);");
+                    sb.AppendLine("      });");
                     sb.AppendLine("  }");
                 }
             }
@@ -95,6 +118,41 @@ public class DartSdk : ILanguageSdk
             var classPath = Path.Combine(clientsDir, $"{cat}Client.dart");
             await File.WriteAllTextAsync(classPath, sb.ToString());
         }
+    }
+
+    private string FixupStringLiteral(string literal)
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (var c in literal)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append('\\');
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
+    }
+
+    private static string FixupVariableName(string incomingName)
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (var c in incomingName)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append('_');
+            }
+        }
+        return sb.ToString();
     }
 
     private async Task ExportSchemas(GeneratorContext context)
