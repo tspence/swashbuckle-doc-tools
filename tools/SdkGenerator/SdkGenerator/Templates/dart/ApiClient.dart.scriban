@@ -1,0 +1,393 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_toolkit/data/LiveData.dart';
+import 'package:flutter_toolkit/http/APIClient.dart';
+import 'package:http/http.dart' as http;
+
+class PMClient {
+  static final PMClient _instance = PMClientImpl();
+
+  factory PMClient() {
+    return _instance;
+  }
+
+  Sockets get sockets => throw UnimplementedError();
+
+  LiveData<bool> get hasAccessToken => throw UnimplementedError();
+
+  Future<void> attemptRestore() => throw UnimplementedError();
+
+  Future<void> clearTokens() => throw UnimplementedError();
+
+  Future<bool> handleAuth0Redirect() async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> get(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> delete(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> changeset(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> put(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> post(String path,
+      [Map<String, dynamic>? params,
+      Map<String, String>? headers,
+      bool ignoreAuth = false]) async {
+    throw UnimplementedError();
+  }
+
+  Future<PMAPIResponse> postFiles(String path, List<String> filePaths,
+      [Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<String?> getRedirectUrl(String url) => throw UnimplementedError();
+}
+
+class PMClientImpl implements PMClient {
+  late BuildConfig config = BuildConfig();
+
+  Map<String, String>? headers;
+
+  http.BaseClient? oauthClient;
+
+  Auth0Service auth0service = Auth0Service();
+
+  @override
+  final Sockets sockets = Sockets();
+
+  @override
+  LiveData<bool> get hasAccessToken => auth0service.hasAccessToken;
+
+  late APIClient api;
+
+  PMClientImpl() {
+    _updateClient(
+        APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
+  }
+
+  Future<void> _updateClient(APIClient client, [bool authed = false]) async {
+    api = client;
+
+    String token = '';
+    if (await auth0service.isValidCredential()) {
+      final credentials = await auth0service.credentials;
+      token = "Bearer ${credentials.accessToken}";
+    }
+    client.headerInterceptor = (headers) {
+      headers["Connection"] = "keep-alive";
+      headers["Accept-Encoding"] = "gzip, deflate, br";
+      headers["Accept"] = "*/*";
+      headers["Authorization"] = token;
+    };
+    //Any time we either refresh or login, we should resync our push status.
+    //Clearing is handled on logout.
+    if (authed) {
+      //We dont need to await sockets or push , they can spinup in the backgrond.
+      PushNotification().syncNotificationStatus();
+      sockets.start(client: this);
+    }
+  }
+
+  @override
+  Future<bool> handleAuth0Redirect() async {
+    final isLoggedIn = await Auth0Service().isLoggedIn();
+    if (isLoggedIn) {
+      await attemptRestore();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> attemptRestore() async {
+    final client =
+        APIClient(baseUrl: config.baseUrl, basePath: config.basePath);
+    await _updateClient(client, true);
+  }
+
+  @override
+  Future<void> clearTokens() async {
+    final isLogOut = await auth0service.logOut();
+    if (isLogOut) {
+      await _updateClient(
+          APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
+    }
+  }
+
+  ClientResponse _logRequest(
+      String action, String path, int startMillis, value) {
+    if (!BuildConfig.isRelease) {
+      debugPrint(
+          "$action $path took ${DateTime.now().millisecondsSinceEpoch - startMillis}ms");
+    }
+    //Todo other stuff
+    return value;
+  }
+
+  PMAPIResponse _handleAPIError(error) {
+    debugPrint("API Error $error");
+
+    if (error is TimeoutException) {
+      return ErrorResponse("Request timed out");
+    }
+
+    if (error is SocketException) {
+      return ConnectionErrorResponse("No connection");
+    }
+
+    if (error is AuthErrorResponse) {
+      // clearTokens();
+      return AuthErrorResponse();
+    }
+
+    return ErrorResponse("An error occurred");
+  }
+
+  //Shortcut for typing
+  PMAPIResponse _handleAPISuccess(value) {
+    final response = WrappedClientResponse(value);
+    if (!response.isSuccess && response.code == 401) {
+      return _handleAPIError(null);
+    } else {
+      return response;
+    }
+  }
+
+  @override
+  Future<PMAPIResponse> get(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    if (!auth0service.checkAuthValid()) {
+      return AuthErrorResponse();
+    }
+
+    int startMillis = DateTime.now().millisecondsSinceEpoch;
+    return api
+        .get(path, params, headers)
+        .then((value) => _logRequest("GET", path, startMillis, value))
+        .then(_handleAPISuccess)
+        .catchError(_handleAPIError);
+  }
+
+  @override
+  Future<PMAPIResponse> delete(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    if (!auth0service.checkAuthValid()) {
+      return AuthErrorResponse();
+    }
+    int startMillis = DateTime.now().millisecondsSinceEpoch;
+    return api
+        .delete(path, params, headers)
+        .then((value) => _logRequest("DELETE", path, startMillis, value))
+        .then(_handleAPISuccess)
+        .catchError(_handleAPIError);
+  }
+
+  @override
+  Future<PMAPIResponse> changeset(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    if (params != null) {
+      final changeSets = <Map<String, dynamic>>[];
+      for (var key in params.keys) {
+        changeSets.add({'property': key, 'value': params[key]});
+      }
+
+      params = {'changesets': changeSets};
+    }
+
+    return put(path, params, headers);
+  }
+
+  @override
+  Future<PMAPIResponse> put(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    if (!auth0service.checkAuthValid()) {
+      return AuthErrorResponse();
+    }
+
+    int startMillis = DateTime.now().millisecondsSinceEpoch;
+    return api
+        .put(path, params, headers)
+        .then((value) => _logRequest("PUT", path, startMillis, value))
+        .then(_handleAPISuccess)
+        .catchError(_handleAPIError);
+  }
+
+  @override
+  Future<PMAPIResponse> post(String path,
+      [Map<String, dynamic>? params,
+      Map<String, String>? headers,
+      bool ignoreAuth = false]) async {
+    if (!auth0service.checkAuthValid()) {
+      return AuthErrorResponse();
+    }
+    int startMillis = DateTime.now().millisecondsSinceEpoch;
+
+    final apiCall = api
+        .post(path, params, headers)
+        .then((value) => _logRequest("POST", path, startMillis, value))
+        .then(_handleAPISuccess)
+        .catchError(_handleAPIError);
+    return apiCall;
+  }
+
+  @override
+  Future<String?> getRedirectUrl(String url) async {
+    String token = '';
+    if (await Auth0Service().isValidCredential()) {
+      final credentials = await Auth0Service().credentials;
+      token = "Bearer ${credentials.accessToken}";
+    }
+    oauthClient = http.Client() as http.BaseClient?;
+    final request = http.Request("Get", Uri.parse(url))
+      ..followRedirects = false;
+    request.headers.addAll({"Authorization": token});
+    final response = await oauthClient?.send(request);
+    return response?.isRedirect == true ? response?.headers['location'] : null;
+  }
+
+  @override
+  Future<PMAPIResponse> postFiles(String path, List<String> filePaths,
+      [Map<String, String>? headers]) async {
+    if (!auth0service.checkAuthValid()) {
+      return AuthErrorResponse();
+    }
+
+    int startMillis = DateTime.now().millisecondsSinceEpoch;
+    List<http.MultipartFile> files = [];
+    for (var filePath in filePaths) {
+      files.add(await http.MultipartFile.fromPath('file', filePath));
+    }
+    return api
+        .postFiles(path, files, headers)
+        .then((value) => _logRequest("SEND", path, startMillis, value))
+        .then(_handleAPISuccess)
+        .catchError(_handleAPIError);
+  }
+}
+
+class WrappedClientResponse extends PMAPIResponse {
+  WrappedClientResponse(this.raw);
+
+  final ClientResponse raw;
+
+  @override
+  int get code => raw.statusCode;
+
+  @override
+  bool get isSuccess => raw.isSuccess && json["success"] != false;
+
+  @override
+  late Map<String, dynamic> json = raw.json;
+}
+
+class ConnectionErrorResponse extends ErrorResponse {
+  ConnectionErrorResponse(String message) : super(message);
+}
+
+class ErrorResponse extends PMAPIResponse {
+  ErrorResponse(this.message);
+
+  @override
+  final String? message;
+
+  @override
+  bool get isSuccess => false;
+}
+
+class AuthErrorResponse extends ErrorResponse {
+  AuthErrorResponse() : super("Authentication Error") {
+    debugPrint("Creating Error Response");
+  }
+
+  @override
+  bool get shouldLogout => true;
+}
+
+class PMAPIResponse extends PMResponse<List<dynamic>> {
+  Map<String, dynamic> get json => {};
+
+  Map<String, dynamic> get meta {
+    return json["meta"] ?? <String, dynamic>{};
+  }
+
+  @override
+  List<dynamic> get data {
+    return json["data"] ?? [];
+  }
+
+  @override
+  String? get cause => json["message"];
+
+  @override
+  String? get message => json["friendlyMessage"];
+
+  @override
+  String? get error => json["exceptionType"];
+
+  @override
+  bool get shouldLogout => json["logout"] == true;
+}
+
+abstract class PMResponse<T> {
+  T get data;
+
+  int get code => -1;
+
+  bool get isSuccess => false;
+
+  String? get cause => "";
+
+  String? get message => "";
+
+  String? get error => "";
+
+  bool get shouldLogout => false;
+
+  PMResponse<D> wrap<D>(D data) => PMDataResponse(data, this);
+}
+
+class PMDataResponse<T> extends PMResponse<T> {
+  PMDataResponse(this.data, this.base);
+
+  final PMResponse base;
+
+  @override
+  final T data;
+
+  @override
+  int get code => base.code;
+
+  @override
+  bool get isSuccess => base.isSuccess;
+
+  @override
+  String? get cause => base.cause;
+
+  @override
+  String? get message => base.message;
+
+  @override
+  String? get error => base.error;
+
+  @override
+  bool get shouldLogout => base.shouldLogout;
+}

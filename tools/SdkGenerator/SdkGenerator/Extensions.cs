@@ -52,6 +52,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToProperCase(this string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.Empty;
+        }
         return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
     }
 

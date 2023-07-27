@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommandLine;
 using Newtonsoft.Json;
@@ -58,12 +59,15 @@ public static class Program
         Console.WriteLine($"Retrieved swagger file. Version: {context.Version2}");
 
         // Let's do some software development kits, if selected
-        await TypescriptSdk.Export(context);
-        await CSharpSdk.Export(context);
-        await JavaSdk.Export(context);
-        await RubySdk.Export(context);
-        await PythonSdk.Export(context);
-        await WorkatoSdk.Export(context);
+        foreach (var t in typeof(Program).Assembly.GetTypes())
+        {
+            if (t.GetInterfaces().Contains(typeof(ILanguageSdk)))
+            {
+                var obj = (ILanguageSdk)Activator.CreateInstance(t);
+                Console.WriteLine($"Exporting {obj.LanguageName()}");
+                await obj.Export(context);
+            }
+        }
 
         // Where do we want to send the documentation? 
         if (context.Project?.Readme?.ApiKey != null)

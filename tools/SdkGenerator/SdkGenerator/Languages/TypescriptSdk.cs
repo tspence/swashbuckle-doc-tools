@@ -9,9 +9,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public static class TypescriptSdk
+public class TypescriptSdk : ILanguageSdk
 {
-    private static string FileHeader(ProjectSchema project)
+    private string FileHeader(ProjectSchema project)
     {
         return "/**\n"
                + $" * {project.ProjectName} for TypeScript\n"
@@ -27,7 +27,7 @@ public static class TypescriptSdk
                + " */\n";
     }
 
-    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
     {
         var s = typeName;
         if (context.Api.IsEnum(typeName))
@@ -90,7 +90,7 @@ public static class TypescriptSdk
         return s;
     }
 
-    private static async Task ExportSchemas(GeneratorContext context)
+    private async Task ExportSchemas(GeneratorContext context)
     {
         var modelsDir = Path.Combine(context.Project.Typescript.Folder, "src", "models");
         Directory.CreateDirectory(modelsDir);
@@ -132,7 +132,7 @@ public static class TypescriptSdk
         }
     }
 
-    private static async Task ExportEndpoints(GeneratorContext context)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
         var clientsDir = Path.Combine(context.Project.Typescript.Folder, "src", "clients");
         Directory.CreateDirectory(clientsDir);
@@ -228,7 +228,7 @@ public static class TypescriptSdk
         }
     }
 
-    private static void AddImport(GeneratorContext context, string name, List<string> list)
+    private void AddImport(GeneratorContext context, string name, List<string> list)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -256,7 +256,7 @@ public static class TypescriptSdk
         }
     }
 
-    private static List<string> GetImports(GeneratorContext context, string category)
+    private List<string> GetImports(GeneratorContext context, string category)
     {
         var types = new List<string>();
         foreach (var endpoint in context.Api.Endpoints)
@@ -274,7 +274,7 @@ public static class TypescriptSdk
         return GenerateImportsFromList(context, types);
     }
 
-    private static List<string> GetImports(GeneratorContext context, SchemaItem item)
+    private List<string> GetImports(GeneratorContext context, SchemaItem item)
     {
         var types = new List<string>();
         foreach (var field in (item?.Fields).EmptyIfNull())
@@ -288,7 +288,7 @@ public static class TypescriptSdk
         return GenerateImportsFromList(context, types);
     }
 
-    private static List<string> GenerateImportsFromList(GeneratorContext context, List<string> types)
+    private List<string> GenerateImportsFromList(GeneratorContext context, List<string> types)
     {
         var suffixList = (context.Project.GenericSuffixes ?? Enumerable.Empty<string>()).ToList();
         
@@ -335,7 +335,7 @@ public static class TypescriptSdk
         return imports;
     }
 
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Typescript == null)
         {
@@ -357,5 +357,10 @@ public static class TypescriptSdk
         await Extensions.PatchFile(context, Path.Combine(context.Project.Typescript.Folder, "package.json"),
             "\"version\": \"[\\d\\.]+\",",
             $"\"version\": \"{context.OfficialVersion}\",");
+    }
+    
+    public string LanguageName()
+    {
+        return "TypeScript/JavaScript";
     }
 }

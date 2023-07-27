@@ -10,9 +10,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public static class CSharpSdk
+public class CSharpSdk : ILanguageSdk
 {
-    private static string FileHeader(ProjectSchema project)
+    private string FileHeader(ProjectSchema project)
     {
         return "/***\n"
                + $" * {project.ProjectName} for C#\n"
@@ -29,7 +29,7 @@ public static class CSharpSdk
                + "\n\n";
     }
 
-    private static string MakeNullable(string typeName)
+    private string MakeNullable(string typeName)
     {
         if (typeName.EndsWith('?'))
         {
@@ -46,7 +46,7 @@ public static class CSharpSdk
         return typeName;
     }
 
-    private static string NullableFixup(string typeName, bool allowNulls)
+    private string NullableFixup(string typeName, bool allowNulls)
     {
         if (allowNulls)
         {
@@ -62,7 +62,7 @@ public static class CSharpSdk
         return typeName;
     }
 
-    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
     {
         var s = typeName;
         if (context.Api.IsEnum(typeName))
@@ -135,7 +135,7 @@ public static class CSharpSdk
         return s;
     }
 
-    private static async Task ExportSchemas(GeneratorContext context)
+    private async Task ExportSchemas(GeneratorContext context)
     {
         var modelsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Models");
         Directory.CreateDirectory(modelsDir);
@@ -196,7 +196,7 @@ public static class CSharpSdk
         }
     }
 
-    private static string MarkdownToDocblock(string markdown, int indent, List<ParameterField> parameterList = null)
+    private string MarkdownToDocblock(string markdown, int indent, List<ParameterField> parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -233,7 +233,7 @@ public static class CSharpSdk
         return sb.ToString();
     }
 
-    private static async Task ExportEndpoints(GeneratorContext context)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
         var clientsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Clients");
         var interfacesDir = Path.Combine(context.Project.Csharp.Folder, "src", "Interfaces");
@@ -256,7 +256,7 @@ public static class CSharpSdk
         }
     }
 
-    private static async Task ExportCategoryClient(GeneratorContext context, string cat, string clientsDir)
+    private async Task ExportCategoryClient(GeneratorContext context, string cat, string clientsDir)
     {
         var sb = new StringBuilder();
 
@@ -360,7 +360,7 @@ public static class CSharpSdk
     }
 
 
-    private static async Task ExportCategoryInterface(GeneratorContext context, string cat, string interfacesDir)
+    private async Task ExportCategoryInterface(GeneratorContext context, string cat, string interfacesDir)
     {
         var sb = new StringBuilder();
 
@@ -414,7 +414,7 @@ public static class CSharpSdk
         await File.WriteAllTextAsync(modulePath, sb.ToString());
     }
     
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Csharp == null)
         {
@@ -434,5 +434,10 @@ public static class CSharpSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "csharp", "sdk.nuspec.scriban"),
             Path.Combine(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
+    }
+
+    public string LanguageName()
+    {
+        return "C#";
     }
 }

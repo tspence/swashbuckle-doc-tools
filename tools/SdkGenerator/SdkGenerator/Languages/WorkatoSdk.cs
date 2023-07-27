@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using SdkGenerator.Project;
@@ -10,9 +9,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public class WorkatoSdk
+public class WorkatoSdk : ILanguageSdk
 {
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Workato == null)
         {
@@ -23,7 +22,7 @@ public class WorkatoSdk
         await ExportEndpoints(context);
     }
 
-    private static async Task ExportSchemas(GeneratorContext context)
+    private async Task ExportSchemas(GeneratorContext context)
     {
         var sb = new StringBuilder();
         foreach (var item in context.Api.Schemas)
@@ -58,7 +57,7 @@ public class WorkatoSdk
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
-    private static string WorkatoControlType(SchemaField field)
+    private string WorkatoControlType(SchemaField field)
     {
         // Reference: https://docs.workato.com/developing-connectors/sdk/sdk-reference/schema.html#control-types
         // Control type is the UX displayed when someone fills in a field
@@ -89,7 +88,7 @@ public class WorkatoSdk
         }
     }
 
-    private static string MakeWorkatoType(SchemaField field)
+    private string MakeWorkatoType(SchemaField field)
     {
         switch (field.DataType)
         {
@@ -117,7 +116,7 @@ public class WorkatoSdk
         }
     }
 
-    private static async Task ExportEndpoints(GeneratorContext context)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
         var sb = new StringBuilder();
         int displayPriority = 1;
@@ -186,7 +185,7 @@ public class WorkatoSdk
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
-    private static string MakeWorkatoQueryString(List<ParameterField> endpointParameters)
+    private string MakeWorkatoQueryString(List<ParameterField> endpointParameters)
     {
         var queryParams = endpointParameters.Where(p => p.Location == "query").ToList();
         if (queryParams.Count == 0)
@@ -203,5 +202,10 @@ public class WorkatoSdk
         }
         sb.AppendLine("          }.to_query");
         return sb.ToString();
+    }
+    
+    public string LanguageName()
+    {
+        return "Workato (Ruby)";
     }
 }

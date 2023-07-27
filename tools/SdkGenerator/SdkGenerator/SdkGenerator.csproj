@@ -45,5 +45,8 @@
         <None Update="Templates\ts\index.ts.scriban">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Update="Templates\dart\ApiClient.dart.scriban">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
