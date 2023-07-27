@@ -1,0 +1,55 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_toolkit/data/LiveData.dart';
+import 'package:flutter_toolkit/http/APIClient.dart';
+import 'package:http/http.dart' as http;
+
+class {{ project.dart.class_name }} {
+  static final {{ project.dart.class_name }} _instance = {{ project.dart.class_name }}Impl();
+
+  factory {{ project.dart.class_name }}() {
+    return _instance;
+  }
+
+{{~ for cat in api.categories ~}}
+    /// A collection of API methods related to {{ cat }}
+    {{ cat }}() {
+        {{ cat | to_camel_case }}Client();
+    }
+{{~ end ~}}
+
+  Future<{{ project.dart.response_class }}> get(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<{{ project.dart.response_class }}> delete(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<{{ project.dart.response_class }}> changeset(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<{{ project.dart.response_class }}> put(String path,
+      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+
+  Future<{{ project.dart.response_class }}> post(String path,
+      [Map<String, dynamic>? params,
+      Map<String, String>? headers,
+      bool ignoreAuth = false]) async {
+    throw UnimplementedError();
+  }
+
+  Future<{{ project.dart.response_class }}> postFiles(String path, List<String> filePaths,
+      [Map<String, String>? headers]) async {
+    throw UnimplementedError();
+  }
+}

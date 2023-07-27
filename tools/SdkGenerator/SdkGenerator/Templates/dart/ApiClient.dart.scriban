@@ -1,84 +1,23 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_toolkit/data/LiveData.dart';
 import 'package:flutter_toolkit/http/APIClient.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
-class PMClient {
-  static final PMClient _instance = PMClientImpl();
-
-  factory PMClient() {
-    return _instance;
-  }
-
-  Sockets get sockets => throw UnimplementedError();
-
-  LiveData<bool> get hasAccessToken => throw UnimplementedError();
-
-  Future<void> attemptRestore() => throw UnimplementedError();
-
-  Future<void> clearTokens() => throw UnimplementedError();
-
-  Future<bool> handleAuth0Redirect() async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> get(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> delete(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> changeset(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> put(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> post(String path,
-      [Map<String, dynamic>? params,
-      Map<String, String>? headers,
-      bool ignoreAuth = false]) async {
-    throw UnimplementedError();
-  }
-
-  Future<PMAPIResponse> postFiles(String path, List<String> filePaths,
-      [Map<String, String>? headers]) async {
-    throw UnimplementedError();
-  }
-
-  Future<String?> getRedirectUrl(String url) => throw UnimplementedError();
-}
-
-class PMClientImpl implements PMClient {
+class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }} {
   late BuildConfig config = BuildConfig();
 
   Map<String, String>? headers;
 
-  http.BaseClient? oauthClient;
-
-  Auth0Service auth0service = Auth0Service();
-
-  @override
-  final Sockets sockets = Sockets();
-
-  @override
-  LiveData<bool> get hasAccessToken => auth0service.hasAccessToken;
-
   late APIClient api;
 
-  PMClientImpl() {
+  {{ project.dart.class_name }}Impl() {
     _updateClient(
         APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
   }
@@ -143,7 +82,7 @@ class PMClientImpl implements PMClient {
     return value;
   }
 
-  PMAPIResponse _handleAPIError(error) {
+  {{ project.dart.response_class }} _handleAPIError(error) {
     debugPrint("API Error $error");
 
     if (error is TimeoutException) {
@@ -163,7 +102,7 @@ class PMClientImpl implements PMClient {
   }
 
   //Shortcut for typing
-  PMAPIResponse _handleAPISuccess(value) {
+  {{ project.dart.response_class }} _handleAPISuccess(value) {
     final response = WrappedClientResponse(value);
     if (!response.isSuccess && response.code == 401) {
       return _handleAPIError(null);
@@ -173,7 +112,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> get(String path,
+  Future<{{ project.dart.response_class }}> get(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
     if (!auth0service.checkAuthValid()) {
       return AuthErrorResponse();
@@ -188,7 +127,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> delete(String path,
+  Future<{{ project.dart.response_class }}> delete(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
     if (!auth0service.checkAuthValid()) {
       return AuthErrorResponse();
@@ -202,7 +141,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> changeset(String path,
+  Future<{{ project.dart.response_class }}> changeset(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
     if (params != null) {
       final changeSets = <Map<String, dynamic>>[];
@@ -217,7 +156,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> put(String path,
+  Future<{{ project.dart.response_class }}> put(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
     if (!auth0service.checkAuthValid()) {
       return AuthErrorResponse();
@@ -232,7 +171,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> post(String path,
+  Future<{{ project.dart.response_class }}> post(String path,
       [Map<String, dynamic>? params,
       Map<String, String>? headers,
       bool ignoreAuth = false]) async {
@@ -265,7 +204,7 @@ class PMClientImpl implements PMClient {
   }
 
   @override
-  Future<PMAPIResponse> postFiles(String path, List<String> filePaths,
+  Future<{{ project.dart.response_class }}> postFiles(String path, List<String> filePaths,
       [Map<String, String>? headers]) async {
     if (!auth0service.checkAuthValid()) {
       return AuthErrorResponse();
@@ -284,7 +223,7 @@ class PMClientImpl implements PMClient {
   }
 }
 
-class WrappedClientResponse extends PMAPIResponse {
+class WrappedClientResponse extends {{ project.dart.response_class }} {
   WrappedClientResponse(this.raw);
 
   final ClientResponse raw;
@@ -303,7 +242,7 @@ class ConnectionErrorResponse extends ErrorResponse {
   ConnectionErrorResponse(String message) : super(message);
 }
 
-class ErrorResponse extends PMAPIResponse {
+class ErrorResponse extends {{ project.dart.response_class }} {
   ErrorResponse(this.message);
 
   @override
@@ -322,7 +261,7 @@ class AuthErrorResponse extends ErrorResponse {
   bool get shouldLogout => true;
 }
 
-class PMAPIResponse extends PMResponse<List<dynamic>> {
+class {{ project.dart.response_class }} extends ApiResponse<List<dynamic>> {
   Map<String, dynamic> get json => {};
 
   Map<String, dynamic> get meta {
@@ -347,7 +286,7 @@ class PMAPIResponse extends PMResponse<List<dynamic>> {
   bool get shouldLogout => json["logout"] == true;
 }
 
-abstract class PMResponse<T> {
+abstract class ApiResponse<T> {
   T get data;
 
   int get code => -1;
@@ -362,13 +301,13 @@ abstract class PMResponse<T> {
 
   bool get shouldLogout => false;
 
-  PMResponse<D> wrap<D>(D data) => PMDataResponse(data, this);
+  ApiResponse<D> wrap<D>(D data) => ApiDataResponse(data, this);
 }
 
-class PMDataResponse<T> extends PMResponse<T> {
-  PMDataResponse(this.data, this.base);
+class ApiDataResponse<T> extends ApiResponse<T> {
+  ApiDataResponse(this.data, this.base);
 
-  final PMResponse base;
+  final ApiResponse base;
 
   @override
   final T data;

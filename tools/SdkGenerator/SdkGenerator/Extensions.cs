@@ -139,6 +139,32 @@ public static class Extensions
         return Regex.Replace(s, "\\s+", " ");
     }
 
+    
+    public static string ToDartDoc(this string description, int indent, List<ParameterField> parameters = null)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder();
+        var prefix = "".PadLeft(indent) + "///";
+
+        // Add summary section
+        foreach (var line in description.Split("\n"))
+        {
+            if (line.StartsWith("###"))
+            {
+                break;
+            }
+
+            sb.AppendLine($"{prefix} {line}".TrimEnd());
+        }
+        
+        return sb.ToString();
+    }
+
+
     public static string ToJavaDoc(this string markdown, int indent, string returnType = null, List<ParameterField> parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown) && parameterList == null && string.IsNullOrWhiteSpace(returnType))

@@ -85,7 +85,7 @@ public class JavaSdk : ILanguageSdk
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s[..^genericName.Length]}";
+                s = $"{genericName}<{s[..^genericName.Length]}>";
             }
         }
 
