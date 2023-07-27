@@ -32,7 +32,66 @@ public class DartSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        await Task.CompletedTask;
+        var clientsDir = Path.Combine(context.Project.Dart.Folder, "clients");
+        Directory.CreateDirectory(clientsDir);
+        foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.dart"))
+        {
+            File.Delete(clientsFile);
+        }
+
+        // Gather a list of unique categories
+        foreach (var cat in context.Api.Categories)
+        {
+            var sb = new StringBuilder();
+
+            // Construct header
+            sb.AppendLine(FileHeader(context.Project));
+
+            sb.AppendLine($"/// Contains all methods related to {cat}");
+            sb.AppendLine($"class {cat}Client");
+            sb.AppendLine("{");
+            sb.AppendLine($"  final {context.Project.Dart.ClassName} _client;");
+            sb.AppendLine();
+            sb.AppendLine($"  /// Constructor for the {cat} API collection");
+            sb.AppendLine($"  {cat}Client({context.Project.Dart.ClassName} client) : _client = client;");
+            sb.AppendLine();
+
+            // Run through all APIs
+            foreach (var endpoint in context.Api.Endpoints)
+            {
+                if (endpoint.Category == cat && !endpoint.Deprecated)
+                {
+                    sb.AppendLine();
+                    sb.Append(endpoint.DescriptionMarkdown.ToDartDoc(2,
+                        endpoint.Parameters));
+
+                    // Figure out the parameter list
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters
+                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name}");
+
+                    // What is our return type?
+                    var returnType = FixupType(context, endpoint.ReturnDataType.DataType,
+                        endpoint.ReturnDataType.IsArray, false);
+                    var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
+
+                    // Write the method
+                    sb.AppendLine(
+                        $"  Future<{returnType}> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
+                    sb.AppendLine(
+                        $"    return _client.{endpoint.Method.ToLower()}(\"{endpoint.Path}\").then((value) {{");
+                    sb.AppendLine($"      return {context.Project.Dart.ResponseClass}.fromContent(value);");
+                    sb.AppendLine("    });");
+                    sb.AppendLine("  }");
+                }
+            }
+
+            // Close out the namespace
+            sb.AppendLine("}");
+
+            // Write this category to a file
+            var classPath = Path.Combine(clientsDir, $"{cat}Client.dart");
+            await File.WriteAllTextAsync(classPath, sb.ToString());
+        }
     }
 
     private async Task ExportSchemas(GeneratorContext context)
@@ -202,7 +261,8 @@ public class DartSdk : ILanguageSdk
                + $"/// @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $"/// @copyright  2021-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
                + $"/// @link       {project.Dart.GithubUrl}\n"
-               + "///\n\n";    }
+               + "///\n";    
+    }
 
     public string LanguageName()
     {

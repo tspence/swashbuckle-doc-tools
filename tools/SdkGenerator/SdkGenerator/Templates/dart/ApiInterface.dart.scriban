@@ -17,7 +17,7 @@ class {{ project.dart.class_name }} {
 {{~ for cat in api.categories ~}}
     /// A collection of API methods related to {{ cat }}
     {{ cat }}() {
-        {{ cat | to_camel_case }}Client();
+        throw UnimplementedError();
     }
 {{~ end ~}}
 

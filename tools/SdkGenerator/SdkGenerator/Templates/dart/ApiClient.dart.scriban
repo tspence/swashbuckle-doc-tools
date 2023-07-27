@@ -21,6 +21,13 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
     _updateClient(
         APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
   }
+  
+{{~ for cat in api.categories ~}}
+  @override
+  {{ cat }}() {
+    return {{ cat }}Client(api, this);
+  }
+{{~ end ~}}
 
   Future<void> _updateClient(APIClient client, [bool authed = false]) async {
     api = client;
@@ -221,112 +228,4 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
   }
-}
-
-class WrappedClientResponse extends {{ project.dart.response_class }} {
-  WrappedClientResponse(this.raw);
-
-  final ClientResponse raw;
-
-  @override
-  int get code => raw.statusCode;
-
-  @override
-  bool get isSuccess => raw.isSuccess && json["success"] != false;
-
-  @override
-  late Map<String, dynamic> json = raw.json;
-}
-
-class ConnectionErrorResponse extends ErrorResponse {
-  ConnectionErrorResponse(String message) : super(message);
-}
-
-class ErrorResponse extends {{ project.dart.response_class }} {
-  ErrorResponse(this.message);
-
-  @override
-  final String? message;
-
-  @override
-  bool get isSuccess => false;
-}
-
-class AuthErrorResponse extends ErrorResponse {
-  AuthErrorResponse() : super("Authentication Error") {
-    debugPrint("Creating Error Response");
-  }
-
-  @override
-  bool get shouldLogout => true;
-}
-
-class {{ project.dart.response_class }} extends ApiResponse<List<dynamic>> {
-  Map<String, dynamic> get json => {};
-
-  Map<String, dynamic> get meta {
-    return json["meta"] ?? <String, dynamic>{};
-  }
-
-  @override
-  List<dynamic> get data {
-    return json["data"] ?? [];
-  }
-
-  @override
-  String? get cause => json["message"];
-
-  @override
-  String? get message => json["friendlyMessage"];
-
-  @override
-  String? get error => json["exceptionType"];
-
-  @override
-  bool get shouldLogout => json["logout"] == true;
-}
-
-abstract class ApiResponse<T> {
-  T get data;
-
-  int get code => -1;
-
-  bool get isSuccess => false;
-
-  String? get cause => "";
-
-  String? get message => "";
-
-  String? get error => "";
-
-  bool get shouldLogout => false;
-
-  ApiResponse<D> wrap<D>(D data) => ApiDataResponse(data, this);
-}
-
-class ApiDataResponse<T> extends ApiResponse<T> {
-  ApiDataResponse(this.data, this.base);
-
-  final ApiResponse base;
-
-  @override
-  final T data;
-
-  @override
-  int get code => base.code;
-
-  @override
-  bool get isSuccess => base.isSuccess;
-
-  @override
-  String? get cause => base.cause;
-
-  @override
-  String? get message => base.message;
-
-  @override
-  String? get error => base.error;
-
-  @override
-  bool get shouldLogout => base.shouldLogout;
 }
