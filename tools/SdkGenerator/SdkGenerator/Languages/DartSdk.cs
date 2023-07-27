@@ -74,11 +74,14 @@ public class DartSdk : ILanguageSdk
                         endpoint.ReturnDataType.IsArray, false);
                     var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
 
+                    // Cleanse path
+                    var cleansedPath  = endpoint.Path.Replace("{", "${");
+                    
                     // Write the method
                     sb.AppendLine(
                         $"  Future<{returnType}> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
                     sb.AppendLine(
-                        $"    return _client.{endpoint.Method.ToLower()}(\"{endpoint.Path}\").then((value) {{");
+                        $"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\").then((value) {{");
                     sb.AppendLine($"      return {context.Project.Dart.ResponseClass}.fromContent(value);");
                     sb.AppendLine("    });");
                     sb.AppendLine("  }");
