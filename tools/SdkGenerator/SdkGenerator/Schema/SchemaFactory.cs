@@ -107,7 +107,7 @@ public static class SchemaFactory
             return prop.GetString() ?? "";
         }
 
-        context.Log($"Missing {name} on element: {element}");
+        context.LogError($"Missing {name} on element: {element}");
         return "";
     }
 
@@ -180,7 +180,7 @@ public static class SchemaFactory
             }
         }
 
-        context.Log($"Missing type: {prop}");
+        context.LogError($"Missing type: {prop}");
         return new SchemaRef
         {
             DataType = "object",

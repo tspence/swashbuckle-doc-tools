@@ -344,7 +344,7 @@ public static class Extensions
     {
         if (!File.Exists(filename))
         {
-            context.Log($"Unable to find file {filename}");
+            context.LogError($"Unable to find file {filename}");
             return;
         }
 
@@ -357,7 +357,7 @@ public static class Extensions
         }
         else
         {
-            context.Log($"Failed to patch file {filename} - no match found.");
+            context.LogError($"Failed to patch file {filename} - no match found.");
         }
     }
 

@@ -261,7 +261,7 @@ public class PythonSdk : ILanguageSdk
                                     // Fetch results don't unpack as expected, use from_json helper method
                                     sb.AppendLine(
                                         $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {genericName}.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^genericName.Length]}), None)");                            
-                                    context.Log("halp");
+                                    context.LogError("halp");
                                     isHandled = true;
                                 }
                             }
