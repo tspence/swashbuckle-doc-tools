@@ -84,7 +84,7 @@ public static class Program
             return;
         }
 
-        Console.WriteLine($"Retrieved swagger file. Version: {context.Version2}");
+        Console.WriteLine($"Retrieved swagger file. Version: {context.Version4}");
 
         // Let's do some software development kits, if selected
         foreach (var t in typeof(Program).Assembly.GetTypes())
