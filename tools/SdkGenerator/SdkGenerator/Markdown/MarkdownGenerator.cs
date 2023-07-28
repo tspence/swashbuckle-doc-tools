@@ -42,14 +42,14 @@ public static class MarkdownGenerator
                 }
                 catch (Exception e)
                 {
-                    context.Log($"Exception while parsing model for {schema.Name}: {e}");
+                    context.LogError($"Exception while parsing model for {schema.Name}: {e}");
                 }
             }
             
             // Upload the swagger specification
             if (!await ReadmeTools.UploadSwagger(context))
             {
-                context.Log("Swagger JSON file not uploaded");
+                context.LogError("Swagger JSON file not uploaded");
             }
         }
     }
@@ -72,7 +72,7 @@ public static class MarkdownGenerator
             }
             catch (Exception e)
             {
-                context.Log($"Exception while parsing model for {schema.Name}: {e}");
+                context.LogError($"Exception while parsing model for {schema.Name}: {e}");
             }
         }
     }

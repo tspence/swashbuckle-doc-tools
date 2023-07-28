@@ -109,12 +109,12 @@ public class ReadmeTools
             // Preserve the "hidden" status - only a human being can approve the doc and make it visible
             var existingDoc = JsonConvert.DeserializeObject<ReadmeDocModel>(modelExists.Content);
             var result = await CallReadme(context, docName, Method.Put, JsonConvert.SerializeObject(doc), null);
-            context.Log($"Updated {schemaName}: {result.StatusCode}");
+            context.LogError($"Updated {schemaName}: {result.StatusCode}");
         }
         else
         {
             var result = await CallReadme(context, "/api/v1/docs", Method.Post, JsonConvert.SerializeObject(doc), null);
-            context.Log($"Created {schemaName}: {result.StatusCode}");
+            context.LogError($"Created {schemaName}: {result.StatusCode}");
         }
     }
 

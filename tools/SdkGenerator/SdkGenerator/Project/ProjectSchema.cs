@@ -55,6 +55,7 @@ public class ProjectSchema
     public LanguageSchema Ruby { get; set; }
     public LanguageSchema Typescript { get; set; }
     public LanguageSchema Workato { get; set; }
+    public LanguageSchema Dart { get; set; }
 }
 
 /// <summary>

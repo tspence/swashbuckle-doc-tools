@@ -29,7 +29,7 @@ public static class ScribanFunctions
         }
         catch (Exception e)
         {
-            context.Log($"Failed to execute template {templateName}: {e.Message}");
+            context.LogError($"Failed to execute template {templateName}: {e.Message}");
         }
     }
 }

@@ -17,20 +17,29 @@ public class GeneratorContext : IDisposable
     public string OfficialVersion { get; set; }
     public string SwaggerJson { get; set; }
     public string SwaggerJsonPath { get; set; }
+    public string LogPath { get; set; }
 
     private GeneratorContext()
     {
     }
 
-    public void Log(string message)
+    public void LogError(string message)
     {
-        if (ErrorStream == null && Project.SwaggerSchemaFolder != null)
+        if (string.IsNullOrEmpty(LogPath))
         {
-            ErrorStream = new StreamWriter(Path.Combine(Project.SwaggerSchemaFolder, "errors.log"));
+            Console.WriteLine("  " + message);
         }
-        if (ErrorStream != null)
+        else
         {
-            ErrorStream.WriteLine(message);
+            if (ErrorStream == null && Project.SwaggerSchemaFolder != null)
+            {
+                ErrorStream = new StreamWriter(Path.Combine(Project.SwaggerSchemaFolder, "errors.log"));
+            }
+
+            if (ErrorStream != null)
+            {
+                ErrorStream.WriteLine(message);
+            }
         }
     }
 
@@ -39,7 +48,7 @@ public class GeneratorContext : IDisposable
         ErrorStream?.Dispose();
     }
 
-    public static async Task<GeneratorContext> FromFile(string filename)
+    public static async Task<GeneratorContext> FromFile(string filename, string logPath)
     {
         // Retrieve project
         if (!File.Exists(filename))
@@ -62,6 +71,7 @@ public class GeneratorContext : IDisposable
         {
             Project = project,
             Api = null,
+            LogPath = logPath,
         };
         if (project.SwaggerSchemaFolder != null)
         {

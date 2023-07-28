@@ -9,9 +9,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public static class JavaSdk
+public class JavaSdk : ILanguageSdk
 {
-    private static string FileHeader(ProjectSchema project)
+    private string FileHeader(ProjectSchema project)
     {
         return "\n/**\n"
                + $" * {project.ProjectName} for Java\n"
@@ -27,7 +27,7 @@ public static class JavaSdk
                + " */\n\n";
     }
 
-    private static string JavaTypeName(GeneratorContext context, string typeName, bool isArray)
+    private string JavaTypeName(GeneratorContext context, string typeName, bool isArray)
     {
         var s = typeName;
         if (context.Api.IsEnum(typeName))
@@ -85,20 +85,20 @@ public static class JavaSdk
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s[..^genericName.Length]}";
+                s = $"{genericName}<{s[..^genericName.Length]}>";
             }
         }
 
         return s;
     }
 
-    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
     {
         var s = JavaTypeName(context, typeName, isArray);
         return nullable ? $"@Nullable {s}" : $"@NotNull {s}";
     }
 
-    private static async Task ExportSchemas(GeneratorContext context)
+    private async Task ExportSchemas(GeneratorContext context)
     {
         var modelsDir = Path.Combine(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "models");
@@ -175,7 +175,7 @@ public static class JavaSdk
         }
     }
 
-    private static async Task ExportEndpoints(GeneratorContext context)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
         var clientsDir = Path.Combine(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "clients");
@@ -308,7 +308,7 @@ public static class JavaSdk
         }
     }
 
-    private static void AddImport(GeneratorContext context, string name, HashSet<string> list)
+    private void AddImport(GeneratorContext context, string name, HashSet<string> list)
     {
         bool isGeneric = false;
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
@@ -337,7 +337,7 @@ public static class JavaSdk
         }
     }
 
-    private static List<string> GetImports(GeneratorContext context, string category)
+    private List<string> GetImports(GeneratorContext context, string category)
     {
         var types = new HashSet<string>();
         foreach (var endpoint in context.Api.Endpoints)
@@ -356,7 +356,7 @@ public static class JavaSdk
         return (from t in types select GetImportForType(context, t)).Distinct().ToList();
     }
 
-    private static List<string> GetImports(GeneratorContext context, SchemaItem schema)
+    private List<string> GetImports(GeneratorContext context, SchemaItem schema)
     {
         var types = new HashSet<string>();
         foreach (var field in schema.Fields)
@@ -371,7 +371,7 @@ public static class JavaSdk
         return (from t in types select GetImportForType(context, t)).Distinct().ToList();
     }
 
-    private static string GetImportForType(GeneratorContext context, string type)
+    private string GetImportForType(GeneratorContext context, string type)
     {
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
@@ -407,7 +407,7 @@ public static class JavaSdk
         }
     }
 
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Java == null)
         {
@@ -431,5 +431,10 @@ public static class JavaSdk
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"),
             "request.addHeader\\(\"SdkVersion\", \"[\\d\\.]+\"\\);",
             $"request.addHeader(\"SdkVersion\", \"{context.OfficialVersion}\");");
+    }
+    
+    public string LanguageName()
+    {
+        return "Java";
     }
 }

@@ -75,7 +75,7 @@ public static class DownloadFile
         }
         catch (Exception ex)
         {
-            context.Log($"Failed to load {context.Project.VersionNumberUrl}: {ex.Message}");
+            context.LogError($"Failed to load {context.Project.VersionNumberUrl}: {ex.Message}");
         }
 
         return "1.0.0.0";
@@ -265,7 +265,7 @@ public static class DownloadFile
         // If we couldn't download the version number, don't try generating anything
         if (context.Version4 == "1.0.0.0")
         {
-            context.Log("Unable to find version number using regex");
+            context.LogError("Unable to find version number using regex");
             return null;
         }
 

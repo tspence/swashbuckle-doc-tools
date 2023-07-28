@@ -9,9 +9,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public static class RubySdk
+public class RubySdk : ILanguageSdk
 {
-    private static string FileHeader(ProjectSchema project)
+    private string FileHeader(ProjectSchema project)
     {
         return "#\n"
                + $"# {project.ProjectName} for Ruby\n"
@@ -27,7 +27,7 @@ public static class RubySdk
                + "#\n\n";
     }
 
-    private static async Task ExportSchemas(ProjectSchema project, ApiSchema api)
+    private async Task ExportSchemas(ProjectSchema project, ApiSchema api)
     {
         var modelsDir = Path.Combine(project.Ruby.Folder, "lib", project.Ruby.Namespace, "models");
         Directory.CreateDirectory(modelsDir);
@@ -96,7 +96,7 @@ public static class RubySdk
         }
     }
 
-    private static async Task ExportEndpoints(ProjectSchema project, ApiSchema api)
+    private async Task ExportEndpoints(ProjectSchema project, ApiSchema api)
     {
         var clientsDir = Path.Combine(project.Ruby.Folder, "lib", project.Ruby.Namespace, "clients");
         Directory.CreateDirectory(clientsDir);
@@ -242,7 +242,7 @@ public static class RubySdk
         return sb.ToString();
     }
 
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Ruby == null)
         {
@@ -272,5 +272,10 @@ public static class RubySdk
         await Extensions.PatchFile(context, Path.Combine(context.Project.Ruby.Folder, "Gemfile.lock"),
             $"{context.Project.Ruby.ModuleName} \\([\\d\\.]+\\)",
             $"{context.Project.Ruby.ModuleName} ({context.OfficialVersion})");
+    }
+    
+    public string LanguageName()
+    {
+        return "Ruby";
     }
 }

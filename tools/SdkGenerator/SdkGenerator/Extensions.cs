@@ -52,6 +52,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToProperCase(this string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.Empty;
+        }
         return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
     }
 
@@ -134,6 +138,32 @@ public static class Extensions
     {
         return Regex.Replace(s, "\\s+", " ");
     }
+
+    
+    public static string ToDartDoc(this string description, int indent, List<ParameterField> parameters = null)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder();
+        var prefix = "".PadLeft(indent) + "///";
+
+        // Add summary section
+        foreach (var line in description.Split("\n"))
+        {
+            if (line.StartsWith("###"))
+            {
+                break;
+            }
+
+            sb.AppendLine($"{prefix} {line}".TrimEnd());
+        }
+        
+        return sb.ToString();
+    }
+
 
     public static string ToJavaDoc(this string markdown, int indent, string returnType = null, List<ParameterField> parameterList = null)
     {
@@ -314,7 +344,7 @@ public static class Extensions
     {
         if (!File.Exists(filename))
         {
-            context.Log($"Unable to find file {filename}");
+            context.LogError($"Unable to find file {filename}");
             return;
         }
 
@@ -327,7 +357,7 @@ public static class Extensions
         }
         else
         {
-            context.Log($"Failed to patch file {filename} - no match found.");
+            context.LogError($"Failed to patch file {filename} - no match found.");
         }
     }
 

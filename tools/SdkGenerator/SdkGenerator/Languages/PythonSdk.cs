@@ -9,9 +9,9 @@ using SdkGenerator.Schema;
 
 namespace SdkGenerator.Languages;
 
-public static class PythonSdk
+public class PythonSdk : ILanguageSdk
 {
-    private static string FileHeader(ProjectSchema project)
+    private string FileHeader(ProjectSchema project)
     {
         return "#\n"
                + $"# {project.ProjectName} for Python\n"
@@ -27,7 +27,7 @@ public static class PythonSdk
                + "#\n\n";
     }
 
-    private static string FixupType(GeneratorContext context, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
     {
         var s = typeName;
         if (context.Api.IsEnum(typeName))
@@ -98,7 +98,7 @@ public static class PythonSdk
         return s;
     }
 
-    private static async Task ExportSchemas(GeneratorContext context)
+    private async Task ExportSchemas(GeneratorContext context)
     {
         var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(modelsDir);
@@ -151,7 +151,7 @@ public static class PythonSdk
         }
     }
 
-    private static async Task CleanModuleDirectory(string pyModuleDir)
+    private async Task CleanModuleDirectory(string pyModuleDir)
     {
         Directory.CreateDirectory(pyModuleDir);
 
@@ -167,7 +167,7 @@ public static class PythonSdk
         }
     }
 
-    private static async Task ExportEndpoints(GeneratorContext context)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
         var clientsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
         await CleanModuleDirectory(clientsDir);
@@ -261,7 +261,7 @@ public static class PythonSdk
                                     // Fetch results don't unpack as expected, use from_json helper method
                                     sb.AppendLine(
                                         $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {genericName}.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^genericName.Length]}), None)");                            
-                                    context.Log("halp");
+                                    context.LogError("halp");
                                     isHandled = true;
                                 }
                             }
@@ -285,7 +285,7 @@ public static class PythonSdk
         }
     }
 
-    private static List<string> BuildImports(GeneratorContext context, string cat)
+    private List<string> BuildImports(GeneratorContext context, string cat)
     {
         var imports = new List<string>();
         foreach (var endpoint in context.Api.Endpoints)
@@ -316,7 +316,7 @@ public static class PythonSdk
         return imports.Distinct().ToList();
     }
 
-    private static void AddImport(GeneratorContext context, List<string> imports, string dataType)
+    private void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
         if (context.Api.IsEnum(dataType) || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
         {
@@ -342,7 +342,7 @@ public static class PythonSdk
         }
     }
 
-    private static string MakePythonDoc(GeneratorContext context, string description, int indent, List<ParameterField> parameters)
+    private string MakePythonDoc(GeneratorContext context, string description, int indent, List<ParameterField> parameters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -384,7 +384,7 @@ public static class PythonSdk
         return sb.ToString();
     }
 
-    public static async Task Export(GeneratorContext context)
+    public async Task Export(GeneratorContext context)
     {
         if (context.Project.Python == null)
         {
@@ -403,5 +403,10 @@ public static class PythonSdk
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
         await Extensions.PatchFile(context, Path.Combine(context.Project.Python.Folder, "setup.cfg"), "version = [\\d\\.]+",
             $"version = {context.OfficialVersion}");
+    }
+    
+    public string LanguageName()
+    {
+        return "Python";
     }
 }
