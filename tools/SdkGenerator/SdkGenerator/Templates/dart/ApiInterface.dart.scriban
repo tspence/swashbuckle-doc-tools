@@ -15,10 +15,10 @@ class {{ project.dart.class_name }} {
   }
 
 {{~ for cat in api.categories ~}}
-    /// A collection of API methods related to {{ cat }}
-    {{ cat }}() {
-        throw UnimplementedError();
-    }
+  /// A collection of API methods related to {{ cat }}
+  {{ cat }}() {
+    throw UnimplementedError();
+  }
 {{~ end ~}}
 
   Future<{{ project.dart.response_class }}> get(String path,
