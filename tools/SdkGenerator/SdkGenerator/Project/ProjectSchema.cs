@@ -7,6 +7,7 @@ public class ProjectSchema
     public string CompanyName { get; set; }
     public string AuthorName { get; set; }
     public string AuthorEmail { get; set; }
+    public string DocumentationUrl { get; set; }
     public string ProjectName { get; set; }
     public string CopyrightHolder { get; set; }
     public int ProjectStartYear { get; set; }

@@ -258,10 +258,8 @@ public class PythonSdk : ILanguageSdk
                             {
                                 if (originalReturnDataType.StartsWith(genericName, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    // Fetch results don't unpack as expected, use from_json helper method
                                     sb.AppendLine(
                                         $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {genericName}.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^genericName.Length]}), None)");                            
-                                    context.LogError("halp");
                                     isHandled = true;
                                 }
                             }
@@ -401,7 +399,9 @@ public class PythonSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "__init__.py.scriban"),
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
-        await Extensions.PatchFile(context, Path.Combine(context.Project.Python.Folder, "setup.cfg"), "version = [\\d\\.]+",
+        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "setup.cfg"), 
+            Path.Combine(".", "templates", "python", "setup.cfg.scriban"),
+            "version = [\\d\\.]+",
             $"version = {context.OfficialVersion}");
     }
     

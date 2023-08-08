@@ -344,27 +344,6 @@ public static class Extensions
         return sb.ToString().TrimEnd();
     }
 
-    public static async Task PatchFile(GeneratorContext context, string filename, string regex, string replacement)
-    {
-        if (!File.Exists(filename))
-        {
-            context.LogError($"Unable to find file {filename}");
-            return;
-        }
-
-        var text = await File.ReadAllTextAsync(filename);
-        var match = Regex.Match(text, regex);
-        if (match.Success)
-        {
-            var newText = text.Replace(match.ToString(), replacement);
-            await File.WriteAllTextAsync(filename, newText);
-        }
-        else
-        {
-            context.LogError($"Failed to patch file {filename} - no match found.");
-        }
-    }
-
     public static void TrimEnd(this StringBuilder sb)
     {
         while (sb.Length > 0 && sb[^1] == ' ')
