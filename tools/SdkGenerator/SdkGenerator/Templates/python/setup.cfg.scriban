@@ -1,6 +1,6 @@
 [metadata]
 name = {{ project.python.module_name }}
-version = {{ project.semver3 }}
+version = {{ api.semver3 }}
 author = {{ project.author_name }}
 author_email = {{ project.author_url }}
 description = {{ project.description }} for Python

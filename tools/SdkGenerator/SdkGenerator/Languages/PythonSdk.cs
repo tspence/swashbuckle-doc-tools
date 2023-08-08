@@ -402,7 +402,7 @@ public class PythonSdk : ILanguageSdk
         await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "setup.cfg"), 
             Path.Combine(".", "templates", "python", "setup.cfg.scriban"),
             "version = [\\d\\.]+",
-            $"version = {context.OfficialVersion}");
+            $"version = {context.Api.Semver3}");
     }
     
     public string LanguageName()
