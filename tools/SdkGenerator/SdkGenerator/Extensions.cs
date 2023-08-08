@@ -42,6 +42,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToCamelCase(this string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return "unknownName";
+        }
         return $"{char.ToLower(s[0])}{s[1..].Replace(" ", "")}";
     }
 
@@ -54,7 +58,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return string.Empty;
+            return "UnknownName";
         }
         return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
     }
