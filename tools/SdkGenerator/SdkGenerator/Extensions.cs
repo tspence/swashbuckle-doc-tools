@@ -42,6 +42,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToCamelCase(this string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return "unknownName";
+        }
         return $"{char.ToLower(s[0])}{s[1..].Replace(" ", "")}";
     }
 
@@ -54,7 +58,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return string.Empty;
+            return "UnknownName";
         }
         return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
     }
@@ -338,27 +342,6 @@ public static class Extensions
         }
 
         return sb.ToString().TrimEnd();
-    }
-
-    public static async Task PatchFile(GeneratorContext context, string filename, string regex, string replacement)
-    {
-        if (!File.Exists(filename))
-        {
-            context.LogError($"Unable to find file {filename}");
-            return;
-        }
-
-        var text = await File.ReadAllTextAsync(filename);
-        var match = Regex.Match(text, regex);
-        if (match.Success)
-        {
-            var newText = text.Replace(match.ToString(), replacement);
-            await File.WriteAllTextAsync(filename, newText);
-        }
-        else
-        {
-            context.LogError($"Failed to patch file {filename} - no match found.");
-        }
     }
 
     public static void TrimEnd(this StringBuilder sb)

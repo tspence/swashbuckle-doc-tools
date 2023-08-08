@@ -16,13 +16,13 @@ public class JavaSdk : ILanguageSdk
         return "\n/**\n"
                + $" * {project.ProjectName} for Java\n"
                + " *\n"
-               + $" * (c) 2021-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $" * (c) {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
                + " *\n"
                + " * For the full copyright and license information, please view the LICENSE\n"
                + " * file that was distributed with this source code.\n"
                + " *\n"
                + $" * @author     {project.AuthorName} <{project.AuthorEmail}>\n"
-               + $" * @copyright  2021-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $" * @copyright  {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
                + $" * @link       {project.Java.GithubUrl}\n"
                + " */\n\n";
     }
@@ -423,12 +423,15 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar),
                 context.Project.Java.ClassName + ".java"));
-        await Extensions.PatchFile(context, Path.Combine(context.Project.Java.Folder, "pom.xml"),
+        await ScribanFunctions.PatchOrTemplate(context, 
+            Path.Combine(context.Project.Java.Folder, "pom.xml"),
+            Path.Combine(".", "templates", "java", "pom.xml.scriban"),
             $"<artifactId>{context.Project.Java.ModuleName.ToLower()}<\\/artifactId>\\s+<version>[\\d\\.]+<\\/version>",
             $"<artifactId>{context.Project.Java.ModuleName.ToLower()}</artifactId>\r\n    <version>{context.OfficialVersion}</version>");
-        await Extensions.PatchFile(context, 
+        await ScribanFunctions.PatchOrTemplate(context, 
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"),
+            Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
             "request.addHeader\\(\"SdkVersion\", \"[\\d\\.]+\"\\);",
             $"request.addHeader(\"SdkVersion\", \"{context.OfficialVersion}\");");
     }

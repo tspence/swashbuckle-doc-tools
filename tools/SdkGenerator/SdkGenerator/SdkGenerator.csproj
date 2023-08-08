@@ -19,37 +19,49 @@
 
     <ItemGroup>
         <None Update="Templates\csharp\ApiClient.cs.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\csharp\sdk.nuspec.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\csharp\ApiInterface.cs.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\java\ApiClient.java.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\python\ApiClient.py.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\python\__init__.py.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\ruby\ApiClient.rb.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\ts\ApiClient.ts.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\ts\index.ts.scriban">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\dart\ApiClient.dart.scriban">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Templates\dart\ApiInterface.dart.scriban">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\java\RestRequest.java.scriban">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\java\pom.xml.scriban">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\python\setup.cfg.scriban">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Templates\ts\package.json.scriban">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 </Project>

@@ -354,7 +354,8 @@ public class TypescriptSdk : ILanguageSdk
             Path.Combine(context.Project.Typescript.Folder, "src", "index.ts"));
 
         // Patch the version number in package.json
-        await Extensions.PatchFile(context, Path.Combine(context.Project.Typescript.Folder, "package.json"),
+        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Typescript.Folder, "package.json"),
+            Path.Combine(".", "templates", "ts", "package.json.scriban"),
             "\"version\": \"[\\d\\.]+\",",
             $"\"version\": \"{context.OfficialVersion}\",");
     }

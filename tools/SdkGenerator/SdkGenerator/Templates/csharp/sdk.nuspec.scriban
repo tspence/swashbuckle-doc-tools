@@ -9,10 +9,10 @@
 		<license type="file">docs/LICENSE</license>
 		<projectUrl>{{ project.csharp.github_url }}</projectUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<description>{{ project.description }}</description>
+		<description>{{ project.description }} for DotNet</description>
 		<icon>docs/logo.png</icon>
 		<readme>docs/README.md</readme>
-		<summary>{{ project.project_name }} for CSharp</summary>
+		<summary>{{ project.project_name }} for DotNet</summary>
 		<releaseNotes>
             # {{ api.semver3 }}
         

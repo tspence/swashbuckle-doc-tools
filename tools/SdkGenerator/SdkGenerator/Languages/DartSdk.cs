@@ -314,13 +314,13 @@ public class DartSdk : ILanguageSdk
         return "///\n"
                + $"/// {project.ProjectName} for Dart\n"
                + "///\n"
-               + $"/// (c) 2021-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $"/// (c) {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
                + "///\n"
                + "/// For the full copyright and license information, please view the LICENSE\n"
                + "/// file that was distributed with this source code.\n"
                + "///\n"
                + $"/// @author     {project.AuthorName} <{project.AuthorEmail}>\n"
-               + $"/// @copyright  2021-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $"/// @copyright  {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
                + $"/// @link       {project.Dart.GithubUrl}\n"
                + "///\n";    
     }

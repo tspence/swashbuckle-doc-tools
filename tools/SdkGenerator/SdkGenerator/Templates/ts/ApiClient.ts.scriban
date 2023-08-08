@@ -140,7 +140,7 @@ end
    * @param func The async function to be called to modify headers before any request
    * @returns The API client for function chaining
    */
-  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): LockstepApi
+  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): {{ project.typescript.response_class }}
   {
     this.customHeaderFunc = func;
     return this;

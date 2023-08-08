@@ -1,0 +1,26 @@
+[metadata]
+name = {{ project.python.module_name }}
+version = {{ api.semver3 }}
+author = {{ project.author_name }}
+author_email = {{ project.author_url }}
+description = {{ project.description }} for Python
+long_description = file: README.md
+long_description_content_type = text/markdown
+url = {{ project.python.github_url }}
+project_urls =
+    Bug Tracker = {{ project.python.github_url }}/issues
+classifiers =
+    Programming Language :: Python :: 3
+    License :: OSI Approved :: MIT License
+    Operating System :: OS Independent
+
+[options]
+package_dir =
+    = src
+packages = find:
+python_requires = >=3.10
+install_requires = 
+    requests
+
+[options.packages.find]
+where = src

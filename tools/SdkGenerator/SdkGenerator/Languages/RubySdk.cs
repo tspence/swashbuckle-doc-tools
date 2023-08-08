@@ -260,18 +260,19 @@ public class RubySdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "ruby", "ApiClient.rb.scriban"),
             Path.Combine(rubyModulePath, context.Project.Ruby.ClassName.ProperCaseToSnakeCase() + ".rb"));
-        await Extensions.PatchFile(context, Path.Combine(rubyModulePath, "version.rb"),
-            "VERSION = \"[\\d\\.]+\"",
-            $"VERSION = \"{context.OfficialVersion}\"");
-        await Extensions.PatchFile(context, rubyGemspecPath,
-            "s.version = '[\\d\\.]+'",
-            $"s.version = '{context.OfficialVersion}'");
-        await Extensions.PatchFile(context, rubyGemspecPath,
-            "s.date = '[\\d-]+'",
-            $"s.date = '{DateTime.Today:yyyy-MM-dd}'");
-        await Extensions.PatchFile(context, Path.Combine(context.Project.Ruby.Folder, "Gemfile.lock"),
-            $"{context.Project.Ruby.ModuleName} \\([\\d\\.]+\\)",
-            $"{context.Project.Ruby.ModuleName} ({context.OfficialVersion})");
+        // TODO - Need to update the ruby generator with ability to build these files
+        // await Extensions.PatchFile(context, Path.Combine(rubyModulePath, "version.rb"),
+        //     "VERSION = \"[\\d\\.]+\"",
+        //     $"VERSION = \"{context.OfficialVersion}\"");
+        // await Extensions.PatchFile(context, rubyGemspecPath,
+        //     "s.version = '[\\d\\.]+'",
+        //     $"s.version = '{context.OfficialVersion}'");
+        // await Extensions.PatchFile(context, rubyGemspecPath,
+        //     "s.date = '[\\d-]+'",
+        //     $"s.date = '{DateTime.Today:yyyy-MM-dd}'");
+        // await Extensions.PatchFile(context, Path.Combine(context.Project.Ruby.Folder, "Gemfile.lock"),
+        //     $"{context.Project.Ruby.ModuleName} \\([\\d\\.]+\\)",
+        //     $"{context.Project.Ruby.ModuleName} ({context.OfficialVersion})");
     }
     
     public string LanguageName()
