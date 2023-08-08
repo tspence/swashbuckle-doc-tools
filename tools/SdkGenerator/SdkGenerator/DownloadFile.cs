@@ -29,7 +29,17 @@ public static class DownloadFile
     {
         // Downloads json as a string to compare
         var response = await HttpClient.GetAsync(project.SwaggerUrl);
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Failed to retrieve Swagger file from {project.SwaggerUrl} - {response.StatusCode}");
+            return string.Empty;
+        }
         var json = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            Console.WriteLine($"Failed to retrieve Swagger file from {project.SwaggerUrl} - content is empty");
+            return string.Empty;
+        }
 
         // Cleanup the JSON text
         return FixupSwagger(project, json, semver2);
