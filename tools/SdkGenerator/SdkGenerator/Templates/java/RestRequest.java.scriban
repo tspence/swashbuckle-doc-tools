@@ -1,13 +1,13 @@
 /**
  * {{ project.project_name }} for Java
  *
- * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.author }}
+ * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.author_name }}
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
- * @author     {{ project.author }} <{{ project.author_email }}>
- * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.author }}
+ * @author     {{ project.author_name }} <{{ project.author_email }}>
+ * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.author_name }}
  * @link       {{ project.java.github_url }}
  */
 
