@@ -14,9 +14,7 @@
 		<readme>docs/README.md</readme>
 		<summary>{{ project.project_name }} for DotNet</summary>
 		<releaseNotes>
-            # {{ api.semver3 }}
-        
-            {{ project.release_notes }}
+            {{ patch_notes }}
         </releaseNotes>
 		<copyright>Copyright {{ project.project_start_year }} - {{ date.now.year }}</copyright>
     	<tags>{{ project.keywords }}</tags>

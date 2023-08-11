@@ -109,9 +109,11 @@ public static class Program
             Console.WriteLine("Unable to retrieve API and version number successfully.");
             return;
         }
-
         Console.WriteLine($"Retrieved swagger file. Version: {context.Version4}");
-
+        
+        // Generate patch notes
+        context.PatchNotes = await DownloadFile.GeneratePatchNotes(context);
+        
         // Let's do some software development kits, if selected
         foreach (var t in typeof(Program).Assembly.GetTypes())
         {
