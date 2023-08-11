@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using CommandLine;
 using Newtonsoft.Json;
+using SdkGenerator.Diff;
 using SdkGenerator.Languages;
 using SdkGenerator.Markdown;
 using SdkGenerator.Project;
@@ -35,6 +36,14 @@ public static class Program
     {
     }
 
+    
+    [Verb("diff", HelpText = "Report on differences from previous swagger file")]
+    private class DiffOptions : BaseOptions
+    {
+        [Option('o', "old", HelpText = "Path to the older version of the swagger file")]
+        public string OldVersion { get; set; }
+    }
+
     private static Type[] LoadVerbs()
     {
         return Assembly.GetExecutingAssembly().GetTypes()
@@ -47,6 +56,7 @@ public static class Program
         var parsed = Parser.Default.ParseArguments(args, types);
         await parsed.WithParsedAsync<CreateOptions>(CreateTask);
         await parsed.WithParsedAsync<BuildOptions>(BuildTask);
+        await parsed.WithParsedAsync<DiffOptions>(DiffTask);
         await parsed.WithNotParsedAsync(HandleErrors);
     }
 
@@ -55,6 +65,20 @@ public static class Program
         await Task.CompletedTask;
         var errList = errors.ToList();
         Console.WriteLine($"Found {errList.Count} errors.");
+    }
+
+    private static async Task DiffTask(DiffOptions options)
+    {
+        // Load the current state of the project
+        var newContext = await GeneratorContext.FromFile(options.ProjectFile, options.LogPath);
+        newContext.Api = await DownloadFile.GenerateApi(newContext);
+        Console.WriteLine($"Comparing {newContext.Project.SwaggerUrl} against old version {options.OldVersion}");
+        
+        // Load the previous version of the swagger file from disk, and compare it
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldVersion, options.LogPath);
+        oldContext.Api = DownloadFile.GatherSchemas(oldContext);
+        var diffs = ApiSchemaDiff.CompareSchema(oldContext, newContext);
+        Console.WriteLine(diffs);
     }
 
     private static async Task CreateTask(CreateOptions options)

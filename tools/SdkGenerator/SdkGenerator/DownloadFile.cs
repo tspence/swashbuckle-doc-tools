@@ -175,7 +175,7 @@ public static class DownloadFile
     /// Export data definitions to their own markdown files
     /// </summary>
     /// <param name="context">The SDK generator context</param>
-    private static ApiSchema GatherSchemas(GeneratorContext context)
+    public static ApiSchema GatherSchemas(GeneratorContext context)
     {
         // Gather schemas from the file
         using var doc = JsonDocument.Parse(context.SwaggerJson);

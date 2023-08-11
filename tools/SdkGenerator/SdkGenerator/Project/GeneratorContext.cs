@@ -80,4 +80,25 @@ public class GeneratorContext : IDisposable
 
         return context;
     }
+
+    public static async Task<GeneratorContext> FromSwaggerFileOnDisk(string swaggerFilename, string logPath)
+    {
+        // Retrieve project
+        if (!File.Exists(swaggerFilename))
+        {
+            Console.WriteLine($"Swagger file could not be found: {swaggerFilename}");
+            return null;
+        }
+
+        // Ensure the folder for collecting swagger files exists
+        var context = new GeneratorContext()
+        {
+            Project = new ProjectSchema(),
+            Api = null,
+            LogPath = logPath,
+            SwaggerJson = await File.ReadAllTextAsync(swaggerFilename),
+        };
+
+        return context;
+    }
 }
