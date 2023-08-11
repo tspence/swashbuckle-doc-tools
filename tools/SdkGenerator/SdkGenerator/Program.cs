@@ -77,8 +77,10 @@ public static class Program
         // Load the previous version of the swagger file from disk, and compare it
         var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldVersion, options.LogPath);
         oldContext.Api = DownloadFile.GatherSchemas(oldContext);
-        var diffs = ApiSchemaDiff.CompareSchema(oldContext, newContext);
-        Console.WriteLine(diffs);
+        var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
+        
+        // Print out human readable description
+        Console.WriteLine(diffs.ToPatchNotes());
     }
 
     private static async Task CreateTask(CreateOptions options)
