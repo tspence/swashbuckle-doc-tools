@@ -100,7 +100,7 @@ public class GeneratorContext : IDisposable
             LogPath = logPath,
             SwaggerJson = await File.ReadAllTextAsync(swaggerFilename),
         };
-
+        context.Api = DownloadFile.GatherSchemas(context);
         return context;
     }
 }

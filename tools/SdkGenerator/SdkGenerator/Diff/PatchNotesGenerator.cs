@@ -18,8 +18,8 @@ public class PatchNotesGenerator
     {
         var diff = new SwaggerDiff
         {
-            OldVersion = previous.Version4,
-            NewVersion = current.Version4
+            OldVersion = previous.OfficialVersion,
+            NewVersion = current.OfficialVersion
         };
 
         CompareEndpoints(previous, current, diff);
