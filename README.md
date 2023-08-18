@@ -1,3 +1,5 @@
+[![NuGet](https://img.shields.io/nuget/v/SdkGenerator.svg?style=plastic)](https://www.nuget.org/packages/SdkGenerator/)
+
 # Swashbuckle SDK Generator
 
 This program allows you to generate a hand-optimized software development kit for different programming languages for 
