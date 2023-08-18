@@ -114,6 +114,7 @@ public static class Program
         context.PatchNotes = await DownloadFile.GeneratePatchNotes(context);
         
         // Let's do some software development kits, if selected
+        bool anyExported = false;
         foreach (var t in typeof(Program).Assembly.GetTypes())
         {
             if (t.GetInterfaces().Contains(typeof(ILanguageSdk)))
@@ -123,6 +124,7 @@ public static class Program
                 {
                     Console.WriteLine($"Exporting {obj.LanguageName()}");
                     await obj.Export(context);
+                    anyExported = true;
                 }
             }
         }
@@ -130,6 +132,7 @@ public static class Program
         // Where do we want to send the documentation? 
         if (options.TemplateName == null || options.TemplateName == "readme")
         {
+            anyExported = true;
             if (context.Project?.Readme?.ApiKey != null)
             {
                 Console.WriteLine("Uploading to Readme...");
@@ -149,6 +152,13 @@ public static class Program
             }
         }
 
-        Console.WriteLine("Done!");
+        if (!anyExported)
+        {
+            Console.WriteLine($"No template '{options.TemplateName}' found.");
+        }
+        else
+        {
+            Console.WriteLine("Done!");
+        }
     }
 }

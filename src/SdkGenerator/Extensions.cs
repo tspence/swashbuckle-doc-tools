@@ -140,7 +140,12 @@ public static class Extensions
     /// <returns></returns>
     public static string ToSingleLineMarkdown(this string s)
     {
-        return Regex.Replace(s, "\\s+", " ");
+        // First replace double newline with periods and spaces
+        var s2 = s.Replace("\n\n", ". ")
+            .Replace("..", ".");
+        
+        // Now replace all multi-whitespace with a single space
+        return Regex.Replace(s2, "\\s+", " ");
     }
 
     

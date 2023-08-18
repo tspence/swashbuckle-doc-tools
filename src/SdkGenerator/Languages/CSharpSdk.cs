@@ -127,7 +127,7 @@ public class CSharpSdk : ILanguageSdk
         {
             s = "string";
         }
-
+        
         return s;
     }
 
@@ -137,10 +137,6 @@ public class CSharpSdk : ILanguageSdk
         {
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
-            sb.AppendLine("#pragma warning disable CS8618");
-            sb.AppendLine();
-            sb.AppendLine("using System;");
-            sb.AppendLine();
             sb.AppendLine($"namespace {context.Project.Csharp.Namespace}");
             sb.AppendLine("{");
             foreach (var item in context.Api.Enums)
@@ -149,24 +145,17 @@ public class CSharpSdk : ILanguageSdk
                 sb.AppendLine("    /// <summary>");
                 sb.AppendLine("    /// To prevent enum parsing errors, all enums are rendered as constants.");
                 sb.AppendLine("    /// </summary>");
-                sb.AppendLine($"    public abstract class {item.Name}");
+                sb.AppendLine($"    public abstract class {item.Name}Values");
                 sb.AppendLine("    {");
-                foreach (var field in item.Values)
+                foreach (var value in item.Values)
                 {
-                    var fieldType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
-                    // Add commentary for date-only fields
-                    var markdown = field.DescriptionMarkdown;
-                    if (field.DataType == "date" && fieldType == "string")
+                    var typeName = FixupType(context, item.EnumType, false, false);
+                    var constantValue = value.Value;
+                    if (typeName == "string")
                     {
-                        markdown +=
-                            "\n\n" +
-                            "This is a date-only field stored as a string in ISO 8601 (YYYY-MM-DD) format.";
+                        constantValue = $"\"{value.Value}\"";
                     }
-
-                    sb.AppendLine();
-                    sb.Append(MarkdownToDocblock(markdown, 8));
-                    sb.AppendLine(
-                        $"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
+                    sb.AppendLine($"        public const {typeName} {value.Key} = {constantValue};");
                 }
 
                 sb.AppendLine("    }");
@@ -205,7 +194,7 @@ public class CSharpSdk : ILanguageSdk
             if (item.Fields != null)
             {
                 sb.AppendLine();
-                sb.Append(MarkdownToDocblock(item.DescriptionMarkdown, 4));
+                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4));
                 sb.AppendLine($"    public class {item.Name} : ApiModel");
                 sb.AppendLine("    {");
                 foreach (var field in item.Fields)
@@ -221,9 +210,17 @@ public class CSharpSdk : ILanguageSdk
                                 "\n\n" +
                                 "This is a date-only field stored as a string in ISO 8601 (YYYY-MM-DD) format.";
                         }
+                        
+                        // If this is an enum, add something to markdown to make that clear
+                        var matchingEnum = context.Api.FindEnum(field.DataType);
+                        if (matchingEnum != null)
+                        {
+                            markdown += "\n\n" +
+                                        $"For a list of values, see `{matchingEnum.Name}Values`.";
+                        }
 
                         sb.AppendLine();
-                        sb.Append(MarkdownToDocblock(markdown, 8));
+                        sb.Append(MarkdownToDocblock(context, markdown, 8));
                         sb.AppendLine($"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
                     }
                 }
@@ -237,7 +234,7 @@ public class CSharpSdk : ILanguageSdk
         }
     }
 
-    private string MarkdownToDocblock(string markdown, int indent, List<ParameterField> parameterList = null)
+    private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, List<ParameterField> parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -266,8 +263,17 @@ public class CSharpSdk : ILanguageSdk
         {
             foreach (var p in parameterList)
             {
+                // If this is an enum, add something to markdown to make that clear
+                var desc = p.DescriptionMarkdown;
+                var matchingEnum = context.Api.FindEnum(p.DataType);
+                if (matchingEnum != null)
+                {
+                    desc += "\n\n" +
+                            $"For a list of values, see `{matchingEnum.Name}Values`.";
+                }
+
                 sb.AppendLine(
-                    $"{prefix} <param name=\"{p.Name.ToVariableName()}\">{p.DescriptionMarkdown.ToSingleLineMarkdown()}</param>");
+                    $"{prefix} <param name=\"{p.Name.ToVariableName()}\">{desc.ToSingleLineMarkdown()}</param>");
             }
         }
 
@@ -332,7 +338,7 @@ public class CSharpSdk : ILanguageSdk
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
@@ -425,7 +431,7 @@ public class CSharpSdk : ILanguageSdk
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
@@ -463,6 +469,7 @@ public class CSharpSdk : ILanguageSdk
         }
 
         await ExportSchemas(context);
+        await ExportEnums(context);
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
@@ -479,6 +486,6 @@ public class CSharpSdk : ILanguageSdk
 
     public string LanguageName()
     {
-        return "C#";
+        return "CSharp";
     }
 }
