@@ -64,11 +64,7 @@ public class CSharpSdk : ILanguageSdk
 
     private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {
@@ -133,6 +129,51 @@ public class CSharpSdk : ILanguageSdk
         }
 
         return s;
+    }
+
+    private async Task ExportEnums(GeneratorContext context)
+    {
+        if (context.Api.Enums.Count > 0)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(FileHeader(context.Project));
+            sb.AppendLine("#pragma warning disable CS8618");
+            sb.AppendLine();
+            sb.AppendLine("using System;");
+            sb.AppendLine();
+            sb.AppendLine($"namespace {context.Project.Csharp.Namespace}");
+            sb.AppendLine("{");
+            foreach (var item in context.Api.Enums)
+            {
+                sb.AppendLine();
+                sb.AppendLine("    /// <summary>");
+                sb.AppendLine("    /// To prevent enum parsing errors, all enums are rendered as constants.");
+                sb.AppendLine("    /// </summary>");
+                sb.AppendLine($"    public abstract class {item.Name}");
+                sb.AppendLine("    {");
+                foreach (var field in item.Values)
+                {
+                    var fieldType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
+                    // Add commentary for date-only fields
+                    var markdown = field.DescriptionMarkdown;
+                    if (field.DataType == "date" && fieldType == "string")
+                    {
+                        markdown +=
+                            "\n\n" +
+                            "This is a date-only field stored as a string in ISO 8601 (YYYY-MM-DD) format.";
+                    }
+
+                    sb.AppendLine();
+                    sb.Append(MarkdownToDocblock(markdown, 8));
+                    sb.AppendLine(
+                        $"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
+                }
+
+                sb.AppendLine("    }");
+            }
+            sb.AppendLine("}");
+            await File.WriteAllTextAsync(Path.Combine(context.Project.Csharp.Folder, "src", "Enums.cs"), sb.ToString());
+        }
     }
 
     private async Task ExportSchemas(GeneratorContext context)

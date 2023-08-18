@@ -29,11 +29,7 @@ public class JavaSdk : ILanguageSdk
 
     private string JavaTypeName(GeneratorContext context, string typeName, bool isArray)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {
@@ -330,7 +326,7 @@ public class JavaSdk : ILanguageSdk
             {
                 list.Add("ErrorResult");
             }
-            else if (!context.Api.IsEnum(name))
+            else if (context.Api.FindEnum(name) == null)
             {
                 list.Add(name);
             }

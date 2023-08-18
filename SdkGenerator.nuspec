@@ -21,7 +21,8 @@
             # 1.1.1
             August 18, 2023
 
-            Improvements to reliability for endpoints that lack documentation.
+            * Improvements to reliability for endpoints that lack documentation.
+            * Fixed some issues with handling of string enums.
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
         <tags>SDK generator swagger openapi swashbuckle</tags>

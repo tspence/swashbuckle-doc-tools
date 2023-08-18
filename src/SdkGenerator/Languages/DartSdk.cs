@@ -241,11 +241,7 @@ public class DartSdk : ILanguageSdk
 
     private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {

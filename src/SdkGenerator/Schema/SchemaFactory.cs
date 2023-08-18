@@ -8,7 +8,7 @@ namespace SdkGenerator.Schema;
 
 public static class SchemaFactory
 {
-    public static SchemaItem MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
+    public static object MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
     {
         if (jsonSchema.Value.TryGetProperty("properties", out var schemaPropertiesElement))
         {
@@ -52,26 +52,30 @@ public static class SchemaFactory
         else if (jsonSchema.Value.TryGetProperty("enum", out var enumPropertiesElement))
         {
             // Basic schema
-            var item = new SchemaItem
+            var item = new EnumItem
             {
                 Name = jsonSchema.Name,
-                Fields = null,
-                Enums = new List<int>()
+                Values = new Dictionary<string, object>(),
             };
             item.DescriptionMarkdown = SafeGetPropString(context, jsonSchema.Value, "description");
             item.EnumType = SafeGetPropString(context, jsonSchema.Value, "type");
             foreach (var value in enumPropertiesElement.EnumerateArray())
             {
-                if (value.ValueKind == JsonValueKind.Number)
+                var name = value.GetString();
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    item.Enums.Add(value.GetInt32());
+                    if (value.ValueKind == JsonValueKind.Number)
+                    {
+                        item.Values[name] = value.GetInt32();
+                    }
+                    else
+                    {
+                        item.Values[name] = name;
+                    }
                 }
             }
-
-            if (IsValidModel(context, item) && !string.IsNullOrWhiteSpace(item.DescriptionMarkdown))
-            {
-                return item;
-            }
+            
+            return item;
         }
 
         return null;

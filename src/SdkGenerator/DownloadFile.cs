@@ -184,67 +184,22 @@ public static class DownloadFile
 
         // Collect all the schemas / data models
         var schemaList = new List<SchemaItem>();
+        var enumList = new List<EnumItem>();
         var components = doc.RootElement.GetProperty("components");
         var schemas = components.GetProperty("schemas");
         foreach (var schema in schemas.EnumerateObject())
         {
             var item = SchemaFactory.MakeSchema(context, schema);
-            if (item != null)
+            if (item is SchemaItem schemaItem)
             {
-                schemaList.Add(item);
+                schemaList.Add(schemaItem);
+            }
+
+            if (item is EnumItem enumItem)
+            {
+                enumList.Add(enumItem);
             }
         }
-
-        schemaList.Add(new()
-        {
-            Name = "ErrorResult",
-            DescriptionMarkdown = "Represents a failed API request.",
-            Fields = new()
-            {
-                new()
-                {
-                    Name = "type",
-                    DescriptionMarkdown = "A description of the type of error that occurred.",
-                    DataType = "string",
-                    Nullable = false,
-                },
-                new()
-                {
-                    Name = "title",
-                    DescriptionMarkdown = "A short title describing the error.",
-                    DataType = "string",
-                    Nullable = false,
-                },
-                new()
-                {
-                    Name = "status",
-                    DescriptionMarkdown = "If an error code is applicable, this contains an error number.",
-                    DataType = "int32",
-                    Nullable = false,
-                },
-                new()
-                {
-                    Name = "detail",
-                    DescriptionMarkdown = "If detailed information about this error is available, this value contains more information.",
-                    DataType = "string",
-                    Nullable = false,
-                },
-                new()
-                {
-                    Name = "instance",
-                    DescriptionMarkdown = "If this error corresponds to a specific instance or object, this field indicates which one.",
-                    DataType = "string",
-                    Nullable = false,
-                },
-                new()
-                {
-                    Name = "content",
-                    DescriptionMarkdown = "The full content of the HTTP response.",
-                    DataType = "string",
-                    Nullable = false,
-                }
-            },
-        });
 
         // Collect all the APIs
         var endpointList = new List<EndpointItem>();
@@ -265,6 +220,7 @@ public static class DownloadFile
             Semver3 = context.Version3,
             Semver4 = context.Version4,
             Schemas = schemaList.OrderBy(s => s.Name).ToList(),
+            Enums = enumList.ToList(),
             Endpoints = endpointList,
             Categories = (from e in endpointList where !e.Deprecated orderby e.Category select e.Category).Distinct().ToList()
         };

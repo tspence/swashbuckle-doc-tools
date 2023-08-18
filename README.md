@@ -57,4 +57,4 @@ Examples of assumptions about OpenAPI made by this program:
 * Each API has a single-word category, a four-word title, and a long remarks section that is a description
 * You have a list of public environments (e.g. production, sandbox) that are documented in the SDK
 * For test environments or dedicated servers, an SDK user must define a custom environment URL
-
+* [Enums are sometimes unsafe for SDK usage](https://medium.com/codex/should-your-api-use-enums-340a6b51d6c3); all enums are converted to integers or strings
