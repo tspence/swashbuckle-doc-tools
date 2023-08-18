@@ -21,7 +21,7 @@
             # 1.1.0
             August 18, 2023
 
-            Set up automated test and publish
+            * Set up automated test and publish.
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
         <tags>SDK generator swagger openapi swashbuckle</tags>

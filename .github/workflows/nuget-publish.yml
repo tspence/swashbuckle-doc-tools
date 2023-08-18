@@ -1,4 +1,4 @@
-name: NuGet Publish
+name: Build and publish
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Update NuGet package
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1

@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{A3294182
 	ProjectSection(SolutionItems) = preProject
 		SdkGenerator.nuspec = SdkGenerator.nuspec
 		README.md = README.md
-		puzzle.png = puzzle.png
+		icons-puzzle.png = icons-puzzle.png
 		PatchNotes.md = PatchNotes.md
 		.github\workflows\nuget-publish.yml = .github\workflows\nuget-publish.yml
 	EndProjectSection
