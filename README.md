@@ -32,14 +32,14 @@ You can automate these steps in a Github workflow to execute this program automa
 
 ## Supported Languages
 
-| Language   | Supported  | Notes                                       |
-|------------|------------|---------------------------------------------|
-| C#         | Yes        | Automatically builds and publishes to NuGet |
-| Dart       | Partially  | In development                              |
-| Java       | Yes        | Automatically builds and publishes to Maven |
-| Python     | Yes        | Automatically builds and publishes to PyPi  |
-| Ruby       | Partially  | Somewhat supported                          |
-| TypeScript | Yes        | Automatically builds and publishes to NPMJS |
+| Language   | Supported   | Github Workflows | Notes                 |
+|------------|-------------|------------------|-----------------------|
+| C#         | Yes         | Automated        | Most complete support |
+| Dart       | In Progress | No               | In development        |
+| Java       | Yes         | No               |                       |
+| Python     | Yes         | No               |                       |
+| Ruby       | In Progress | No               | Somewhat supported    |
+| TypeScript | Yes         | No               |                       |
 
 ## Supported Tools
 
