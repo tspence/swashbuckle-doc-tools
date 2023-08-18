@@ -2,7 +2,7 @@
 <package >
     <metadata>
         <id>SdkGenerator</id>
-        <version>1.0.0</version>
+        <version>1.1.0</version>
         <title>SdkGenerator</title>
         <authors>Ted Spence</authors>
         <owners>Ted Spence</owners>
@@ -16,27 +16,25 @@
             using Github Workflows.
         </description>
         <summary>Command line dotnet tool to generate SDKs for your Swagger/OpenAPI project.</summary>
-        <icon>docs/icons8-searchlight-90.png</icon>
+        <icon>docs/icons-puzzle.png</icon>
         <releaseNotes>
-            # 1.0.0
-            July 27, 2023
+            # 1.1.0
+            August 18, 2023
 
-            Made program automatable using verbs:
-            * sdkgenerator create -p (new-project-file)
-            * sdkgenerator build -p (project-file)
+            * Set up automated test and publish.
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
-        <tags>SDK generator swagger openapi swashbuckle </tags>
+        <tags>SDK generator swagger openapi swashbuckle</tags>
         <repository type="git" url="https://github.com/tspence/swashbuckle-doc-tools" />
         <dependencies>
-            <group targetFramework=".NETStandard2.0"/>
+            <group targetFramework="net7.0"/>
         </dependencies>
     </metadata>
     <files>
         <file src=".\LICENSE" target="docs/LICENSE"/>
         <file src=".\README.md" target="docs/README.md"/>
-        <file src=".\icons8-searchlight-90.png" target="docs/icons8-searchlight-90.png"/>
+        <file src=".\icons-puzzle.png" target="docs/icons-puzzle.png"/>
         <file src=".\PatchNotes.md" target="docs/PatchNotes.md"/>
-        <file src="src\Searchlight\bin\Release\netstandard2.0\*" target="lib\netstandard20" />
+        <file src="src\SdkGenerator\bin\Release\net7.0\*" target="lib\net7.0" />
     </files>
 </package>
