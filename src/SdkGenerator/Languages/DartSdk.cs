@@ -294,13 +294,7 @@ public class DartSdk : ILanguageSdk
         }
         
         // Is this a generic class?
-        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-        {
-            if (s.EndsWith(genericName))
-            {
-                s = $"{genericName}<{s[..^genericName.Length]}>";
-            }
-        }
+        s = context.ApplyGenerics(s, "<", ">");
 
         return s;
     }

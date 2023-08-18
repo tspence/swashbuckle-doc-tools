@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SdkGenerator.Diff;
@@ -102,5 +103,36 @@ public class GeneratorContext : IDisposable
         };
         context.Api = DownloadFile.GatherSchemas(context);
         return context;
+    }
+
+    public bool IsGenericSchema(string itemName)
+    {
+        return (Project.GenericSuffixes ?? Enumerable.Empty<string>()).Any(genericName => itemName.EndsWith(genericName));
+    }
+
+    public string RemoveGenericSchema(string typeName)
+    {
+        foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            if (typeName.EndsWith(genericName))
+            {
+                typeName = RemoveGenericSchema(typeName[..^genericName.Length]);
+            }
+        }
+
+        return typeName;
+    }
+
+    public string ApplyGenerics(string typeName, string prefix, string suffix)
+    {
+        foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            if (typeName.EndsWith(genericName))
+            {
+                typeName = $"{genericName}<{ApplyGenerics(typeName[..^genericName.Length], prefix, suffix)}>";
+            }
+        }
+
+        return typeName;
     }
 }

@@ -109,13 +109,7 @@ public class CSharpSdk : ILanguageSdk
             s += "[]";
         }
 
-        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-        {
-            if (s.EndsWith(genericName))
-            {
-                s = s[..^genericName.Length];
-            }
-        }
+        s = context.RemoveGenericSchema(s);
 
         if (s.EndsWith("List"))
         {
@@ -145,7 +139,7 @@ public class CSharpSdk : ILanguageSdk
                 sb.AppendLine("    /// <summary>");
                 sb.AppendLine("    /// To prevent enum parsing errors, all enums are rendered as constants.");
                 sb.AppendLine("    /// </summary>");
-                sb.AppendLine($"    public abstract class {item.Name}Values");
+                sb.AppendLine($"    public static class {item.Name}Values");
                 sb.AppendLine("    {");
                 foreach (var value in item.Values)
                 {

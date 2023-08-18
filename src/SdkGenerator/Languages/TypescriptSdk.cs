@@ -70,13 +70,7 @@ public class TypescriptSdk : ILanguageSdk
             s += "[]";
         }
 
-        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-        {
-            if (s.EndsWith(genericName))
-            {
-                s = $"{genericName}<{s[..^genericName.Length]}";
-            }
-        }
+        s = context.ApplyGenerics(s, "<", ">");
 
         if (nullable)
         {

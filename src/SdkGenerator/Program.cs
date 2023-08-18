@@ -79,7 +79,7 @@ public static class Program
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
-        Console.WriteLine(diffs.ToPatchNotes());
+        Console.WriteLine(diffs.ToSummaryMarkdown());
     }
 
     private static async Task CreateTask(CreateOptions options)
