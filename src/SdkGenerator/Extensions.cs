@@ -358,4 +358,28 @@ public static class Extensions
         return source ?? Enumerable.Empty<T>();
     }
 #nullable disable
+    
+    public static bool IsValidName(this string itemName)
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            return false;
+        }
+        
+        // Ensure that all characters within this name are safe characters
+        foreach (var c in itemName)
+        {
+            if (!IsSafeChar(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsSafeChar(this char c)
+    {
+        return char.IsAsciiLetterOrDigit(c) || c == '_' || c == ' ';
+    }
 }

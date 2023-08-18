@@ -202,114 +202,129 @@ public static class SchemaFactory
         var path = prop.Name;
         foreach (var endpointProp in prop.Value.EnumerateObject())
         {
-            var item = new EndpointItem
+            EndpointItem item = null;
+            try
             {
-                Parameters = new List<ParameterField>(),
-                Path = path,
-                Method = endpointProp.Name,
-                Name = SafeGetPropString(context, endpointProp.Value, "summary"),
-                DescriptionMarkdown = GetDescriptionMarkdown(context, endpointProp.Value, "description")
-            };
-            items.Add(item);
-
-            // Determine category
-            endpointProp.Value.TryGetProperty("tags", out var tags);
-            item.Category = tags.ValueKind == JsonValueKind.Array
-                ? tags.EnumerateArray().FirstOrDefault().GetString()!.Replace("/", string.Empty)
-                : "Utility";
-
-            // Determine if deprecated
-            endpointProp.Value.TryGetProperty("deprecated", out var deprecatedProp);
-            item.Deprecated = deprecatedProp.ValueKind == JsonValueKind.True;
-
-            // Parse parameters
-            endpointProp.Value.TryGetProperty("parameters", out var parameterListProp);
-            if (parameterListProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var paramProp in parameterListProp.EnumerateArray())
+                item = new EndpointItem
                 {
-                    var p = new ParameterField();
-                    item.Parameters.Add(p);
-                    p.Name = SafeGetPropString(context, paramProp, "name");
-                    p.Location = SafeGetPropString(context, paramProp, "in");
-                    p.DescriptionMarkdown = GetDescriptionMarkdown(context, paramProp, "description");
-
-                    // Parse the field's required status
-                    paramProp.TryGetProperty("required", out var requiredProp);
-                    p.Required = requiredProp.ValueKind == JsonValueKind.True;
-
-                    // Parse the field's schema
-                    foreach (var paramSchemaProp in paramProp.EnumerateObject())
-                    {
-                        if (paramSchemaProp.NameEquals("schema"))
-                        {
-                            var schemaRef = GetTypeRef(context, paramSchemaProp);
-                            p.DataType = schemaRef.DataType;
-                            p.DataTypeRef = schemaRef.DataTypeRef;
-                            p.IsArray = schemaRef.IsArray;
-                        }
-                    }
+                    Parameters = new List<ParameterField>(),
+                    Path = path,
+                    Method = endpointProp.Name,
+                    Name = SafeGetPropString(context, endpointProp.Value, "summary"),
+                    DescriptionMarkdown = GetDescriptionMarkdown(context, endpointProp.Value, "description")
+                };
+                
+                // Skip any endpoints that don't have a name!
+                if (!item.Name.IsValidName())
+                {
+                    context.LogError($"Skipping endpoint {item.Path}; its name '{item.Name}' is invalid.");
+                    continue;
                 }
-            }
 
-            // Parse the request body parameter
-            endpointProp.Value.TryGetProperty("requestBody", out var requestBodyProp);
-            if (requestBodyProp.ValueKind == JsonValueKind.Object)
-            {
-                requestBodyProp.TryGetProperty("content", out var requestBodyContentProp);
-                foreach (var encodingProp in requestBodyContentProp.EnumerateObject())
+                // Determine category
+                endpointProp.Value.TryGetProperty("tags", out var tags);
+                item.Category = tags.ValueKind == JsonValueKind.Array
+                    ? tags.EnumerateArray().FirstOrDefault().GetString()!.Replace("/", string.Empty)
+                    : "Utility";
+
+                // Determine if deprecated
+                endpointProp.Value.TryGetProperty("deprecated", out var deprecatedProp);
+                item.Deprecated = deprecatedProp.ValueKind == JsonValueKind.True;
+
+                // Parse parameters
+                endpointProp.Value.TryGetProperty("parameters", out var parameterListProp);
+                if (parameterListProp.ValueKind == JsonValueKind.Array)
                 {
-                    if (encodingProp.Name == "application/json")
+                    foreach (var paramProp in parameterListProp.EnumerateArray())
                     {
-                        var p = new ParameterField
-                        {
-                            Name = "body",
-                            Location = "body",
-                            DescriptionMarkdown = GetDescriptionMarkdown(context, requestBodyProp, "description"),
-                            Required = true,
-                        };
+                        var p = new ParameterField();
                         item.Parameters.Add(p);
-                        foreach (var innerSchemaProp in encodingProp.Value.EnumerateObject())
+                        p.Name = SafeGetPropString(context, paramProp, "name");
+                        p.Location = SafeGetPropString(context, paramProp, "in");
+                        p.DescriptionMarkdown = GetDescriptionMarkdown(context, paramProp, "description");
+
+                        // Parse the field's required status
+                        paramProp.TryGetProperty("required", out var requiredProp);
+                        p.Required = requiredProp.ValueKind == JsonValueKind.True;
+
+                        // Parse the field's schema
+                        foreach (var paramSchemaProp in paramProp.EnumerateObject())
                         {
-                            if (innerSchemaProp.NameEquals("schema"))
+                            if (paramSchemaProp.NameEquals("schema"))
                             {
-                                var typeRef = GetTypeRef(context, innerSchemaProp);
-                                p.DataType = typeRef.DataType;
-                                p.DataTypeRef = typeRef.DataTypeRef;
-                                p.IsArray = typeRef.IsArray;
+                                var schemaRef = GetTypeRef(context, paramSchemaProp);
+                                p.DataType = schemaRef.DataType;
+                                p.DataTypeRef = schemaRef.DataTypeRef;
+                                p.IsArray = schemaRef.IsArray;
                             }
                         }
                     }
-                    else if (encodingProp.Name == "multipart/form-data")
-                    {
-                        item.Parameters.Add(new ParameterField
-                        {
-                            Name = "filename",
-                            Location = "form",
-                            DescriptionMarkdown = "The full path of a file to upload to the API",
-                            Required = true,
-                            DataType = "File",
-                            DataTypeRef = "File",
-                            IsArray = false,
-                        });
-                    }
                 }
-            }
 
-            // Parse the "success" response type
-            endpointProp.Value.TryGetProperty("responses", out var responsesProp);
-            foreach (var response in responsesProp.EnumerateObject())
-            {
-                if (response.Name.StartsWith("2"))
+                // Parse the request body parameter
+                endpointProp.Value.TryGetProperty("requestBody", out var requestBodyProp);
+                if (requestBodyProp.ValueKind == JsonValueKind.Object)
                 {
-                    response.Value.TryGetProperty("content", out var contentProp);
-                    contentProp.TryGetProperty("application/json", out var appJsonProp);
-                    foreach (var responseSchemaProp in appJsonProp.EnumerateObject())
+                    requestBodyProp.TryGetProperty("content", out var requestBodyContentProp);
+                    foreach (var encodingProp in requestBodyContentProp.EnumerateObject())
                     {
-                        item.ReturnDataType = GetTypeRef(context, responseSchemaProp);
-                        break;
+                        if (encodingProp.Name == "application/json")
+                        {
+                            var p = new ParameterField
+                            {
+                                Name = "body",
+                                Location = "body",
+                                DescriptionMarkdown = GetDescriptionMarkdown(context, requestBodyProp, "description"),
+                                Required = true,
+                            };
+                            item.Parameters.Add(p);
+                            foreach (var innerSchemaProp in encodingProp.Value.EnumerateObject())
+                            {
+                                if (innerSchemaProp.NameEquals("schema"))
+                                {
+                                    var typeRef = GetTypeRef(context, innerSchemaProp);
+                                    p.DataType = typeRef.DataType;
+                                    p.DataTypeRef = typeRef.DataTypeRef;
+                                    p.IsArray = typeRef.IsArray;
+                                }
+                            }
+                        }
+                        else if (encodingProp.Name == "multipart/form-data")
+                        {
+                            item.Parameters.Add(new ParameterField
+                            {
+                                Name = "filename",
+                                Location = "form",
+                                DescriptionMarkdown = "The full path of a file to upload to the API",
+                                Required = true,
+                                DataType = "File",
+                                DataTypeRef = "File",
+                                IsArray = false,
+                            });
+                        }
                     }
                 }
+
+                // Parse the "success" response type
+                endpointProp.Value.TryGetProperty("responses", out var responsesProp);
+                foreach (var response in responsesProp.EnumerateObject())
+                {
+                    if (response.Name.StartsWith("2"))
+                    {
+                        response.Value.TryGetProperty("content", out var contentProp);
+                        contentProp.TryGetProperty("application/json", out var appJsonProp);
+                        foreach (var responseSchemaProp in appJsonProp.EnumerateObject())
+                        {
+                            item.ReturnDataType = GetTypeRef(context, responseSchemaProp);
+                            break;
+                        }
+                    }
+                }
+                items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                context.LogError($"Failed to process endpoint {item?.Path ?? "Unknown Path"}: {ex.Message}");
             }
         }
 

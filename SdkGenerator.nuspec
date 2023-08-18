@@ -2,7 +2,7 @@
 <package >
     <metadata>
         <id>SdkGenerator</id>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
         <title>SdkGenerator</title>
         <authors>Ted Spence</authors>
         <owners>Ted Spence</owners>
@@ -18,10 +18,10 @@
         <summary>Command line dotnet tool to generate SDKs for your Swagger/OpenAPI project.</summary>
         <icon>docs/icons-puzzle.png</icon>
         <releaseNotes>
-            # 1.1.0
+            # 1.1.1
             August 18, 2023
 
-            * Set up automated test and publish.
+            Improvements to reliability for endpoints that lack documentation.
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
         <tags>SDK generator swagger openapi swashbuckle</tags>
