@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using SdkGenerator.Diff;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Project;
@@ -18,6 +19,7 @@ public class GeneratorContext : IDisposable
     public string SwaggerJson { get; set; }
     public string SwaggerJsonPath { get; set; }
     public string LogPath { get; set; }
+    public SwaggerDiff PatchNotes { get; set; }
 
     private GeneratorContext()
     {
@@ -78,6 +80,27 @@ public class GeneratorContext : IDisposable
             Directory.CreateDirectory(project.SwaggerSchemaFolder);
         }
 
+        return context;
+    }
+
+    public static async Task<GeneratorContext> FromSwaggerFileOnDisk(string swaggerFilename, string logPath)
+    {
+        // Retrieve project
+        if (!File.Exists(swaggerFilename))
+        {
+            Console.WriteLine($"Swagger file could not be found: {swaggerFilename}");
+            return null;
+        }
+
+        // Ensure the folder for collecting swagger files exists
+        var context = new GeneratorContext()
+        {
+            Project = new ProjectSchema(),
+            Api = null,
+            LogPath = logPath,
+            SwaggerJson = await File.ReadAllTextAsync(swaggerFilename),
+        };
+        context.Api = DownloadFile.GatherSchemas(context);
         return context;
     }
 }

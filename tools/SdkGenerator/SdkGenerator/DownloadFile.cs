@@ -10,8 +10,10 @@ using System.Threading.Tasks;
 using JsonDiffPatchDotNet;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SdkGenerator.Diff;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
+using Semver;
 
 namespace SdkGenerator;
 
@@ -175,7 +177,7 @@ public static class DownloadFile
     /// Export data definitions to their own markdown files
     /// </summary>
     /// <param name="context">The SDK generator context</param>
-    private static ApiSchema GatherSchemas(GeneratorContext context)
+    public static ApiSchema GatherSchemas(GeneratorContext context)
     {
         // Gather schemas from the file
         using var doc = JsonDocument.Parse(context.SwaggerJson);
@@ -294,5 +296,43 @@ public static class DownloadFile
 
         // Export data definitions to markdown files
         return GatherSchemas(context);
+    }
+
+    public static async Task<SwaggerDiff> GeneratePatchNotes(GeneratorContext context)
+    {
+        // List all files in the swagger folder
+        string mostRecentFile = null;
+        SemVersion mostRecentVersion = null;
+        foreach (var file in Directory.GetFiles(context.Project.SwaggerSchemaFolder))
+        {
+            // Determine semantic version of the file
+            var fileName = Path.GetFileNameWithoutExtension(file);
+            var dashPos = fileName.IndexOf('-'); 
+            if (dashPos > 0)
+            {
+                var versionString = fileName[(dashPos+1)..];
+                if (versionString != context.OfficialVersion)
+                {
+                    var version = SemVersion.Parse(versionString, SemVersionStyles.Any);
+                    if (mostRecentVersion == null || mostRecentVersion.ComparePrecedenceTo(version) < 0)
+                    {
+                        mostRecentVersion = version;
+                        mostRecentFile = file;
+                    }
+                }
+            }
+        }
+        
+        // If no files found, can't determine differences
+        if (mostRecentFile == null)
+        {
+            return new SwaggerDiff();
+        }
+        
+        // Compare these two files
+        var fullFileName = Path.Combine(context.Project.SwaggerSchemaFolder, mostRecentFile);
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(fullFileName, context.LogPath);
+        oldContext.OfficialVersion = mostRecentVersion.ToString();
+        return PatchNotesGenerator.Compare(oldContext, context);
     }
 }
