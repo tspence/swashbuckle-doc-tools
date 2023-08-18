@@ -22,7 +22,10 @@
             August 18, 2023
 
             * Improvements to reliability for endpoints that lack documentation.
-            * Fixed some issues with handling of string enums.
+            * Fixed issues with handling of string enums.
+            * Convert all enums to constants and add reference documentation.
+            * Generate the github workflow YML file for publishing.
+            * Remove fixed ErrorResult.cs file.
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
         <tags>SDK generator swagger openapi swashbuckle</tags>
