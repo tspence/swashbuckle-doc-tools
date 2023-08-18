@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{A3294182-391E-4D48-A66B-DBCC08770FD2}"
 	ProjectSection(SolutionItems) = preProject
 		SdkGenerator.nuspec = SdkGenerator.nuspec
+		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
 Global

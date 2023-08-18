@@ -219,7 +219,7 @@ namespace {{ project.csharp.namespace }}
             }
             else if (filename != null)
             {
-                var bytesFile = File.ReadAllBytes(filename);
+                var bytesFile = System.IO.File.ReadAllBytes(filename);
                 var fileContent = new ByteArrayContent(bytesFile);
                 var form = new MultipartFormDataContent(Guid.NewGuid().ToString());
                 form.Add(fileContent, "file", Path.GetFileName(filename));

@@ -165,7 +165,7 @@ public class CSharpSdk : ILanguageSdk
             {
                 sb.AppendLine();
                 sb.Append(MarkdownToDocblock(item.DescriptionMarkdown, 4));
-                sb.AppendLine($"    public class {item.Name}");
+                sb.AppendLine($"    public class {item.Name} : ApiModel");
                 sb.AppendLine("    {");
                 foreach (var field in item.Fields)
                 {
