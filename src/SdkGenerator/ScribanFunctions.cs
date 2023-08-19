@@ -60,7 +60,7 @@ public static class ScribanFunctions
             templateContext.PushGlobal(scriptObject1);
             templateContext.SetValue(new ScriptVariableGlobal("api"), context.Api);
             templateContext.SetValue(new ScriptVariableGlobal("project"), context.Project);
-            templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToPatchNotes());
+            templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToSummaryMarkdown());
             var result = await template.RenderAsync(templateContext);
             await File.WriteAllTextAsync(outputFile, result);
         }

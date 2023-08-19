@@ -29,11 +29,7 @@ public class PythonSdk : ILanguageSdk
 
     private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {
@@ -316,7 +312,7 @@ public class PythonSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
-        if (context.Api.IsEnum(dataType) || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
+        if (context.Api.FindEnum(dataType) != null || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
         {
             return;
         }

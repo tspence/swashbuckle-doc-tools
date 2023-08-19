@@ -48,10 +48,10 @@ public class SwaggerDiff
     public Dictionary<string, List<string>> SchemaChanges { get; set; } = new();
 
     /// <summary>
-    /// Convert this diff into human friendly patch notes in Markdown format 
+    /// Convert this diff into a shortened summary of patch notes in Markdown format 
     /// </summary>
     /// <returns></returns>
-    public string ToPatchNotes()
+    public string ToSummaryMarkdown()
     {
         var sb = new StringBuilder();
         
@@ -61,8 +61,7 @@ public class SwaggerDiff
         sb.AppendLine($"These patch notes summarize the changes from version {OldVersion}.");
         sb.AppendLine();
         
-        // Explain which APIs were added or removed
-        sb.AppendLine("## Methods");
+        // Explain which APIs were added
         var apiLines = new List<string>();
         foreach (var api in NewEndpoints)
         {
@@ -85,6 +84,29 @@ public class SwaggerDiff
             sb.AppendLine();
         }
         
+        // Explain which APIs were removed
+        apiLines.Clear();
+        foreach (var api in DeprecatedEndpoints)
+        {
+            apiLines.Add($"* {api}");
+        }
+        if (apiLines.Count > 0)
+        {
+            sb.AppendLine();
+            if (apiLines.Count > 5)
+            {
+                sb.AppendLine($"Deprecated {apiLines.Count} old APIs, including:");
+                apiLines = apiLines.GetRange(0, 5);
+                apiLines.Add($"* ... {DeprecatedEndpoints.Count - 5} more");
+            }
+
+            foreach (var line in apiLines)
+            {
+                sb.AppendLine(line);
+            }
+            sb.AppendLine();
+        }
+
         return sb.ToString();
     }
 }

@@ -241,11 +241,7 @@ public class DartSdk : ILanguageSdk
 
     private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isNullable)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {
@@ -298,13 +294,7 @@ public class DartSdk : ILanguageSdk
         }
         
         // Is this a generic class?
-        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-        {
-            if (s.EndsWith(genericName))
-            {
-                s = $"{genericName}<{s[..^genericName.Length]}>";
-            }
-        }
+        s = context.ApplyGenerics(s, "<", ">");
 
         return s;
     }

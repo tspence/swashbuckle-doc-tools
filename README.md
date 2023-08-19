@@ -1,3 +1,5 @@
+[![NuGet](https://img.shields.io/nuget/v/SdkGenerator.svg?style=plastic)](https://www.nuget.org/packages/SdkGenerator/)
+
 # Swashbuckle SDK Generator
 
 This program allows you to generate a hand-optimized software development kit for different programming languages for 
@@ -30,14 +32,14 @@ You can automate these steps in a Github workflow to execute this program automa
 
 ## Supported Languages
 
-| Language   | Supported  | Notes                                       |
-|------------|------------|---------------------------------------------|
-| C#         | Yes        | Automatically builds and publishes to NuGet |
-| Dart       | Partially  | In development                              |
-| Java       | Yes        | Automatically builds and publishes to Maven |
-| Python     | Yes        | Automatically builds and publishes to PyPi  |
-| Ruby       | Partially  | Somewhat supported                          |
-| TypeScript | Yes        | Automatically builds and publishes to NPMJS |
+| Language   | Supported   | Github Workflows | Notes                 |
+|------------|-------------|------------------|-----------------------|
+| C#         | Yes         | Automated        | Most complete support |
+| Dart       | In Progress | No               | In development        |
+| Java       | Yes         | No               |                       |
+| Python     | Yes         | No               |                       |
+| Ruby       | In Progress | No               | Somewhat supported    |
+| TypeScript | Yes         | No               |                       |
 
 ## Supported Tools
 
@@ -55,4 +57,5 @@ Examples of assumptions about OpenAPI made by this program:
 * Each API has a single-word category, a four-word title, and a long remarks section that is a description
 * You have a list of public environments (e.g. production, sandbox) that are documented in the SDK
 * For test environments or dedicated servers, an SDK user must define a custom environment URL
-
+* [Enums are sometimes unsafe for SDK usage](https://medium.com/codex/should-your-api-use-enums-340a6b51d6c3); all enums are converted to integers or strings
+* Nobody intentionally adds HttpStatusCode to their swagger file; if it appears, ignore it.

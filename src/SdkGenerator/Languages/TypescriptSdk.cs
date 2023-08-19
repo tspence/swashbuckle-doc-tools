@@ -29,11 +29,7 @@ public class TypescriptSdk : ILanguageSdk
 
     private string FixupType(GeneratorContext context, string typeName, bool isArray, bool nullable)
     {
-        var s = typeName;
-        if (context.Api.IsEnum(typeName))
-        {
-            s = context.Api.FindSchema(typeName).EnumType;
-        }
+        var s = context.Api.ReplaceEnumWithType(typeName);
 
         switch (s)
         {
@@ -74,13 +70,7 @@ public class TypescriptSdk : ILanguageSdk
             s += "[]";
         }
 
-        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-        {
-            if (s.EndsWith(genericName))
-            {
-                s = $"{genericName}<{s[..^genericName.Length]}";
-            }
-        }
+        s = context.ApplyGenerics(s, "<", ">");
 
         if (nullable)
         {
@@ -250,7 +240,7 @@ public class TypescriptSdk : ILanguageSdk
             }
         }
         
-        if (!context.Api.IsEnum(name) && !list.Contains(name))
+        if (context.Api.FindEnum(name) == null && !list.Contains(name))
         {
             list.Add(name);
         }

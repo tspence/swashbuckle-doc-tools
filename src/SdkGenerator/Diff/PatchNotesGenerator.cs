@@ -36,6 +36,10 @@ public class PatchNotesGenerator
         // Search for new or modified endpoints
         foreach (var item in current.Api.Schemas)
         {
+            if (current.IsGenericSchema(item.Name))
+            {
+                continue;
+            }
             dict.TryGetValue(item.Name, out var prevItem);
             if (prevItem == null)
             {
@@ -59,6 +63,10 @@ public class PatchNotesGenerator
         // Search for deprecated endpoints
         foreach (var oldItem in previous.Api.Schemas)
         {
+            if (current.IsGenericSchema(oldItem.Name))
+            {
+                continue;
+            }
             if (!compared.Contains(oldItem.Name))
             {
                 diff.DeprecatedSchemas.Add(oldItem.Name);
