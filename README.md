@@ -59,3 +59,8 @@ Examples of assumptions about OpenAPI made by this program:
 * For test environments or dedicated servers, an SDK user must define a custom environment URL
 * [Enums are sometimes unsafe for SDK usage](https://medium.com/codex/should-your-api-use-enums-340a6b51d6c3); all enums are converted to integers or strings
 * Nobody intentionally adds HttpStatusCode to their swagger file; if it appears, ignore it.
+
+
+## Attribution
+
+[Puzzle icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/puzzle)
