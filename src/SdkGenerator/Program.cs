@@ -17,7 +17,7 @@ public static class Program
 {
     private class BaseOptions
     {
-        [Option('p', "project", HelpText = "Specify a project file")]
+        [Option('p', "project", Required = true, HelpText = "Specify a project file")]
         public string ProjectFile { get; set; }
         
         [Option('l', "log", HelpText = "Write errors to a log file on disk. If null, writes to stdout")]
