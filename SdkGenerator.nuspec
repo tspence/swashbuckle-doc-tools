@@ -2,7 +2,7 @@
 <package >
     <metadata>
         <id>SdkGenerator</id>
-        <version>1.1.1</version>
+        <version>1.1.2-beta</version>
         <title>SdkGenerator</title>
         <authors>Ted Spence</authors>
         <owners>Ted Spence</owners>
@@ -18,14 +18,10 @@
         <summary>Command line dotnet tool to generate SDKs for your Swagger/OpenAPI project.</summary>
         <icon>docs/icons-puzzle.png</icon>
         <releaseNotes>
-            # 1.1.1
-            August 18, 2023
+            # 1.1.2-beta
+            August 21, 2023
 
-            * Improvements to reliability for endpoints that lack documentation.
-            * Fixed issues with handling of string enums.
-            * Convert all enums to constants and add reference documentation.
-            * Generate the github workflow YML file for publishing.
-            * Remove fixed ErrorResult.cs file.
+            * Fixed tool deployment
         </releaseNotes>
         <copyright>Copyright 2021 - 2023</copyright>
         <tags>SDK generator swagger openapi swashbuckle</tags>

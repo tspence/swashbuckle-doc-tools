@@ -1,3 +1,8 @@
+# 1.1.2
+August 21, 2023
+
+* Fixed tool deployment
+
 # 1.1.1
 August 18, 2023
 

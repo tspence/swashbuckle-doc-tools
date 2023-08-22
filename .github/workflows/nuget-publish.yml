@@ -26,15 +26,9 @@ jobs:
       - name: Build solution and generate NuGet package
         run: dotnet build -c Release
 
-      - name: Setup Nuget
-        uses: nuget/setup-nuget@v1
-        with:
-          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
-          nuget-version: "5.x"
-
       - name: Run Nuget pack
-        run: nuget pack SdkGenerator.nuspec
+        run: dotnet pack --configuration Release /p:NuspecFile=../../SdkGenerator.nuspec
 
       - name: Push generated package to NuGet registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: nuget push *.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push *.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
