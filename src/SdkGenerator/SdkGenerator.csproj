@@ -22,6 +22,7 @@
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,8 +50,7 @@
     <PackageReference
         Include="Microsoft.SourceLink.GitHub"
         Version="1.1.1"
-        PrivateAssets="all"
-        IncludeAssets="build; buildTransitive; buildMultitargeting" />
+        PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
