@@ -67,5 +67,8 @@
         <None Update="Templates\csharp\nuget-publish.yml.scriban">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <None Update="DotNetToolSettings.xml">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
