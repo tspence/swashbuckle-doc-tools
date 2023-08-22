@@ -1,4 +1,4 @@
-# 1.1.2 through 1.1.5
+# 1.1.2 through 1.1.6
 August, 2023
 
 Working to automate the deployment of this application to NuGet.
@@ -6,6 +6,7 @@ This is trickier than I expected.
 * All files need to go in the `tools/` folder rather than the `lib/` folder.
 * Add a `<packageTypes><packageType name="DotnetTool" /></packageTypes>` section to the NuSpec file.
 * Add a `DotNetToolSettings.xml` file to the tools folder. 
+* The file must be named `DotnetToolSettings.xml` exactly; any capitalization differences cause it to fail.
 
 # 1.1.1
 August 18, 2023
