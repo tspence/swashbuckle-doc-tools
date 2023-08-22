@@ -2,7 +2,7 @@
 <package >
     <metadata>
         <id>SdkGenerator</id>
-        <version>1.1.2</version>
+        <version>1.1.3</version>
         <title>SdkGenerator</title>
         <authors>Ted Spence</authors>
         <owners>Ted Spence</owners>
@@ -35,6 +35,7 @@
         <file src=".\README.md" target="docs/README.md"/>
         <file src=".\icons-puzzle.png" target="docs/icons-puzzle.png"/>
         <file src=".\PatchNotes.md" target="docs/PatchNotes.md"/>
-        <file src="src\SdkGenerator\bin\Release\net7.0\*" target="lib\net7.0" />
+        <file src="src\SdkGenerator\bin\Release\net7.0\*" target="tools\net7.0\any" />
+        <file src="src\SdkGenerator\bin\Release\net7.0\Templates\**" target="tools\net7.0\any\Templates" />
     </files>
 </package>
