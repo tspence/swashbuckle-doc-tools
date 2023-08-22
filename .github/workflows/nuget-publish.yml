@@ -31,4 +31,4 @@ jobs:
 
       - name: Push generated package to NuGet registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: dotnet nuget push *.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json -ApiKey ${{secrets.NUGET_API_KEY}}
