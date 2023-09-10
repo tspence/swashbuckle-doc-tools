@@ -1,3 +1,9 @@
+# 1.1.7
+September 10, 2023
+
+* Updated build process to modern DotNet standards, with thanks to [Chet Husk](https://github.com/baronfel)
+* We no longer need a DotNetToolSettings.xml file nor a NuSpec file
+
 # 1.1.2 through 1.1.6
 August, 2023
 

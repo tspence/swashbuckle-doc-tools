@@ -7,12 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SdkGenerator", "src\SdkGene
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{A3294182-391E-4D48-A66B-DBCC08770FD2}"
 	ProjectSection(SolutionItems) = preProject
-		SdkGenerator.nuspec = SdkGenerator.nuspec
 		README.md = README.md
-		icons-puzzle.png = icons-puzzle.png
-		PatchNotes.md = PatchNotes.md
 		.github\workflows\nuget-publish.yml = .github\workflows\nuget-publish.yml
 		LICENSE = LICENSE
+		src\SdkGenerator\SdkGenerator.csproj = src\SdkGenerator\SdkGenerator.csproj
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwashbuckleDocTools", "src\SwashbuckleDocTools\SwashbuckleDocTools.csproj", "{FF82E4E7-9412-4E00-A577-FD7194193AE2}"

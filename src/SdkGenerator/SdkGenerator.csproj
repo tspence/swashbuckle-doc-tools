@@ -11,10 +11,12 @@
       automated using Github Workflows.</Description>
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2023</Copyright>
-    <PackageReleaseNotes># 1.1.6
-      August 21, 2023
+    <PackageReleaseNotes>
+      # 1.1.7
+      September 10, 2023
 
-      * Fixed capitalization of DotnetToolSettings.xml
+      * Updated build process to modern DotNet standards, with thanks to [Chet Husk](https://github.com/baronfel)
+      * We no longer need a DotNetToolSettings.xml file nor a NuSpec file
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -55,7 +57,7 @@
 
   <ItemGroup>
     <None
-        Include="README.md"
+        Include="..\..\README.md"
         PackagePath="/docs"
         Pack="true" />
     <None
@@ -70,6 +72,12 @@
         Include="Templates/**/*"
         Pack="true"
         CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\README.md">
+      <Link>README.md</Link>
+    </Content>
   </ItemGroup>
 
   <!-- This is a silly thing, but the Templates are included in the package as `content`, even
