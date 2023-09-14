@@ -91,6 +91,10 @@ public class PatchNotesGenerator
             dict.TryGetValue(name, out var prevItem);
             if (prevItem == null)
             {
+                if (diff.NewEndpoints.ContainsKey(name))
+                {
+                    current.LogError($"Duplicate API name: {name}");
+                }
                 diff.NewEndpoints[name] = item;
             }
             else
