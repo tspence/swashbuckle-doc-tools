@@ -1,3 +1,8 @@
+# 1.1.8
+September 14, 2023
+
+* Minor fixes for local debugging and duplicate API names
+
 # 1.1.7
 September 10, 2023
 
