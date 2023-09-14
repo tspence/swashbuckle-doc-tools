@@ -71,7 +71,7 @@
     <None
         Include="Templates/**/*"
         Pack="true"
-        CopyToPublishDirectory="PreserveNewest" />
+        CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>
