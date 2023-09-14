@@ -53,7 +53,7 @@ public class PatchNotesGenerator
                 var changes = GetSchemaChanges(item, prevItem);
                 if (changes.Any())
                 {
-                    diff.SchemaChanges.Add(item.Name, changes);
+                    diff.SchemaChanges[item.Name] = changes;
                 }
             }
 
@@ -91,14 +91,14 @@ public class PatchNotesGenerator
             dict.TryGetValue(name, out var prevItem);
             if (prevItem == null)
             {
-                diff.NewEndpoints.Add(name, item);
+                diff.NewEndpoints[name] = item;
             }
             else
             {
                 var changes = GetEndpointChanges(item, prevItem);
                 if (changes.Any())
                 {
-                    diff.EndpointChanges.Add(name, changes);
+                    diff.EndpointChanges[name] = changes;
                 }
             }
 
