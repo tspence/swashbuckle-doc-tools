@@ -82,7 +82,19 @@ public class PatchNotesGenerator
     private static void CompareEndpoints(GeneratorContext previous, GeneratorContext current, SwaggerDiff diff)
     {
         var compared = new HashSet<string>();
-        var dict = previous.Api.Endpoints.ToDictionary(api => MakeApiName(api));
+        
+        // Handle duplicate names, a common error in manually named APIs
+        var dict = new Dictionary<string, EndpointItem>();
+        foreach (var item in previous.Api.Endpoints)
+        {
+            var name = MakeApiName(item);
+            if (dict.ContainsKey(name))
+            {
+                current.LogError($"Duplicate API name in previous version of API: {name}");
+            }
+
+            dict[name] = item;
+        }
 
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
@@ -93,7 +105,7 @@ public class PatchNotesGenerator
             {
                 if (diff.NewEndpoints.ContainsKey(name))
                 {
-                    current.LogError($"Duplicate API name: {name}");
+                    current.LogError($"Duplicate API name in current version of API: {name}");
                 }
                 diff.NewEndpoints[name] = item;
             }
