@@ -173,6 +173,14 @@ public static class DownloadFile
         return JsonConvert.SerializeObject(jObject, Formatting.Indented);
     }
 
+    public static string GetVersion(string swaggerJson)
+    {
+        using var doc = JsonDocument.Parse(swaggerJson);
+        var info = doc.RootElement.GetProperty("info");
+        var version = info.GetProperty("version");
+        return version.GetString() ?? "1.0.0";
+    }
+    
     /// <summary>
     /// Export data definitions to their own markdown files
     /// </summary>
@@ -181,7 +189,7 @@ public static class DownloadFile
     {
         // Gather schemas from the file
         using var doc = JsonDocument.Parse(context.SwaggerJson);
-
+        
         // Collect all the schemas / data models
         var schemaList = new List<SchemaItem>();
         var enumList = new List<EnumItem>();

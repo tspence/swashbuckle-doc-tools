@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
@@ -18,8 +19,8 @@ public class PatchNotesGenerator
     {
         var diff = new SwaggerDiff
         {
-            OldVersion = previous.OfficialVersion,
-            NewVersion = current.OfficialVersion
+            OldVersion = previous.OfficialVersion ?? previous.Version3,
+            NewVersion = current.OfficialVersion ?? current.Version3,
         };
 
         CompareEndpoints(previous, current, diff);
@@ -148,6 +149,9 @@ public class PatchNotesGenerator
                 diff.DeprecatedEndpoints.Add(name);
             }
         }
+        
+        // Clean up all empty changesets
+        diff.EndpointChanges = new Dictionary<string, List<string>>(diff.EndpointChanges.Where(item => item.Value.Count > 0));
     }
 
     private static string MakeApiName(EndpointItem item)
@@ -157,6 +161,10 @@ public class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(EndpointItem item, EndpointItem prevItem)
     {
+        if (item.Parameters.Count > prevItem.Parameters.Count)
+        {
+            return new List<string>() { $"Added new parameters to {item.Name}" };
+        }
         return new List<string>();
     }
 }

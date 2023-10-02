@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using SdkGenerator.Schema;
 
@@ -77,13 +78,32 @@ public class SwaggerDiff
             sb.AppendLine();
         }
 
-        // List name changes - itemize everything
+        // List name changes
         if (Renames.Count > 0)
         {
             sb.AppendLine($"Renamed {Renames.Count} old APIs:");
             foreach (var rename in Renames)
             {
                 sb.AppendLine($"* {rename}");
+            }
+
+            sb.AppendLine();
+        }
+        
+        // APIs with changes
+        if (EndpointChanges.Count > 0)
+        {
+            sb.AppendLine($"Changes to {EndpointChanges.Count} existing APIs:");
+            foreach (var rename in EndpointChanges)
+            {
+                if (rename.Value.Count == 1)
+                {
+                    sb.AppendLine($"* {rename.Value.FirstOrDefault()}");
+                }
+                else
+                {
+                    sb.AppendLine($"* {rename.Value.Count} changes to {rename.Key}");
+                }
             }
 
             sb.AppendLine();
