@@ -84,37 +84,55 @@ public class PatchNotesGenerator
         var compared = new HashSet<string>();
         
         // Handle duplicate names, a common error in manually named APIs
-        var dict = new Dictionary<string, EndpointItem>();
+        var nameToEndpoint = new Dictionary<string, EndpointItem>();
+        var pathToName = new Dictionary<string, string>();
         foreach (var item in previous.Api.Endpoints)
         {
             var name = MakeApiName(item);
-            if (dict.ContainsKey(name))
+            if (nameToEndpoint.ContainsKey(name))
             {
                 current.LogError($"Duplicate API name in previous version of API: {name}");
             }
 
-            dict[name] = item;
+            nameToEndpoint[name] = item;
+            pathToName[item.Path + ":" + item.Method] = name;
         }
 
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
         {
+            EndpointItem prevItem = null;
             var name = MakeApiName(item);
-            dict.TryGetValue(name, out var prevItem);
-            if (prevItem == null)
+            
+            // First check if the API was simply renamed
+            if (pathToName.TryGetValue(item.Path + ":" + item.Method, out var prevName) && name != prevName)
             {
-                if (diff.NewEndpoints.ContainsKey(name))
+                compared.Add(prevName);
+                diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
+                if (nameToEndpoint.TryGetValue(prevName, out prevItem))
                 {
-                    current.LogError($"Duplicate API name in current version of API: {name}");
+                    diff.EndpointChanges[name] = GetEndpointChanges(item, prevItem);
                 }
-                diff.NewEndpoints[name] = item;
             }
             else
             {
-                var changes = GetEndpointChanges(item, prevItem);
-                if (changes.Any())
+                nameToEndpoint.TryGetValue(name, out prevItem);
+                if (prevItem == null)
                 {
-                    diff.EndpointChanges[name] = changes;
+                    if (diff.NewEndpoints.ContainsKey(name))
+                    {
+                        current.LogError($"Duplicate API name in current version of API: {name}");
+                    }
+
+                    diff.NewEndpoints[name] = item;
+                }
+                else
+                {
+                    var changes = GetEndpointChanges(item, prevItem);
+                    if (changes.Any())
+                    {
+                        diff.EndpointChanges[name] = changes;
+                    }
                 }
             }
 
