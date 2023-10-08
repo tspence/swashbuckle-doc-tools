@@ -67,16 +67,21 @@ public class PythonSdk : ILanguageSdk
 
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
+            if (s == genericName)
+            {
+                return $"{genericName}[object]";
+            }
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}[{s[..^genericName.Length]}]";
-                return s;
+                var innerType = FixupType(context, s[..^genericName.Length], false, false);
+                return $"{genericName}[{innerType}]";
             }
         }
 
-        if (!isParamHint && !isReturnHint)
+        // Is this a generic list?
+        if (s.EndsWith("list", StringComparison.OrdinalIgnoreCase))
         {
-            s = "object";
+            return $"list[{FixupType(context, s[..^4], false, false)}]";
         }
 
         if (isArray)
@@ -178,9 +183,6 @@ public class PythonSdk : ILanguageSdk
 
             // Construct header
             sb.Append(FileHeader(context.Project));
-            sb.AppendLine(
-                $"from {context.Project.Python.Namespace}.{context.Project.Python.ResponseClass.ProperCaseToSnakeCase()} import {context.Project.Python.ResponseClass}");
-            sb.AppendLine($"from {context.Project.Python.Namespace}.models.errorresult import ErrorResult");
             foreach (var import in imports.Distinct())
             {
                 sb.AppendLine(import);
@@ -192,7 +194,7 @@ public class PythonSdk : ILanguageSdk
             sb.AppendLine($"    API methods related to {cat}");
             sb.AppendLine("    \"\"\"");
             sb.AppendLine(
-                $"    from {context.Project.Python.Namespace}.{context.Project.Python.ClassName.ProperCaseToSnakeCase()} import {context.Project.Python.ClassName}");
+                $"    from {context.Project.Python.ClassName.WordsToSnakeCase()} import {context.Project.Python.ClassName}");
             sb.AppendLine();
             sb.AppendLine($"    def __init__(self, client: {context.Project.Python.ClassName}):");
             sb.AppendLine("        self.client = client");
@@ -209,13 +211,13 @@ public class PythonSdk : ILanguageSdk
                     var originalReturnDataType = FixupType(context, endpoint.ReturnDataType.DataType,
                         endpoint.ReturnDataType.IsArray, isReturnHint: true);
                     string returnDataType;
-                    if (!isFileDownload)
+                    if (isFileDownload)
                     {
-                        returnDataType = $"{context.Project.Python.ResponseClass}[{originalReturnDataType}]";
+                        returnDataType = "Response";
                     }
                     else
                     {
-                        returnDataType = "Response";
+                        returnDataType = originalReturnDataType;
                     }
 
                     // Figure out the parameter list
@@ -225,7 +227,14 @@ public class PythonSdk : ILanguageSdk
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
                     // Write the method
-                    sb.AppendLine($"    def {endpoint.Name.WordsToSnakeCase()}(self, {paramListStr}) -> {returnDataType}:");
+                    if (string.IsNullOrWhiteSpace(paramListStr))
+                    {
+                        sb.AppendLine($"    def {endpoint.Name.WordsToSnakeCase()}(self) -> {returnDataType}:");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"    def {endpoint.Name.WordsToSnakeCase()}(self, {paramListStr}) -> {returnDataType}:");
+                    }
                     sb.Append(MakePythonDoc(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
                     sb.AppendLine(endpoint.Path.Contains('{')
                         ? $"        path = f\"{endpoint.Path}\""
@@ -238,43 +247,25 @@ public class PythonSdk : ILanguageSdk
                     }
                     else
                     {
-                        bool isHandled = false;
+                        // Remove the outer response class shell if present
+                        string innerType = originalReturnDataType;
+                        if (originalReturnDataType.StartsWith(context.Project.Python.ResponseClass + "["))
+                        {
+                            innerType = innerType.Substring(context.Project.Python.ResponseClass.Length + 1,
+                                innerType.Length - context.Project.Python.ResponseClass.Length - 2);
+                        }
                         sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
-                        if (originalReturnDataType.StartsWith("list", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Use a list comprehension to unpack array responses
-                            sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(True, result.status_code, [{endpoint.ReturnDataType.DataType}(**item) for item in result.json()], None)");
-                            isHandled = true;
-                        }
-
-                        if (!isHandled)
-                        {
-                            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-                            {
-                                if (originalReturnDataType.StartsWith(genericName, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    sb.AppendLine(
-                                        $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {genericName}.from_json(result.json(), {endpoint.ReturnDataType.DataType[..^genericName.Length]}), None)");                            
-                                    isHandled = true;
-                                }
-                            }
-                        }
-                        if (!isHandled)
-                        {
-                            sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(True, result.status_code, {originalReturnDataType}(**result.json()), None)");
-                        }
-
+                        sb.AppendLine(
+                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, {innerType}(result.json(), {innerType}))");
                         sb.AppendLine("        else:");
                         sb.AppendLine(
-                            $"            return {context.Project.Python.ResponseClass}(False, result.status_code, None, ErrorResult.from_json(result.json()))");
+                            $"            return {context.Project.Python.ResponseClass}(result.json(), False, True, result.status_code, None)");
                     }
                 }
             }
 
             // Write this category to a file
-            var classPath = Path.Combine(clientsDir, cat.WordsToSnakeCase() + "_client.py");
+            var classPath = Path.Combine(clientsDir, cat.WordsToSnakeCase() + "client.py");
             await File.WriteAllTextAsync(classPath, sb.ToString());
         }
     }
@@ -282,6 +273,8 @@ public class PythonSdk : ILanguageSdk
     private List<string> BuildImports(GeneratorContext context, string cat)
     {
         var imports = new List<string>();
+        imports.Add(
+            $"from models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
@@ -312,27 +305,32 @@ public class PythonSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
-        if (context.Api.FindEnum(dataType) != null || dataType is null or "TestTimeoutException" or "File" or "byte[]" or "binary" or "string")
+        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType is "TestTimeoutException" or "File" or "byte[]" or "binary" or "string" || dataType == context.Project.Python.ResponseClass)
         {
             return;
         }
 
-        if (dataType is "ActionResultModel")
+        if (dataType.EndsWith("List", StringComparison.OrdinalIgnoreCase))
         {
-            imports.Add($"from {context.Project.Python.Namespace}.models.actionresultmodel import ActionResultModel");
+            AddImport(context, imports, dataType.Substring(0, dataType.Length - 4));
+            return;
         }
-        else
-        {
-            foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-            {
-                if (dataType.EndsWith(genericName))
-                {
-                    imports.Add($"from {context.Project.Python.Namespace}.{genericName.WordsToSnakeCase()} import {genericName}");
-                    dataType = dataType[..^genericName.Length];
-                }
-            }
 
-            imports.Add($"from {context.Project.Python.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}");
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            if (dataType.EndsWith(genericName))
+            {
+                AddImport(context, imports, genericName);
+                AddImport(context, imports, dataType[..^genericName.Length]);
+                return;
+            }
+        }
+
+        // Check for duplicates
+        string importText = $"from models.{dataType.WordsToSnakeCase()} import {dataType}";
+        if (!imports.Contains(importText))
+        {
+            imports.Add(importText);
         }
     }
 
@@ -391,14 +389,14 @@ public class PythonSdk : ILanguageSdk
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "ApiClient.py.scriban"),
-            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.ProperCaseToSnakeCase() + ".py"));
+            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "__init__.py.scriban"),
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
-        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "setup.cfg"), 
-            Path.Combine(".", "templates", "python", "setup.cfg.scriban"),
-            "version = [\\d\\.]+",
-            $"version = {context.Api.Semver3}");
+        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
+            Path.Combine(".", "templates", "python", "pyproject.toml.scriban"),
+            "version = \"[\\d\\.]+\"",
+            $"version = \"{context.Api.Semver3}\"");
     }
     
     public string LanguageName()

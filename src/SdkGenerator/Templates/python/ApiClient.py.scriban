@@ -43,7 +43,7 @@ class {{ project.python.class_name }}:
             the source of errors. 
         """
 {{~ for cat in api.categories ~}}
-        from {{ project.python.namespace }}.clients.{{ cat | proper_case_to_snake_case }}_client import {{ cat }}Client
+        from clients.{{ cat | words_to_snake_case }}client import {{ cat }}Client
 {{~ end ~}}
 {{~ for cat in api.categories ~}}
         self.{{ cat | to_camel_case }} = {{ cat }}Client(self)
