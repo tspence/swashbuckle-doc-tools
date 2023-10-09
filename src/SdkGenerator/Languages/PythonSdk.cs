@@ -235,7 +235,7 @@ public class PythonSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
-                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}{(p.Nullable ? " | None" : "")}");
                     var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name.ToVariableName()}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
@@ -252,8 +252,21 @@ public class PythonSdk : ILanguageSdk
                     sb.AppendLine(endpoint.Path.Contains('{')
                         ? $"        path = f\"{endpoint.Path}\""
                         : $"        path = \"{endpoint.Path}\"");
+                    
+                    // Assemble query parameter object, skipping none values
+                    var paramVar = "None";
+                    if (endpoint.Parameters.Where(p => p.Location == "query").Any())
+                    {
+                        paramVar = "queryParams";
+                        sb.AppendLine("queryParams = {}");
+                        foreach (var p in endpoint.Parameters.Where(p => p.Location == "query"))
+                        {
+                            sb.AppendLine($"        if {p.Name.ToVariableName()}:");
+                            sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
+                        }
+                    }
                     sb.AppendLine(
-                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, {(string.IsNullOrWhiteSpace(paramListStr) ? "None" : "{" + bodyJson + "}")}, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, {paramVar}, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
                     if (isFileDownload)
                     {
                         sb.AppendLine("        return result");
