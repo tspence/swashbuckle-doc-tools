@@ -94,12 +94,14 @@ public class GeneratorContext : IDisposable
         }
 
         // Ensure the folder for collecting swagger files exists
+        var swaggerJson = await File.ReadAllTextAsync(swaggerFilename);
         var context = new GeneratorContext()
         {
             Project = new ProjectSchema(),
             Api = null,
             LogPath = logPath,
-            SwaggerJson = await File.ReadAllTextAsync(swaggerFilename),
+            SwaggerJson = swaggerJson,
+            OfficialVersion = DownloadFile.GetVersion(swaggerJson)
         };
         context.Api = DownloadFile.GatherSchemas(context);
         return context;

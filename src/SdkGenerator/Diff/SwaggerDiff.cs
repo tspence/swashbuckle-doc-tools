@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using SdkGenerator.Schema;
 
@@ -33,6 +34,11 @@ public class SwaggerDiff
     public Dictionary<string, List<string>> EndpointChanges { get; set; } = new();
     
     /// <summary>
+    /// For endpoints that were renamed, a list of the renames
+    /// </summary>
+    public List<string> Renames { get; set; } = new();
+    
+    /// <summary>
     /// New schema definitions
     /// </summary>
     public List<string> NewSchemas { get; set; } = new();
@@ -62,47 +68,54 @@ public class SwaggerDiff
         sb.AppendLine();
         
         // Explain which APIs were added
-        var apiLines = new List<string>();
-        foreach (var api in NewEndpoints)
+        if (NewEndpoints.Count > 0)
         {
-            apiLines.Add($"* {api.Key} ({api.Value.Method.ToUpper()} {api.Value.Path})");
-        }
-        if (apiLines.Count > 0)
-        {
-            sb.AppendLine();
-            if (apiLines.Count > 5)
+            sb.AppendLine($"Added {NewEndpoints.Count} new APIs:");
+            foreach (var api in NewEndpoints)
             {
-                sb.AppendLine($"Added {apiLines.Count} new APIs, including:");
-                apiLines = apiLines.GetRange(0, 5);
-                apiLines.Add($"* ... {NewEndpoints.Count - 5} more");
+                sb.AppendLine($"* {api.Key} ({api.Value.Method.ToUpper()} {api.Value.Path})");
+            }
+            sb.AppendLine();
+        }
+
+        // List name changes
+        if (Renames.Count > 0)
+        {
+            sb.AppendLine($"Renamed {Renames.Count} old APIs:");
+            foreach (var rename in Renames)
+            {
+                sb.AppendLine($"* {rename}");
             }
 
-            foreach (var line in apiLines)
+            sb.AppendLine();
+        }
+        
+        // APIs with changes
+        if (EndpointChanges.Count > 0)
+        {
+            sb.AppendLine($"Changes to {EndpointChanges.Count} existing APIs:");
+            foreach (var rename in EndpointChanges)
             {
-                sb.AppendLine(line);
+                if (rename.Value.Count == 1)
+                {
+                    sb.AppendLine($"* {rename.Value.FirstOrDefault()}");
+                }
+                else
+                {
+                    sb.AppendLine($"* {rename.Value.Count} changes to {rename.Key}");
+                }
             }
+
             sb.AppendLine();
         }
         
         // Explain which APIs were removed
-        apiLines.Clear();
-        foreach (var api in DeprecatedEndpoints)
+        if (DeprecatedEndpoints.Count > 0)
         {
-            apiLines.Add($"* {api}");
-        }
-        if (apiLines.Count > 0)
-        {
-            sb.AppendLine();
-            if (apiLines.Count > 5)
+            sb.AppendLine($"Deprecated {DeprecatedEndpoints.Count} old APIs:");
+            foreach (var api in DeprecatedEndpoints)
             {
-                sb.AppendLine($"Deprecated {apiLines.Count} old APIs, including:");
-                apiLines = apiLines.GetRange(0, 5);
-                apiLines.Add($"* ... {DeprecatedEndpoints.Count - 5} more");
-            }
-
-            foreach (var line in apiLines)
-            {
-                sb.AppendLine(line);
+                sb.AppendLine($"* {api}");
             }
             sb.AppendLine();
         }

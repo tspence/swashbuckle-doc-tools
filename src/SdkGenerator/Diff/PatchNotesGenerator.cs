@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
@@ -18,8 +19,8 @@ public class PatchNotesGenerator
     {
         var diff = new SwaggerDiff
         {
-            OldVersion = previous.OfficialVersion,
-            NewVersion = current.OfficialVersion
+            OldVersion = previous.OfficialVersion ?? previous.Version3,
+            NewVersion = current.OfficialVersion ?? current.Version3,
         };
 
         CompareEndpoints(previous, current, diff);
@@ -82,27 +83,57 @@ public class PatchNotesGenerator
     private static void CompareEndpoints(GeneratorContext previous, GeneratorContext current, SwaggerDiff diff)
     {
         var compared = new HashSet<string>();
-        var dict = previous.Api.Endpoints.ToDictionary(api => MakeApiName(api));
+        
+        // Handle duplicate names, a common error in manually named APIs
+        var nameToEndpoint = new Dictionary<string, EndpointItem>();
+        var pathToName = new Dictionary<string, string>();
+        foreach (var item in previous.Api.Endpoints)
+        {
+            var name = MakeApiName(item);
+            if (nameToEndpoint.ContainsKey(name))
+            {
+                current.LogError($"Duplicate API name in previous version of API: {name}");
+            }
+
+            nameToEndpoint[name] = item;
+            pathToName[item.Path + ":" + item.Method] = name;
+        }
 
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
         {
+            EndpointItem prevItem = null;
             var name = MakeApiName(item);
-            dict.TryGetValue(name, out var prevItem);
-            if (prevItem == null)
+            
+            // First check if the API was simply renamed
+            if (pathToName.TryGetValue(item.Path + ":" + item.Method, out var prevName) && name != prevName)
             {
-                if (diff.NewEndpoints.ContainsKey(name))
+                compared.Add(prevName);
+                diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
+                if (nameToEndpoint.TryGetValue(prevName, out prevItem))
                 {
-                    current.LogError($"Duplicate API name: {name}");
+                    diff.EndpointChanges[name] = GetEndpointChanges(item, prevItem);
                 }
-                diff.NewEndpoints[name] = item;
             }
             else
             {
-                var changes = GetEndpointChanges(item, prevItem);
-                if (changes.Any())
+                nameToEndpoint.TryGetValue(name, out prevItem);
+                if (prevItem == null)
                 {
-                    diff.EndpointChanges[name] = changes;
+                    if (diff.NewEndpoints.ContainsKey(name))
+                    {
+                        current.LogError($"Duplicate API name in current version of API: {name}");
+                    }
+
+                    diff.NewEndpoints[name] = item;
+                }
+                else
+                {
+                    var changes = GetEndpointChanges(item, prevItem);
+                    if (changes.Any())
+                    {
+                        diff.EndpointChanges[name] = changes;
+                    }
                 }
             }
 
@@ -118,6 +149,9 @@ public class PatchNotesGenerator
                 diff.DeprecatedEndpoints.Add(name);
             }
         }
+        
+        // Clean up all empty changesets
+        diff.EndpointChanges = new Dictionary<string, List<string>>(diff.EndpointChanges.Where(item => item.Value.Count > 0));
     }
 
     private static string MakeApiName(EndpointItem item)
@@ -127,6 +161,10 @@ public class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(EndpointItem item, EndpointItem prevItem)
     {
+        if (item.Parameters.Count > prevItem.Parameters.Count)
+        {
+            return new List<string>() { $"Added new parameters to {item.Name}" };
+        }
         return new List<string>();
     }
 }

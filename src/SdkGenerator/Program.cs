@@ -15,6 +15,16 @@ namespace SdkGenerator;
 
 public static class Program
 {
+    [Verb("compare", HelpText = "Compare one swagger file to another")]
+    private class CompareOptions
+    {
+        [Option('o', "old", Required = true, HelpText = "Older swagger file")]
+        public string OldFile { get; set; }
+        
+        [Option('n', "new", Required = true, HelpText = "Newer swagger file")]
+        public string NewFile { get; set; }
+    }
+    
     private class BaseOptions
     {
         [Option('p', "project", Required = true, HelpText = "Specify a project file")]
@@ -57,6 +67,7 @@ public static class Program
         await parsed.WithParsedAsync<CreateOptions>(CreateTask);
         await parsed.WithParsedAsync<BuildOptions>(BuildTask);
         await parsed.WithParsedAsync<DiffOptions>(DiffTask);
+        await parsed.WithParsedAsync<CompareOptions>(CompareTask);
         await parsed.WithNotParsedAsync(HandleErrors);
     }
 
@@ -76,6 +87,20 @@ public static class Program
         
         // Load the previous version of the swagger file from disk, and compare it
         var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldVersion, options.LogPath);
+        var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
+        
+        // Print out human readable description
+        Console.WriteLine(diffs.ToSummaryMarkdown());
+    }
+
+    private static async Task CompareTask(CompareOptions options)
+    {
+        // Load the current state of the project
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldFile, null);
+        var newContext = await GeneratorContext.FromSwaggerFileOnDisk(options.NewFile, null);
+        Console.WriteLine($"Comparing {oldContext.Version4} against old version {newContext.Version4}");
+        
+        // Load the previous version of the swagger file from disk, and compare it
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
