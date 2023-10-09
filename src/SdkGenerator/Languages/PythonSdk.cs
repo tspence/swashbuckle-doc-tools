@@ -103,11 +103,11 @@ public class PythonSdk : ILanguageSdk
     private async Task ExportSchemas(GeneratorContext context)
     {
         var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
-        await CleanModuleDirectory(modelsDir);
+        await CleanModuleDirectory(context, modelsDir);
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null)
+            if (item.Fields != null && item.Name != context.Project.Python.ResponseClass)
             {
                 var sb = new StringBuilder();
                 sb.AppendLine(FileHeader(context.Project));
@@ -166,21 +166,24 @@ public class PythonSdk : ILanguageSdk
         }
     }
 
-    private async Task CleanModuleDirectory(string pyModuleDir)
+    private async Task CleanModuleDirectory(GeneratorContext context, string pyModuleDir)
     {
         await Task.CompletedTask;
         Directory.CreateDirectory(pyModuleDir);
 
         foreach (var pyFile in Directory.EnumerateFiles(pyModuleDir, "*.py"))
         {
-            File.Delete(pyFile);
+            if (!pyFile.EndsWith(context.Project.Python.ResponseClass + ".py", StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(pyFile);
+            }
         }
     }
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
         var clientsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
-        await CleanModuleDirectory(clientsDir);
+        await CleanModuleDirectory(context, clientsDir);
 
         // Gather a list of unique categories
         foreach (var cat in context.Api.Categories)
@@ -197,6 +200,7 @@ public class PythonSdk : ILanguageSdk
                 sb.AppendLine(import);
             }
 
+            sb.AppendLine("import json");
             sb.AppendLine();
             sb.AppendLine($"class {cat}Client:");
             sb.AppendLine("    \"\"\"");
@@ -265,7 +269,7 @@ public class PythonSdk : ILanguageSdk
                         }
                         sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                         sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, {innerType}(result.json(), {innerType}))");
+                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
                         sb.AppendLine("        else:");
                         sb.AppendLine(
                             $"            return {context.Project.Python.ResponseClass}(result.json(), False, True, result.status_code, None)");
