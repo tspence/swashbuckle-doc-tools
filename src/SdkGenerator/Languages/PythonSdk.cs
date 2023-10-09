@@ -104,6 +104,7 @@ public class PythonSdk : ILanguageSdk
     {
         var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(context, modelsDir);
+        await File.WriteAllTextAsync(Path.Combine(modelsDir, "__init__.py"), string.Empty);
 
         foreach (var item in context.Api.Schemas)
         {
@@ -184,6 +185,7 @@ public class PythonSdk : ILanguageSdk
     {
         var clientsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
         await CleanModuleDirectory(context, clientsDir);
+        await File.WriteAllTextAsync(Path.Combine(clientsDir, "__init__.py"), string.Empty);
 
         // Gather a list of unique categories
         foreach (var cat in context.Api.Categories)
@@ -440,6 +442,9 @@ public class PythonSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "ApiClient.py.scriban"),
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
+        await ScribanFunctions.ExecuteTemplate(context, 
+            Path.Combine(".", "templates", "python", "__init__.py.scriban"),
+            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
         await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
             Path.Combine(".", "templates", "python", "pyproject.toml.scriban"),
             "version = \"[\\d\\.]+\"",
