@@ -209,7 +209,7 @@ public class PythonSdk : ILanguageSdk
             sb.AppendLine($"    API methods related to {cat}");
             sb.AppendLine("    \"\"\"");
             sb.AppendLine(
-                $"    from {context.Project.Python.ClassName.WordsToSnakeCase()} import {context.Project.Python.ClassName}");
+                $"    from {context.Project.Python.Namespace}.{context.Project.Python.ClassName.WordsToSnakeCase()} import {context.Project.Python.ClassName}");
             sb.AppendLine();
             sb.AppendLine($"    def __init__(self, client: {context.Project.Python.ClassName}):");
             sb.AppendLine("        self.client = client");
@@ -326,7 +326,7 @@ public class PythonSdk : ILanguageSdk
     {
         var imports = new List<string>();
         imports.Add(
-            $"from models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
+            $"from {context.Project.Python.Namespace}.models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
@@ -379,7 +379,7 @@ public class PythonSdk : ILanguageSdk
         }
 
         // Check for duplicates
-        string importText = $"from models.{dataType.WordsToSnakeCase()} import {dataType}";
+        string importText = $"from {context.Project.Python.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}";
         if (!imports.Contains(importText))
         {
             imports.Add(importText);
