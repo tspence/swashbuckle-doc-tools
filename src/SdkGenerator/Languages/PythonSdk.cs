@@ -46,6 +46,7 @@ public class PythonSdk : ILanguageSdk
                 break;
             case "int32":
             case "integer":
+            case "HttpStatusCode":
             case "int64":
                 s = "int";
                 break;
@@ -117,6 +118,12 @@ public class PythonSdk : ILanguageSdk
                     sb.AppendLine("from __future__ import annotations");
                 }
 
+                // Produce imports
+                foreach (var import in BuildImports(context, item.Fields))
+                {
+                    sb.AppendLine(import);
+                }
+
                 // Add in all the rest of the imports
                 sb.AppendLine("from dataclasses import dataclass");
                 sb.AppendLine();
@@ -127,6 +134,13 @@ public class PythonSdk : ILanguageSdk
                 foreach (var f in item.Fields)
                 {
                     sb.AppendLine($"    {f.Name}: {FixupType(context, f.DataType, f.IsArray)} | None = None");
+                    
+                    // Do we have a docstring?
+                    if (!string.IsNullOrWhiteSpace(f.DescriptionMarkdown))
+                    {
+                        sb.Append(MakePythonDoc(context, f.DescriptionMarkdown, 4, null));
+                        sb.AppendLine();
+                    }
                 }
 
                 sb.AppendLine();
@@ -154,15 +168,10 @@ public class PythonSdk : ILanguageSdk
 
     private async Task CleanModuleDirectory(string pyModuleDir)
     {
+        await Task.CompletedTask;
         Directory.CreateDirectory(pyModuleDir);
 
-        var initFile = Path.Combine(pyModuleDir, "__init__.py");
-        if (!File.Exists(initFile))
-        {
-            await File.Create(initFile).DisposeAsync();
-        }
-
-        foreach (var pyFile in Directory.EnumerateFiles(pyModuleDir, "*.py").Where(f => !f.EndsWith("__init__.py")))
+        foreach (var pyFile in Directory.EnumerateFiles(pyModuleDir, "*.py"))
         {
             File.Delete(pyFile);
         }
@@ -222,8 +231,8 @@ public class PythonSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
-                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
-                    var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name}");
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
+                    var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name.ToVariableName()}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
                     // Write the method
@@ -270,6 +279,21 @@ public class PythonSdk : ILanguageSdk
         }
     }
 
+    private List<string> BuildImports(GeneratorContext context, List<SchemaField> fields)
+    {
+        var imports = new List<string>();
+        foreach (var field in fields)
+        {
+            if (!field.Deprecated && field.DataTypeRef != null)
+            {
+                AddImport(context, imports, field.DataType);
+            }
+        }
+
+        imports.Sort();
+        return imports.Distinct().ToList();
+    }
+
     private List<string> BuildImports(GeneratorContext context, string cat)
     {
         var imports = new List<string>();
@@ -305,7 +329,7 @@ public class PythonSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
-        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType is "TestTimeoutException" or "File" or "byte[]" or "binary" or "string" || dataType == context.Project.Python.ResponseClass)
+        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType is "TestTimeoutException" or "File" or "byte[]" or "binary" or "string" or "HttpStatusCode" || dataType == context.Project.Python.ResponseClass)
         {
             return;
         }
@@ -390,9 +414,6 @@ public class PythonSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "ApiClient.py.scriban"),
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
-        await ScribanFunctions.ExecuteTemplate(context, 
-            Path.Combine(".", "templates", "python", "__init__.py.scriban"),
-            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
         await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
             Path.Combine(".", "templates", "python", "pyproject.toml.scriban"),
             "version = \"[\\d\\.]+\"",
