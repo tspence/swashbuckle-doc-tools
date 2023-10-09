@@ -254,19 +254,14 @@ public class PythonSdk : ILanguageSdk
                         : $"        path = \"{endpoint.Path}\"");
                     
                     // Assemble query parameter object, skipping none values
-                    var paramVar = "None";
-                    if (endpoint.Parameters.Where(p => p.Location == "query").Any())
+                    sb.AppendLine("        queryParams = {}");
+                    foreach (var p in endpoint.Parameters.Where(p => p.Location == "query"))
                     {
-                        paramVar = "queryParams";
-                        sb.AppendLine("queryParams = {}");
-                        foreach (var p in endpoint.Parameters.Where(p => p.Location == "query"))
-                        {
-                            sb.AppendLine($"        if {p.Name.ToVariableName()}:");
-                            sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
-                        }
+                        sb.AppendLine($"        if {p.Name.ToVariableName()}:");
+                        sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
                     }
                     sb.AppendLine(
-                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, {paramVar}, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
                     if (isFileDownload)
                     {
                         sb.AppendLine("        return result");
