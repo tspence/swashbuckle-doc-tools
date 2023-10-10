@@ -18,7 +18,6 @@ import { {{ cat }}Client } from ".";
 import { {{ project.typescript.response_class }} } from ".";
 
 import * as axios from "axios";
-import * as blob from "buffer";
 import * as FormData from "form-data";
 import * as fs from "fs";
 import * as os from "os";
@@ -69,6 +68,7 @@ export class {{ project.typescript.class_name }} {
   /**
    * Construct a new API client to target the specific environment.
    *
+   * Predefined environment names:
 {{~ for env in project.environments ~}}
    *   * {{ env.name }} - {{ env.url }}
 {{~ end ~}}
@@ -77,21 +77,12 @@ export class {{ project.typescript.class_name }} {
    * @returns The API client to use
    */
   public static withEnvironment(env: string): {{ project.typescript.class_name }} {
-{{~ 
-for env in project.environments
-    if env.default 
-~}}
-    let url = "{{ env.url }}";
-{{~
-    end 
-end 
-~}}
     switch (env) {
 {{~ for env in project.environments ~}}
-      case "{{ env.name }}": url = "{{ env.url }}"; break;
+      case "{{ env.name }}": return new {{ project.typescript.class_name }}("{{ env.url }}");
 {{~ end ~}}
+      default: return new {{ project.typescript.class_name }}(env);
     }
-    return new {{ project.typescript.class_name }}(url);
   }
 
   /**
@@ -140,7 +131,7 @@ end
    * @param func The async function to be called to modify headers before any request
    * @returns The API client for function chaining
    */
-  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): {{ project.typescript.response_class }}
+  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): {{ project.typescript.class_name }}
   {
     this.customHeaderFunc = func;
     return this;
@@ -184,7 +175,7 @@ end
   /**
    * Make a GET request using this client
    */
-  public async request<T>(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<T>> {
+  public async request<T>(method: axios.Method, path: string, options: unknown, body: unknown): Promise<T> {
     const requestConfig = {
       url: new url.URL(path, this.serverUrl).href,
       method,
@@ -192,14 +183,13 @@ end
       data: body,
       headers: await this.getHeaders(),
     };
-    const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+    return await axios.default.request(requestConfig);
   }
 
   /**
    * Upload a file to a REST endpoint and retrieve results as JSON
    */
-  public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<{{ project.typescript.response_class }}<T>> {
+  public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<T> {
     const fileBuffer = fs.readFileSync(filename);
     const formData = new FormData();
     formData.append("file", fileBuffer);
@@ -210,8 +200,7 @@ end
       params: options,
       headers: await this.getHeaders(),
     };
-    const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+    return await axios.default.request(requestConfig);
   }
 
   /**
@@ -227,7 +216,6 @@ end
       headers: await this.getHeaders(),
       responseType,
     };
-    const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<Blob>(result.status, new blob.Blob(result.data));
+    return await axios.default.request(requestConfig);
   }
 }

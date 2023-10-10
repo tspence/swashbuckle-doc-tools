@@ -14,7 +14,6 @@
  */
 
 export { {{ project.typescript.class_name }} } from "./{{ project.typescript.class_name }}";
-export { {{ project.typescript.response_class }} } from "./{{ project.typescript.response_class }}";
 
 {{~ for cat in api.categories ~}}
 export { {{ cat }}Client } from "./clients/{{ cat }}Client";

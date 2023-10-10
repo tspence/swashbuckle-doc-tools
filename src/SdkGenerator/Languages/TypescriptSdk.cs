@@ -177,11 +177,13 @@ public class TypescriptSdk : ILanguageSdk
             sb.AppendLine("    this.client = client;");
             sb.AppendLine("  }");
 
-            // Run through all APIs
+            // Run through all APIs - but make sure we don't accidentally name the same one twice
+            List<string> names = new();
             foreach (var endpoint in context.Api.Endpoints)
             {
-                if (endpoint.Category == cat && !endpoint.Deprecated)
+                if (endpoint.Category == cat && !endpoint.Deprecated && !names.Contains(endpoint.Name))
                 {
+                    names.Add(endpoint.Name);
                     sb.AppendLine();
                     sb.Append(endpoint.DescriptionMarkdown.ToJavaDoc(2, null, endpoint.Parameters));
 
