@@ -287,16 +287,16 @@ public class PythonSdk : ILanguageSdk
                             sb.AppendLine("            for dict in json.loads(result.content)['data']:");
                             sb.AppendLine($"                data.append({elementType}(**dict))");
                             sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, data)");
+                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, data)");
                         }
                         else
                         {
                             sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
+                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
                         }
                         sb.AppendLine("        else:");
                         sb.AppendLine(
-                            $"            return {context.Project.Python.ResponseClass}(result.json(), False, True, result.status_code, None)");
+                            $"            return {context.Project.Python.ResponseClass}[{innerType}](result.json(), False, True, result.status_code, None)");
                     }
                 }
             }
