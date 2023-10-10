@@ -18,7 +18,7 @@ import { {{ cat }}Client } from ".";
 import { {{ project.typescript.response_class }} } from ".";
 
 import * as axios from "axios";
-import * as FormData from "form-data";
+import { default as FormData } from "form-data";
 import * as fs from "fs";
 import * as os from "os";
 import * as url from "url";
@@ -190,7 +190,7 @@ export class {{ project.typescript.class_name }} {
    * Upload a file to a REST endpoint and retrieve results as JSON
    */
   public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<T> {
-    const fileBuffer = fs.readFileSync(filename);
+    const fileBuffer = await fs.promises.readFile(filename);
     const formData = new FormData();
     formData.append("file", fileBuffer);
     const requestConfig: axios.AxiosRequestConfig = {
