@@ -100,11 +100,18 @@ public class TypescriptSdk : ILanguageSdk
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.ts"))
         {
-            File.Delete(modelFile);
+            if (!modelFile.EndsWith(context.Project.Typescript.ResponseClass + ".ts", StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(modelFile);
+            }
         }
 
         foreach (var item in context.Api.Schemas)
         {
+            if (item.Name.Equals(context.Project.Typescript.ResponseClass))
+            {
+                continue;
+            }
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
             foreach (var import in GetImports(context, item))
