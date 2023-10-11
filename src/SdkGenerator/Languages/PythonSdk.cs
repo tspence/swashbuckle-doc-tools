@@ -104,6 +104,7 @@ public class PythonSdk : ILanguageSdk
     {
         var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(context, modelsDir);
+        await File.WriteAllTextAsync(Path.Combine(modelsDir, "__init__.py"), string.Empty);
 
         foreach (var item in context.Api.Schemas)
         {
@@ -184,6 +185,7 @@ public class PythonSdk : ILanguageSdk
     {
         var clientsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
         await CleanModuleDirectory(context, clientsDir);
+        await File.WriteAllTextAsync(Path.Combine(clientsDir, "__init__.py"), string.Empty);
 
         // Gather a list of unique categories
         foreach (var cat in context.Api.Categories)
@@ -207,7 +209,7 @@ public class PythonSdk : ILanguageSdk
             sb.AppendLine($"    API methods related to {cat}");
             sb.AppendLine("    \"\"\"");
             sb.AppendLine(
-                $"    from {context.Project.Python.ClassName.WordsToSnakeCase()} import {context.Project.Python.ClassName}");
+                $"    from {context.Project.Python.Namespace}.{context.Project.Python.ClassName.WordsToSnakeCase()} import {context.Project.Python.ClassName}");
             sb.AppendLine();
             sb.AppendLine($"    def __init__(self, client: {context.Project.Python.ClassName}):");
             sb.AppendLine("        self.client = client");
@@ -285,16 +287,16 @@ public class PythonSdk : ILanguageSdk
                             sb.AppendLine("            for dict in json.loads(result.content)['data']:");
                             sb.AppendLine($"                data.append({elementType}(**dict))");
                             sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, data)");
+                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, data)");
                         }
                         else
                         {
                             sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}(None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
+                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
                         }
                         sb.AppendLine("        else:");
                         sb.AppendLine(
-                            $"            return {context.Project.Python.ResponseClass}(result.json(), False, True, result.status_code, None)");
+                            $"            return {context.Project.Python.ResponseClass}[{innerType}](result.json(), False, True, result.status_code, None)");
                     }
                 }
             }
@@ -324,7 +326,7 @@ public class PythonSdk : ILanguageSdk
     {
         var imports = new List<string>();
         imports.Add(
-            $"from models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
+            $"from {context.Project.Python.Namespace}.models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
@@ -377,7 +379,7 @@ public class PythonSdk : ILanguageSdk
         }
 
         // Check for duplicates
-        string importText = $"from models.{dataType.WordsToSnakeCase()} import {dataType}";
+        string importText = $"from {context.Project.Python.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}";
         if (!imports.Contains(importText))
         {
             imports.Add(importText);
@@ -440,6 +442,9 @@ public class PythonSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "python", "ApiClient.py.scriban"),
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
+        await ScribanFunctions.ExecuteTemplate(context, 
+            Path.Combine(".", "templates", "python", "__init__.py.scriban"),
+            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
         await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
             Path.Combine(".", "templates", "python", "pyproject.toml.scriban"),
             "version = \"[\\d\\.]+\"",

@@ -13,18 +13,17 @@
  * @link       {{ project.typescript.github_url }}
  */
 
-export { {{ project.typescript.class_name }} } from "./{{ project.typescript.class_name }}";
-export { {{ project.typescript.response_class }} } from "./{{ project.typescript.response_class }}";
+export { {{ project.typescript.class_name }} } from "./{{ project.typescript.class_name }}.js";
 
 {{~ for cat in api.categories ~}}
-export { {{ cat }}Client } from "./clients/{{ cat }}Client";
+export { {{ cat }}Client } from "./clients/{{ cat }}Client.js";
 {{~ end ~}}
 
 {{~ 
 for schema in api.schemas 
   if schema.fields
 ~}}
-export { {{ schema.name }} } from "./models/{{ schema.name }}";
+export { {{ schema.name }} } from "./models/{{ schema.name }}.js";
 {{~ 
   end
 end 

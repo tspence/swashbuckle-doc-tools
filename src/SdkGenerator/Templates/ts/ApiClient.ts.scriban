@@ -13,16 +13,15 @@
  */
 
 {{~ for cat in api.categories ~}}
-import { {{ cat }}Client } from ".";
+import { {{ cat }}Client } from "./index.js";
 {{~ end ~}}
-import { {{ project.typescript.response_class }} } from ".";
+import { {{ project.typescript.response_class }} } from "./index.js";
 
-import * as axios from "axios";
-import * as blob from "buffer";
-import * as FormData from "form-data";
-import * as fs from "fs";
-import * as os from "os";
-import * as url from "url";
+import axios, { Method } from "axios";
+import { default as FormData } from "form-data";
+import fs from "fs";
+import os from "os";
+import url from "url";
 
 /**
  * List of headers used by the API
@@ -46,7 +45,6 @@ export class {{ project.typescript.class_name }} {
   private readonly serverUrl: string;
   private readonly version: string = "{{ api.semver3 }}";
   private bearerToken: string | null = null;
-  private apiKey: string | null = null;
   private sdkName = "TypeScript";
   private appName: string | null = null;
   private customHeaderFunc: ((headers: unknown) => Promise<unknown>) | null = null;
@@ -69,6 +67,7 @@ export class {{ project.typescript.class_name }} {
   /**
    * Construct a new API client to target the specific environment.
    *
+   * Predefined environment names:
 {{~ for env in project.environments ~}}
    *   * {{ env.name }} - {{ env.url }}
 {{~ end ~}}
@@ -77,21 +76,12 @@ export class {{ project.typescript.class_name }} {
    * @returns The API client to use
    */
   public static withEnvironment(env: string): {{ project.typescript.class_name }} {
-{{~ 
-for env in project.environments
-    if env.default 
-~}}
-    let url = "{{ env.url }}";
-{{~
-    end 
-end 
-~}}
     switch (env) {
 {{~ for env in project.environments ~}}
-      case "{{ env.name }}": url = "{{ env.url }}"; break;
+      case "{{ env.name }}": return new {{ project.typescript.class_name }}("{{ env.url }}");
 {{~ end ~}}
+      default: return new {{ project.typescript.class_name }}(env);
     }
-    return new {{ project.typescript.class_name }}(url);
   }
 
   /**
@@ -115,20 +105,6 @@ end
    */
   public withBearerToken(token: string): {{ project.typescript.class_name }} {
     this.bearerToken = token;
-    this.apiKey = null;
-    return this;
-  }
-
-  /**
-   * Configures this API client to use an API Key.
-   *
-   * {{ project.authentication_help }}
-   * 
-   * @param apiKey The API key to use for this API session
-   */
-  public withApiKey(apiKey: string): {{ project.typescript.class_name }} {
-    this.apiKey = apiKey;
-    this.bearerToken = null;
     return this;
   }
   
@@ -140,7 +116,7 @@ end
    * @param func The async function to be called to modify headers before any request
    * @returns The API client for function chaining
    */
-  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): {{ project.typescript.response_class }}
+  public withCustomHeaderFunc(func: (headers: unknown) => Promise<unknown>): {{ project.typescript.class_name }}
   {
     this.customHeaderFunc = func;
     return this;
@@ -171,9 +147,6 @@ end
     if (this.bearerToken !== null) {
       headers["Authorization"] = `Bearer ${this.bearerToken}`;
     } 
-    if (this.apiKey !== null) {
-      headers["ApiKey"] = this.apiKey;
-    }
     if (this.customHeaderFunc != null) {
       return (await this.customHeaderFunc(headers)) as ApiHeaders;
     } else {
@@ -184,7 +157,7 @@ end
   /**
    * Make a GET request using this client
    */
-  public async request<T>(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<T>> {
+  public async request<T>(method: Method, path: string, options: unknown, body: unknown): Promise<T> {
     const requestConfig = {
       url: new url.URL(path, this.serverUrl).href,
       method,
@@ -193,14 +166,14 @@ end
       headers: await this.getHeaders(),
     };
     const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+    return result.data;
   }
 
   /**
    * Upload a file to a REST endpoint and retrieve results as JSON
    */
-  public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<{{ project.typescript.response_class }}<T>> {
-    const fileBuffer = fs.readFileSync(filename);
+  public async fileUpload<T>(method: Method, path: string, options: unknown, filename: string): Promise<T> {
+    const fileBuffer = await fs.promises.readFile(filename);
     const formData = new FormData();
     formData.append("file", fileBuffer);
     const requestConfig: axios.AxiosRequestConfig = {
@@ -211,13 +184,13 @@ end
       headers: await this.getHeaders(),
     };
     const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<T>(result.status, result.data);
+    return result.data;
   }
 
   /**
    * Make a GET request using this client and download the results as a blob
    */
-  public async requestBlob(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
+  public async requestBlob(method: Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
     const responseType: axios.ResponseType = "blob";
     const requestConfig: axios.AxiosRequestConfig = {
       url: new url.URL(path, this.serverUrl).href,
@@ -228,6 +201,6 @@ end
       responseType,
     };
     const result = await axios.default.request(requestConfig);
-    return new {{ project.typescript.response_class }}<Blob>(result.status, new blob.Blob(result.data));
+    return result.data;
   }
 }

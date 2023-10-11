@@ -60,17 +60,31 @@ public class TypescriptSdk : ILanguageSdk
             case "binary":
                 s = "Blob";
                 break;
-            default:
-                s = typeName;
-                break;
+        }
+
+        foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        {
+            if (typeName.EndsWith(genericName))
+            {
+                var innerType = s.Substring(0, s.Length - genericName.Length);
+                if (string.IsNullOrWhiteSpace(innerType))
+                {
+                    return $"{genericName}<object>";
+                }
+                var fixedInnerType = FixupType(context, innerType, false, false);
+                return $"{genericName}<{fixedInnerType}>";
+            }
+        }
+
+        if (s.EndsWith("List", StringComparison.OrdinalIgnoreCase))
+        {
+            return FixupType(context, s.Substring(0, s.Length - 4), true, false);
         }
 
         if (isArray)
         {
             s += "[]";
         }
-
-        s = context.ApplyGenerics(s, "<", ">");
 
         if (nullable)
         {
@@ -86,11 +100,18 @@ public class TypescriptSdk : ILanguageSdk
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.ts"))
         {
-            File.Delete(modelFile);
+            if (!modelFile.EndsWith(context.Project.Typescript.ResponseClass + ".ts", StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(modelFile);
+            }
         }
 
         foreach (var item in context.Api.Schemas)
         {
+            if (item.Name.Equals(context.Project.Typescript.ResponseClass))
+            {
+                continue;
+            }
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
             foreach (var import in GetImports(context, item))
@@ -139,8 +160,7 @@ public class TypescriptSdk : ILanguageSdk
 
             // Construct header
             sb.AppendLine(FileHeader(context.Project));
-            sb.AppendLine($"import {{ {context.Project.Typescript.ClassName} }} from \"..\";");
-            sb.AppendLine($"import {{ {context.Project.Typescript.ResponseClass} }} from \"..\";");
+            sb.AppendLine($"import {{ {context.Project.Typescript.ClassName} }} from \"../index.js\";");
             foreach (var import in GetImports(context, cat))
             {
                 sb.AppendLine(import);
@@ -157,11 +177,13 @@ public class TypescriptSdk : ILanguageSdk
             sb.AppendLine("    this.client = client;");
             sb.AppendLine("  }");
 
-            // Run through all APIs
+            // Run through all APIs - but make sure we don't accidentally name the same one twice
+            List<string> names = new();
             foreach (var endpoint in context.Api.Endpoints)
             {
-                if (endpoint.Category == cat && !endpoint.Deprecated)
+                if (endpoint.Category == cat && !endpoint.Deprecated && !names.Contains(endpoint.Name))
                 {
+                    names.Add(endpoint.Name);
                     sb.AppendLine();
                     sb.Append(endpoint.DescriptionMarkdown.ToJavaDoc(2, null, endpoint.Parameters));
 
@@ -186,7 +208,7 @@ public class TypescriptSdk : ILanguageSdk
                     }
 
                     // Write the method
-                    sb.AppendLine($"  {endpoint.Name.ToCamelCase()}({paramListStr}): Promise<{context.Project.Typescript.ResponseClass}<{returnType}>> {{");
+                    sb.AppendLine($"  {endpoint.Name.ToCamelCase()}({paramListStr}): Promise<{returnType}> {{");
                     sb.AppendLine($"    const url = `{endpoint.Path.Replace("{", "${")}`;");
                     if (options.Count > 0)
                     {
@@ -227,99 +249,81 @@ public class TypescriptSdk : ILanguageSdk
 
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            
-            if (name.EndsWith(genericName))
+            if (name.EndsWith(genericName) && name != genericName)
             {
-                if (!list.Contains(genericName))
-                {
-                    list.Add(genericName);
-                }
-
-                var innerType = name[..^11];
+                AddImport(context, genericName, list);
+                var innerType = name.Substring(0, name.Length - genericName.Length);
                 AddImport(context, innerType, list);
+                return;
             }
         }
         
-        if (context.Api.FindEnum(name) == null && !list.Contains(name))
+        // Handle lists
+        if (name.EndsWith("List", StringComparison.OrdinalIgnoreCase) && name.Length > 4)
         {
-            list.Add(name);
+            var innerType = name.Substring(0, name.Length - 4);
+            AddImport(context, innerType, list);
+            return;
+        }
+        
+        // Ignore base types
+        switch (name)
+        {
+            case "string":
+            case "uuid":
+            case "object":
+            case "int32":
+            case "integer":
+            case "date":
+            case "date-time":
+            case "File":
+            case "boolean":
+            case "array":
+            case "email":
+            case "double":
+            case "float":
+            case "uri":
+                return;
+        }
+
+        if (context.Api.FindEnum(name) != null)
+        {
+            return;
+        }
+
+        var importStatement = (name == "binary") 
+            ? "import { Blob } from \"buffer\";" 
+            : "import { " + name + " } from \"../index.js\";";
+        if (!list.Contains(importStatement))
+        {
+            list.Add(importStatement);
         }
     }
 
     private List<string> GetImports(GeneratorContext context, string category)
     {
-        var types = new List<string>();
+        var imports = new List<string>();
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == category && !endpoint.Deprecated)
             {
-                AddImport(context, endpoint.ReturnDataType.DataType, types);
+                AddImport(context, endpoint.ReturnDataType.DataType, imports);
                 foreach (var p in endpoint.Parameters)
                 {
-                    AddImport(context, p.DataType, types);
+                    AddImport(context, p.DataType, imports);
                 }
             }
         }
 
-        return GenerateImportsFromList(context, types);
+        return imports;
     }
 
     private List<string> GetImports(GeneratorContext context, SchemaItem item)
     {
-        var types = new List<string>();
+        var imports = new List<string>();
         foreach (var field in (item?.Fields).EmptyIfNull())
         {
-            if (field?.DataType != item?.Name)
-            {
-                AddImport(context, field?.DataType, types);
-            }
-        }
-
-        return GenerateImportsFromList(context, types);
-    }
-
-    private List<string> GenerateImportsFromList(GeneratorContext context, List<string> types)
-    {
-        var suffixList = (context.Project.GenericSuffixes ?? Enumerable.Empty<string>()).ToList();
-        
-        // Deduplicate the list and generate import statements
-        var imports = new List<string>();
-        foreach (var t in types)
-        {
-            if (suffixList.Contains(t))
-            {
-                imports.Add($"import {{ {t} }} from \"..\";");
-                break;
-            } 
-            switch (t)
-            {
-                case "ActionResultModel":
-                    imports.Add("import { ActionResultModel } from \"..\";");
-                    break;
-                case "TestTimeoutException":
-                    imports.Add("import { ErrorResult } from \"..\";");
-                    break;
-                case "binary":
-                    imports.Add("import { Blob } from \"buffer\";");
-                    break;
-                case "string":
-                case "uuid":
-                case "object":
-                case "int32":
-                case "date":
-                case "date-time":
-                case "File":
-                case "boolean":
-                case "array":
-                case "email":
-                case "double":
-                case "float":
-                case "uri":
-                    break;
-                default:
-                    imports.Add("import { " + t + " } from \"..\";");
-                    break;
-            }
+            AddImport(context, field?.DataType, imports);
         }
 
         return imports;
@@ -352,6 +356,6 @@ public class TypescriptSdk : ILanguageSdk
     
     public string LanguageName()
     {
-        return "TypeScript/JavaScript";
+        return "TypeScript";
     }
 }
