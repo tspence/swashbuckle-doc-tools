@@ -32,14 +32,14 @@ You can automate these steps in a Github workflow to execute this program automa
 
 ## Supported Languages
 
-| Language   | Supported   | Github Workflows | Notes                 |
-|------------|-------------|------------------|-----------------------|
-| C#         | Yes         | Automated        | Most complete support |
-| Dart       | In Progress | No               | In development        |
-| Java       | Yes         | No               |                       |
-| Python     | Yes         | No               |                       |
-| Ruby       | In Progress | No               | Somewhat supported    |
-| TypeScript | Yes         | No               |                       |
+| Language   | Supported   | Github Workflows | Notes              |
+|------------|-------------|------------------|--------------------|
+| C#         | Yes         | Automated        | Live               |
+| Dart       | In Progress | No               | In development     |
+| Java       | Yes         | No               |                    |
+| Python     | Yes         | No               | Live               |
+| Ruby       | In Progress | No               | Somewhat supported |
+| TypeScript | Yes         | No               | Live               |
 
 ## Supported Tools
 
