@@ -160,7 +160,7 @@ public class TypescriptSdk : ILanguageSdk
 
             // Construct header
             sb.AppendLine(FileHeader(context.Project));
-            sb.AppendLine($"import {{ {context.Project.Typescript.ClassName} }} from \"..\";");
+            sb.AppendLine($"import {{ {context.Project.Typescript.ClassName} }} from \"../index.js\";");
             foreach (var import in GetImports(context, cat))
             {
                 sb.AppendLine(import);
@@ -293,7 +293,7 @@ public class TypescriptSdk : ILanguageSdk
 
         var importStatement = (name == "binary") 
             ? "import { Blob } from \"buffer\";" 
-            : "import { " + name + " } from \"..\";";
+            : "import { " + name + " } from \"../index.js\";";
         if (!list.Contains(importStatement))
         {
             list.Add(importStatement);

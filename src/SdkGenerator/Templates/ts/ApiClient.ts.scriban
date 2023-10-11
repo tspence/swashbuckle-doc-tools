@@ -13,15 +13,15 @@
  */
 
 {{~ for cat in api.categories ~}}
-import { {{ cat }}Client } from ".";
+import { {{ cat }}Client } from "./index.js";
 {{~ end ~}}
-import { {{ project.typescript.response_class }} } from ".";
+import { {{ project.typescript.response_class }} } from "./index.js";
 
-import * as axios from "axios";
+import axios, { Method } from "axios";
 import { default as FormData } from "form-data";
-import * as fs from "fs";
-import * as os from "os";
-import * as url from "url";
+import fs from "fs";
+import os from "os";
+import url from "url";
 
 /**
  * List of headers used by the API
@@ -45,7 +45,6 @@ export class {{ project.typescript.class_name }} {
   private readonly serverUrl: string;
   private readonly version: string = "{{ api.semver3 }}";
   private bearerToken: string | null = null;
-  private apiKey: string | null = null;
   private sdkName = "TypeScript";
   private appName: string | null = null;
   private customHeaderFunc: ((headers: unknown) => Promise<unknown>) | null = null;
@@ -106,20 +105,6 @@ export class {{ project.typescript.class_name }} {
    */
   public withBearerToken(token: string): {{ project.typescript.class_name }} {
     this.bearerToken = token;
-    this.apiKey = null;
-    return this;
-  }
-
-  /**
-   * Configures this API client to use an API Key.
-   *
-   * {{ project.authentication_help }}
-   * 
-   * @param apiKey The API key to use for this API session
-   */
-  public withApiKey(apiKey: string): {{ project.typescript.class_name }} {
-    this.apiKey = apiKey;
-    this.bearerToken = null;
     return this;
   }
   
@@ -162,9 +147,6 @@ export class {{ project.typescript.class_name }} {
     if (this.bearerToken !== null) {
       headers["Authorization"] = `Bearer ${this.bearerToken}`;
     } 
-    if (this.apiKey !== null) {
-      headers["ApiKey"] = this.apiKey;
-    }
     if (this.customHeaderFunc != null) {
       return (await this.customHeaderFunc(headers)) as ApiHeaders;
     } else {
@@ -175,7 +157,7 @@ export class {{ project.typescript.class_name }} {
   /**
    * Make a GET request using this client
    */
-  public async request<T>(method: axios.Method, path: string, options: unknown, body: unknown): Promise<T> {
+  public async request<T>(method: Method, path: string, options: unknown, body: unknown): Promise<T> {
     const requestConfig = {
       url: new url.URL(path, this.serverUrl).href,
       method,
@@ -183,13 +165,14 @@ export class {{ project.typescript.class_name }} {
       data: body,
       headers: await this.getHeaders(),
     };
-    return await axios.default.request(requestConfig);
+    const result = await axios.default.request(requestConfig);
+    return result.data;
   }
 
   /**
    * Upload a file to a REST endpoint and retrieve results as JSON
    */
-  public async fileUpload<T>(method: axios.Method, path: string, options: unknown, filename: string): Promise<T> {
+  public async fileUpload<T>(method: Method, path: string, options: unknown, filename: string): Promise<T> {
     const fileBuffer = await fs.promises.readFile(filename);
     const formData = new FormData();
     formData.append("file", fileBuffer);
@@ -200,13 +183,14 @@ export class {{ project.typescript.class_name }} {
       params: options,
       headers: await this.getHeaders(),
     };
-    return await axios.default.request(requestConfig);
+    const result = await axios.default.request(requestConfig);
+    return result.data;
   }
 
   /**
    * Make a GET request using this client and download the results as a blob
    */
-  public async requestBlob(method: axios.Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
+  public async requestBlob(method: Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
     const responseType: axios.ResponseType = "blob";
     const requestConfig: axios.AxiosRequestConfig = {
       url: new url.URL(path, this.serverUrl).href,
@@ -216,6 +200,7 @@ export class {{ project.typescript.class_name }} {
       headers: await this.getHeaders(),
       responseType,
     };
-    return await axios.default.request(requestConfig);
+    const result = await axios.default.request(requestConfig);
+    return result.data;
   }
 }
