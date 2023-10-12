@@ -76,15 +76,26 @@ public class JavaSdk : ILanguageSdk
             s += "[]";
         }
         
+        // Handle lists, which are congruent to an array
+        if (s.EndsWith("List", StringComparison.OrdinalIgnoreCase))
+        {
+            return JavaTypeName(context, s.Substring(0, s.Length - 4), true);
+        }
+        
         // Is this a generic class?
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s[..^genericName.Length]}>";
+                var innerType = s[..^genericName.Length];
+                s = $"{genericName}<{JavaTypeName(context, innerType, false)}>";
             }
         }
 
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return "Object";
+        }
         return s;
     }
 
@@ -192,7 +203,6 @@ public class JavaSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ClassName};");
             sb.AppendLine($"import {context.Project.Java.Namespace}.RestRequest;");
-            sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ResponseClass};");
             sb.AppendLine("import org.jetbrains.annotations.NotNull;");
             sb.AppendLine("import org.jetbrains.annotations.Nullable;");
             foreach (var import in GetImports(context, cat))
@@ -240,7 +250,7 @@ public class JavaSdk : ILanguageSdk
 
                     // Write the method
                     sb.AppendLine(
-                        $"    public @NotNull {context.Project.Java.ResponseClass}<{returnType}> {endpoint.Name.ToCamelCase()}({paramListStr})");
+                        $"    public @NotNull {returnType} {endpoint.Name.ToCamelCase()}({paramListStr})");
                     sb.AppendLine("    {");
                     sb.AppendLine(
                         $"        {requestType} r = new {requestType}(this.client, \"{endpoint.Method.ToUpper()}\", \"{endpoint.Path}\");");

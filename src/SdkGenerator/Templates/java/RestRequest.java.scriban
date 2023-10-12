@@ -45,7 +45,7 @@ public class RestRequest<@NotNull T> {
     private String method;
     private String path;
     private Object body;
-    private {{ project.java.module_name }} client;
+    private {{ project.java.class_name }} client;
 
     /**
      * <p>
@@ -56,7 +56,7 @@ public class RestRequest<@NotNull T> {
      * @param method a {@link java.lang.String} object.
      * @param path   a {@link java.lang.String} object.
      */
-    public RestRequest(@NotNull {{ project.java.module_name }} client, @NotNull String method, @NotNull String path) {
+    public RestRequest(@NotNull {{ project.java.class_name }} client, @NotNull String method, @NotNull String path) {
         this.client = client;
         this.method = method;
         this.path = path;
