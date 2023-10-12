@@ -167,12 +167,6 @@ public class RestRequest<@NotNull T> {
                 request.addHeader("Authorization", "Bearer " + bearerToken);
             }
 
-            // Add authentication
-            String apiKey = this.client.getApiKey();
-            if (apiKey != null) {
-                request.addHeader("Api-Key", apiKey);
-            }
-
             // If we have a request body
             Gson gson = new Gson();
             if (body != null) {
