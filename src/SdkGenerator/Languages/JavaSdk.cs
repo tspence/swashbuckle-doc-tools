@@ -27,6 +27,8 @@ public class JavaSdk : ILanguageSdk
                + " */\n\n";
     }
 
+    private List<string> _reserved = new() { "static" };
+
     private string JavaTypeName(GeneratorContext context, string typeName, bool isArray)
     {
         var s = context.Api.ReplaceEnumWithType(typeName);
@@ -65,9 +67,6 @@ public class JavaSdk : ILanguageSdk
             case "File":
             case "binary":
                 s = "byte[]";
-                break;
-            case "TestTimeoutException":
-                s = "ErrorResult";
                 break;
         }
 
@@ -148,7 +147,7 @@ public class JavaSdk : ILanguageSdk
                     {
                         // This is the field; we collect all fields
                         sb.AppendLine(
-                            $"    private {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name.ToCamelCase()};");
+                            $"    private {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name.ToCamelCase().ToVariableName(_reserved)};");
                     }
                 }
 
@@ -161,7 +160,7 @@ public class JavaSdk : ILanguageSdk
                         // For whatever reason, Java wants the field description to be the "return" value of the getter
                         sb.Append(field.DescriptionMarkdown.ToJavaDoc(4, "The field " + field.Name));
                         sb.AppendLine(
-                            $"    public {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get{field.Name.ToProperCase()}() {{ return this.{field.Name.ToCamelCase()}; }}");
+                            $"    public {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get{field.Name.ToProperCase()}() {{ return this.{field.Name.ToCamelCase().ToVariableName(_reserved)}; }}");
 
                         // For whatever reason, Java wants the field description to be the "value" param of the setter
                         var pf = new ParameterField
@@ -171,7 +170,7 @@ public class JavaSdk : ILanguageSdk
                         };
                         sb.Append(field.DescriptionMarkdown.ToJavaDoc(4, null, new List<ParameterField> { pf }));
                         sb.AppendLine(
-                            $"    public void set{field.Name.ToProperCase()}({FixupType(context, field.DataType, field.IsArray, field.Nullable)} value) {{ this.{field.Name.ToCamelCase()} = value; }}");
+                            $"    public void set{field.Name.ToProperCase()}({FixupType(context, field.DataType, field.IsArray, field.Nullable)} value) {{ this.{field.Name.ToCamelCase().ToVariableName(_reserved)} = value; }}");
                     }
                 }
 
@@ -241,7 +240,7 @@ public class JavaSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters
-                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name}");
+                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name.ToVariableName(_reserved)}");
 
                     // What is our return type?
                     string rawReturnType = endpoint.ReturnDataType.DataType;
@@ -269,10 +268,10 @@ public class JavaSdk : ILanguageSdk
                                 sb.AppendLine("        r.AddBody(body);");
                                 break;
                             case "query":
-                                sb.AppendLine($"        r.AddQuery(\"{o.Name}\", {o.Name}.toString());");
+                                sb.AppendLine($"        r.AddQuery(\"{o.Name}\", {o.Name.ToVariableName(_reserved)}.toString());");
                                 break;
                             case "path":
-                                sb.AppendLine($"        r.AddPath(\"{{{o.Name}}}\", {o.Name}.toString());");
+                                sb.AppendLine($"        r.AddPath(\"{{{o.Name}}}\", {o.Name.ToVariableName(_reserved)}.toString());");
                                 break;
                             case "form":
                                 break;
@@ -307,30 +306,20 @@ public class JavaSdk : ILanguageSdk
             return;
         }
         
-        bool isGeneric = false;
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
             if (name.EndsWith(genericName))
             {
-                isGeneric = true;
                 list.Add(genericName);
-                list.Add("type-token");
-                var innerType = name[..^11];
+                var innerType = name[..^genericName.Length];
                 AddImport(context, innerType, list);
-                break;
+                return;
             }
         }
-
-        if (!isGeneric)
+        
+        if (context.Api.FindEnum(name) == null)
         {
-            if (name.Equals("TestTimeoutException"))
-            {
-                list.Add("ErrorResult");
-            }
-            else if (context.Api.FindEnum(name) == null)
-            {
-                list.Add(name);
-            }
+            list.Add(name);
         }
     }
 
@@ -384,6 +373,7 @@ public class JavaSdk : ILanguageSdk
             case "uuid":
             case "object":
             case "int32":
+            case "integer":
             case "boolean":
             case "double":
             case "array":
@@ -392,13 +382,10 @@ public class JavaSdk : ILanguageSdk
             case "float":
             case "date":
             case "date-time":
-                return null;
-            case "type-token":
-                return "import com.google.gson.reflect.TypeToken;";
             case "binary":
             case "File":
             case "byte[]":
-                return $"import {context.Project.Java.Namespace}.BlobRequest;";
+                return null;
             default:
                 return $"import {context.Project.Java.Namespace}.models.{type};";
         }

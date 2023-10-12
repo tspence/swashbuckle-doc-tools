@@ -176,12 +176,10 @@ public class RestRequest<@NotNull T> {
             final CloseableHttpResponse response = httpclient.execute(request);
 
             // Did we succeed?
-            int code = response.getCode();
             long serverDuration = 0;
             if (response.getHeader("ServerDuration") != null) {
                 serverDuration = Long.parseLong(response.getHeader("ServerDuration").getValue());
             }
-
             String content = EntityUtils.toString(response.getEntity());
             long roundTripTime = Duration.between(start, Instant.now()).toMillis();
             result.Parse(content, response.getCode(), serverDuration, roundTripTime);
