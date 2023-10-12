@@ -67,6 +67,10 @@ for env in project.environments
 ~}}
         String url = "{{ env.url }}";
 {{~
+    else
+~}}
+        String url = env;
+{{~
     end 
 end 
 ~}}

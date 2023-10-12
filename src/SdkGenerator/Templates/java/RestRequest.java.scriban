@@ -13,7 +13,6 @@
 
 package {{ project.java.namespace }};
 
-import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.URI;
 import java.time.Duration;
@@ -52,7 +51,7 @@ public class RestRequest<@NotNull T> {
      * Constructor for RestRequest.
      * </p>
      *
-     * @param client a {@link {{ project.java.namespace }}.{{ project.java.module_name }}} object.
+     * @param client a {@link {{ project.java.namespace }}.{{ project.java.class_name }}} object.
      * @param method a {@link java.lang.String} object.
      * @param path   a {@link java.lang.String} object.
      */
@@ -102,12 +101,11 @@ public class RestRequest<@NotNull T> {
     /**
      * Adapted from Apache simple request client example
      *
-     * @param classReference a {@link java.lang.reflect.Type} object.
      * @return a {@link {{ project.java.namespace }}.{{ project.java.response_class }}} object.
      */
-    public @NotNull {{ project.java.response_class }}<T> Call(Type classReference) {
+    public @NotNull {{ project.java.response_class }}<T> Call() {
         Instant start = Instant.now();
-        {{ project.java.response_class }}<T> {{ project.java.response_class }} = new {{ project.java.response_class }}<T>();
+        {{ project.java.response_class }}<T> result = new {{ project.java.response_class }}<T>();
         try {
 
             CloseableHttpClient httpclient = HttpClients.createDefault();
@@ -168,43 +166,28 @@ public class RestRequest<@NotNull T> {
             }
 
             // If we have a request body
-            Gson gson = new Gson();
             if (body != null) {
+                Gson gson = new Gson();
                 StringEntity stringEntity = new StringEntity(gson.toJson(body));
                 request.setEntity(stringEntity);
             }
+            
             // Execute and parse results
             final CloseableHttpResponse response = httpclient.execute(request);
-
-            // get round trip time
-            long roundTripTime = Duration.between(start, Instant.now()).toMillis();
 
             // Did we succeed?
             int code = response.getCode();
             long serverDuration = 0;
-
             if (response.getHeader("ServerDuration") != null) {
                 serverDuration = Long.parseLong(response.getHeader("ServerDuration").getValue());
             }
 
             String content = EntityUtils.toString(response.getEntity());
-
-            if (code >= 200 && code < 300) {
-                T t = gson.fromJson(content, classReference);
-                {{ project.java.response_class }}.setValue(t);
-                {{ project.java.response_class }}.setServerDuration(serverDuration);
-                {{ project.java.response_class }}.setRoundTripTime(roundTripTime);
-                {{ project.java.response_class }}.setSuccess(true);
-            } else {
-                ErrorResult errorResult = gson.fromJson(content, ErrorResult.class);
-                {{ project.java.response_class }}.setError(errorResult);
-                {{ project.java.response_class }}.setSuccess(false);
-            }
-            return {{ project.java.response_class }};
+            long roundTripTime = Duration.between(start, Instant.now()).toMillis();
+            result.Parse(content, response.getCode(), serverDuration, roundTripTime);
         } catch (Exception e) {
-            {{ project.java.response_class }}.setSuccess(false);
-            {{ project.java.response_class }}.setException(e);
+            result.Parse(e.toString(), -1, -1, -1);
         }
-        return {{ project.java.response_class }};
+        return result;
     }
 }

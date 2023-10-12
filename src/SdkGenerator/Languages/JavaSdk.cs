@@ -117,7 +117,7 @@ public class JavaSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null)
+            if (item.Fields != null && !context.Project.Java.HandwrittenClasses.Contains(item.Name))
             {
                 var sb = new StringBuilder();
                 sb.AppendLine(FileHeader(context.Project));
@@ -244,13 +244,18 @@ public class JavaSdk : ILanguageSdk
                         select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name}");
 
                     // What is our return type?
-                    var returnType = JavaTypeName(context, endpoint.ReturnDataType.DataType,
-                        endpoint.ReturnDataType.IsArray);
+                    string rawReturnType = endpoint.ReturnDataType.DataType;
+                    if (rawReturnType.EndsWith(context.Project.Java.ResponseClass, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rawReturnType = rawReturnType.Substring(0,
+                            rawReturnType.Length - context.Project.Java.ResponseClass.Length);
+                    }
+                    var returnType = JavaTypeName(context, rawReturnType, endpoint.ReturnDataType.IsArray);
                     var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
 
                     // Write the method
                     sb.AppendLine(
-                        $"    public @NotNull {returnType} {endpoint.Name.ToCamelCase()}({paramListStr})");
+                        $"    public @NotNull {context.Project.Java.ResponseClass}<{returnType}> {endpoint.Name.ToCamelCase()}({paramListStr})");
                     sb.AppendLine("    {");
                     sb.AppendLine(
                         $"        {requestType} r = new {requestType}(this.client, \"{endpoint.Method.ToUpper()}\", \"{endpoint.Path}\");");
@@ -275,32 +280,7 @@ public class JavaSdk : ILanguageSdk
                                 throw new Exception("Unknown location " + o.Location);
                         }
                     }
-
-                    // Check if this is a generic
-                    bool isGeneric = false;
-                    foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-                    {
-                        if (returnType.Contains(genericName))
-                        {
-                            sb.AppendLine($"        return r.Call(new TypeToken<{returnType}>() {{}}.getType());");
-                            isGeneric = true;
-                            break;
-                        }
-                    }
-                    
-                    // Other non-generic types
-                    if (!isGeneric)
-                    {
-                        if (returnType == "byte[]")
-                        {
-                            sb.AppendLine("        return r.Call();");
-                        }
-                        else
-                        {
-                            sb.AppendLine($"        return r.Call({returnType}.class);");
-                        }
-                    }
-
+                    sb.AppendLine($"        return r.Call();");
                     sb.AppendLine("    }");
                 }
             }
@@ -316,6 +296,17 @@ public class JavaSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, string name, HashSet<string> list)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        if (name.EndsWith("List", StringComparison.OrdinalIgnoreCase))
+        {
+            AddImport(context, name.Substring(0, name.Length - 4), list);
+            return;
+        }
+        
         bool isGeneric = false;
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
@@ -434,12 +425,10 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(".", "templates", "java", "pom.xml.scriban"),
             $"<artifactId>{context.Project.Java.ModuleName.ToLower()}<\\/artifactId>\\s+<version>[\\d\\.]+<\\/version>",
             $"<artifactId>{context.Project.Java.ModuleName.ToLower()}</artifactId>\r\n    <version>{context.OfficialVersion}</version>");
-        await ScribanFunctions.PatchOrTemplate(context, 
-            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
-                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"),
+        await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
-            "request.addHeader\\(\"SdkVersion\", \"[\\d\\.]+\"\\);",
-            $"request.addHeader(\"SdkVersion\", \"{context.OfficialVersion}\");");
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
+                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
     }
     
     public string LanguageName()
