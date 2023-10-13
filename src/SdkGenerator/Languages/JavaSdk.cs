@@ -266,13 +266,15 @@ public class JavaSdk : ILanguageSdk
                         switch (o.Location)
                         {
                             case "body":
-                                sb.AppendLine("        r.AddBody(body);");
+                                sb.AppendLine("        if (body != null) { r.AddBody(body); }");
                                 break;
                             case "query":
-                                sb.AppendLine($"        r.AddQuery(\"{o.Name}\", {o.Name.ToVariableName(_reserved)}.toString());");
+                                sb.AppendLine(
+                                    $"        if ({o.Name.ToVariableName(_reserved)} != null) {{ r.AddQuery(\"{o.Name}\", {o.Name.ToVariableName(_reserved)}.toString()); }}");
                                 break;
                             case "path":
-                                sb.AppendLine($"        r.AddPath(\"{{{o.Name}}}\", {o.Name.ToVariableName(_reserved)}.toString());");
+                                sb.AppendLine(
+                                    $"        r.AddPath(\"{{{o.Name}}}\", {o.Name.ToVariableName(_reserved)} == null ? \"\" : {o.Name.ToVariableName(_reserved)}.toString());");
                                 break;
                             case "form":
                                 break;
