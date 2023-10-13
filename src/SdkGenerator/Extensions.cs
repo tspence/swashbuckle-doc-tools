@@ -236,8 +236,8 @@ public static class Extensions
             {
                 var cleansedMarkdown = Regex.Replace(p.DescriptionMarkdown, "\\s+", " ").TrimEnd();
                 sb.AppendLine(!string.IsNullOrWhiteSpace(cleansedMarkdown)
-                    ? $"{prefix} * @param {p.Name} {cleansedMarkdown}"
-                    : $"{prefix} * @param {p.Name} Documentation pending");
+                    ? $"{prefix} * @param {p.Name.ToVariableName()} {cleansedMarkdown}"
+                    : $"{prefix} * @param {p.Name.ToVariableName()} Documentation pending");
             }
         }
 
