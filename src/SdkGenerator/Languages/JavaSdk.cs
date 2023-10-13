@@ -204,6 +204,7 @@ public class JavaSdk : ILanguageSdk
             sb.AppendLine($"import {context.Project.Java.Namespace}.RestRequest;");
             sb.AppendLine("import org.jetbrains.annotations.NotNull;");
             sb.AppendLine("import org.jetbrains.annotations.Nullable;");
+            sb.AppendLine("import com.google.gson.reflect.TypeToken;");
             foreach (var import in GetImports(context, cat))
             {
                 sb.AppendLine(import);
@@ -279,7 +280,7 @@ public class JavaSdk : ILanguageSdk
                                 throw new Exception("Unknown location " + o.Location);
                         }
                     }
-                    sb.AppendLine($"        return r.Call();");
+                    sb.AppendLine($"        return r.Call(new TypeToken<AstroResult<{returnType}>>() {{}}.getType());");
                     sb.AppendLine("    }");
                 }
             }
@@ -407,11 +408,9 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar),
                 context.Project.Java.ClassName + ".java"));
-        await ScribanFunctions.PatchOrTemplate(context, 
-            Path.Combine(context.Project.Java.Folder, "pom.xml"),
+        await ScribanFunctions.ExecuteTemplate(context,
             Path.Combine(".", "templates", "java", "pom.xml.scriban"),
-            $"<artifactId>{context.Project.Java.ModuleName.ToLower()}<\\/artifactId>\\s+<version>[\\d\\.]+<\\/version>",
-            $"<artifactId>{context.Project.Java.ModuleName.ToLower()}</artifactId>\r\n    <version>{context.OfficialVersion}</version>");
+            Path.Combine(context.Project.Java.Folder, "pom.xml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
