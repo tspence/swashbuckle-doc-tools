@@ -13,6 +13,7 @@
 
 package {{ project.java.namespace }};
 
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.URI;
 import java.time.Duration;
@@ -34,7 +35,7 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+
 
 /**
  * Represents a request to a remote web server
@@ -104,7 +105,7 @@ public class RestRequest<@NotNull T> {
      *
      * @return a {@link {{ project.java.namespace }}.{{ project.java.response_class }}} object.
      */
-    public @NotNull {{ project.java.response_class }}<T> Call(TypeToken<AstroResult<T>> token) {
+    public @NotNull {{ project.java.response_class }}<T> Call(Type classReference) {
         Instant start = Instant.now();
         {{ project.java.response_class }}<T> result = new {{ project.java.response_class }}<T>();
         try {
@@ -183,9 +184,9 @@ public class RestRequest<@NotNull T> {
             }
             String content = EntityUtils.toString(response.getEntity());
             long roundTripTime = Duration.between(start, Instant.now()).toMillis();
-            result.Parse(token, content, response.getCode(), serverDuration, roundTripTime);
+            result.Parse(classReference, content, response.getCode(), serverDuration, roundTripTime);
         } catch (Exception e) {
-            result.Parse(token, e.toString(), -1, -1, -1);
+            result.Parse(classReference, e.toString(), -1, -1, -1);
         }
         return result;
     }
