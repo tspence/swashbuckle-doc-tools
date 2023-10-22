@@ -8,7 +8,7 @@ using SdkGenerator.Project;
 
 namespace SdkGenerator.Readme;
 
-public class ReadmeTools
+public static class ReadmeTools
 {
     
     private static async Task<RestResponse> CallReadme(GeneratorContext context, string resource, Method method, string body, List<Tuple<string, string>> extraHeaders)
@@ -75,11 +75,10 @@ public class ReadmeTools
         {
             var resource = $"/api/v1/categories?page={page}&perPage={perPage}";
             var response = await CallReadme(context, resource, Method.Get, null, null);
-            if (response.IsSuccessful)
+            if (response.IsSuccessful && response.Content != null)
             {
                 // Preserve the "hidden" status - only a human being can approve the doc and make it visible
-                var content = response.Content;
-                var categories = JsonConvert.DeserializeObject<List<ReadmeCategoryModel>>(content);
+                var categories = JsonConvert.DeserializeObject<List<ReadmeCategoryModel>>(response.Content);
                 if (categories.Count == 0) break;
                 results.AddRange(categories);
             }
@@ -104,10 +103,10 @@ public class ReadmeTools
 
         // Check to see if the model exists
         var modelExists = await CallReadme(context, docName, Method.Get, null, null);
-        if (modelExists.IsSuccessful)
+        if (modelExists.IsSuccessful && modelExists.Content != null)
         {
             // Preserve the "hidden" status - only a human being can approve the doc and make it visible
-            var existingDoc = JsonConvert.DeserializeObject<ReadmeDocModel>(modelExists.Content);
+            //var existingDoc = JsonConvert.DeserializeObject<ReadmeDocModel>(modelExists.Content);
             var result = await CallReadme(context, docName, Method.Put, JsonConvert.SerializeObject(doc), null);
             context.LogError($"Updated {schemaName}: {result.StatusCode}");
         }
@@ -127,7 +126,7 @@ public class ReadmeTools
         };
         var resource = $"/api/v1/categories";
         var response = await CallReadme(context, resource, Method.Post, JsonConvert.SerializeObject(newCategory), null);
-        if (response.IsSuccessful)
+        if (response.IsSuccessful && response.Content != null)
         {
             // Preserve the "hidden" status - only a human being can approve the doc and make it visible
             var created = JsonConvert.DeserializeObject<ReadmeCategoryModel>(response.Content);

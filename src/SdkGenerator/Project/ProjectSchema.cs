@@ -101,6 +101,11 @@ public class ReadmeSiteSchema
     /// Set this value to avoid uploading API references multiple times
     /// </summary>
     public string ReadmeApiDefinitionId { get; set; }
+    
+    /// <summary>
+    /// Defined formats: 'list' and 'table'
+    /// </summary>
+    public string Format { get; set; }
 }
 
 public class LanguageSchema
