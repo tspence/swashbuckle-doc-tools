@@ -190,7 +190,7 @@ public class TypescriptSdk : ILanguageSdk
                     // Figure out the parameter list. For parameters, we'll use ? to indicate nullability.
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters
                         orderby p.Required descending
-                        select $"{p.Name}{(p.Required ? "" : "?")}: {FixupType(context, p.DataType, p.IsArray, false)}");
+                        select $"{p.Name.ToVariableName()}{(p.Required ? "" : "?")}: {FixupType(context, p.DataType, p.IsArray, false)}");
 
                     // Do we need to specify options?
                     var options = (from p in endpoint.Parameters where p.Location == "query" select p).ToList();
@@ -216,7 +216,7 @@ public class TypescriptSdk : ILanguageSdk
                         sb.AppendLine("      params: {");
                         foreach (var o in options)
                         {
-                            sb.AppendLine($"        {o.Name},");
+                            sb.AppendLine($"        '{o.Name}': {o.Name.ToVariableName()},");
                         }
 
                         sb.AppendLine("      },");

@@ -160,8 +160,11 @@ public static class DownloadFile
                                 }
                                 if (methodObj.SelectToken("description") is JValue desc)
                                 {
-                                    desc.Value = desc.Value?.ToString().ReflowMarkdown() + "\r\n\r\n" +
-                                                 $"### Data Definition\r\n\r\nSee [{cleanModelName}](../docs/{cleanModelName.ToLower()}) for the complete data definition.";
+                                    if (!string.IsNullOrWhiteSpace(project.Readme.DataModelUrl))
+                                    {
+                                        desc.Value = desc.Value?.ToString().ReflowMarkdown() + "\r\n\r\n" +
+                                                     $"### Data Definition\r\n\r\nSee [{cleanModelName}]({project.Readme.DataModelUrl}{cleanModelName.ToLower()}) for the complete data definition.";
+                                    }
                                 }
                             }
                         }
