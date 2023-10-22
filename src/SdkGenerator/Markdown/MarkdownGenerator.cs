@@ -98,40 +98,46 @@ public static class MarkdownGenerator
 
         // Provide definitions for all the fields
         sb.AppendLine("# Fields");
-        sb.AppendLine("| Field | Type | Notes |");
-        sb.AppendLine("|--|--|--|");
+        sb.AppendLine("| Field | Description |");
+        sb.AppendLine("|--|--|");
         foreach (var field in item.Fields)
         {
-            var modifiers = "";
+            List<string> modifiers = new();
+            modifiers.Add($"**{field.Name}**");
+            modifiers.Add($"{field.DataType}");
             if (field.Nullable)
             {
-                modifiers += "(nullable) ";
+                modifiers.Add("optional");
+            }
+            else
+            {
+                modifiers.Add("required");
             }
 
             if (field.ReadOnly)
             {
-                modifiers += "(read-only) ";
+                modifiers.Add("read-only");
             }
 
             if (field.Deprecated)
             {
-                modifiers += "(deprecated) ";
+                modifiers.Add("deprecated");
             }
 
             if (field.MaxLength.HasValue && field.MinLength.HasValue)
             {
-                modifiers += $"(between {field.MinLength} and {field.MaxLength} characters) ";
+                modifiers.Add($"between {field.MinLength} and {field.MaxLength} characters");
             }
             else if (field.MinLength.HasValue)
             {
-                modifiers += $"(minimum {field.MinLength} characters) ";
+                modifiers.Add($"minimum {field.MinLength} characters");
             }
             else if (field.MaxLength.HasValue)
             {
-                modifiers += $"(maximum {field.MaxLength} characters) ";
+                modifiers.Add($"maximum {field.MaxLength} characters");
             }
 
-            sb.AppendLine($"| **{field.Name}** | {field.DataType} {modifiers} | {FixupLines(field.DescriptionMarkdown)} |");
+            sb.AppendLine($"| {string.Join("<br />", modifiers)} | {FixupLines(field.DescriptionMarkdown)} |");
         }
 
         return sb.ToString();

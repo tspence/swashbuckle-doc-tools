@@ -12,14 +12,18 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2023</Copyright>
     <PackageReleaseNotes>
-      # 1.2.0
-      October 11, 2023
+      # 1.2.1
+      October 22, 2023
 
-      * Verified that Python and TypeScript work correctly, at least for my current SDKs
+      * Class and property generation can now avoid language-specific keywords
+      * Variable names are now cleansed for parameters (some APIs use $param=value)
+      * Java now uses semver3 as is becoming the standard in most places
+      * Generated API documentation will now only link to data model pages if specified
+      * Readme can now select between `list` and `table` style data model documentation
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

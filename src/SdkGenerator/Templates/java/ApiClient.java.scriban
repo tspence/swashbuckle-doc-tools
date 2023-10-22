@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class {{ project.java.class_name }} {
     private String serverUri;
-    private String apiKey;
     private String bearerToken;
     private String appName;
 
@@ -68,6 +67,10 @@ for env in project.environments
 ~}}
         String url = "{{ env.url }}";
 {{~
+    else
+~}}
+        String url = env;
+{{~
     end 
 end 
 ~}}
@@ -106,22 +109,6 @@ end
     public @NotNull {{ project.java.class_name }} withBearerToken(@NotNull String token)
     {
         this.bearerToken = token;
-        this.apiKey = null;
-        return this;
-    }
-
-    /**
-     * Configures this API client to use an API Key.
-     *
-     * {{ project.authentication_help }}
-     *
-     * @param apiKey The API key to use for this API session
-     * @return The API client to use
-     */
-    public @NotNull {{ project.java.class_name }} withApiKey(@NotNull String apiKey)
-    {
-        this.apiKey = apiKey;
-        this.bearerToken = null;
         return this;
     }
 
@@ -143,15 +130,6 @@ end
      */
     public @NotNull String getServerUri() {
         return this.serverUri;
-    }
-
-    /**
-     * Returns the currently selected API key
-     *
-     * @return The API Key
-     */
-    public @Nullable String getApiKey() {
-        return this.apiKey;
     }
 
     /**

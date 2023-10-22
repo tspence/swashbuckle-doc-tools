@@ -3,7 +3,10 @@
 # Swashbuckle SDK Generator
 
 This program allows you to generate a hand-optimized software development kit for different programming languages for 
-your REST API.  
+your REST API.  It can also generate documentation in Markdown or Readme formats.
+
+Example usage of this program:
+* [ProjectManager](https://developer.projectmanager.com)
 
 This opinionated software makes assumptions about your API and attempts to create a SDK that matches good practices in 
 each programming language.  The OpenAPI / Swagger spec permits lots of different ways of doing things; this tool is 

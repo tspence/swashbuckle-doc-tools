@@ -75,9 +75,9 @@ public class EnvironmentSchema
 public class ReadmeSiteSchema
 {
     /// <summary>
-    /// The customer visible URL of your developer site
+    /// The base URL of data models
     /// </summary>
-    public string Url { get; set; }
+    public string DataModelUrl { get; set; }
 
     /// <summary>
     /// An API key to use to communicate with Readme
@@ -101,6 +101,11 @@ public class ReadmeSiteSchema
     /// Set this value to avoid uploading API references multiple times
     /// </summary>
     public string ReadmeApiDefinitionId { get; set; }
+    
+    /// <summary>
+    /// Defined formats: 'list' and 'table'
+    /// </summary>
+    public string Format { get; set; }
 }
 
 public class LanguageSchema

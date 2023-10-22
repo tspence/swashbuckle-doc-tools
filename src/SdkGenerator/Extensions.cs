@@ -18,10 +18,13 @@ public static class Extensions
     /// Examples:
     /// * $top -> top
     /// * name -> name
+    /// * some name -> somename
+    /// * [reserved keyword] -> _reservedkeyword
     /// </summary>
     /// <param name="swaggerParameterName">A swagger parameter name</param>
+    /// <param name="keywords">A list of reserved keywords to avoid</param>
     /// <returns></returns>
-    public static string ToVariableName(this string swaggerParameterName)
+    public static string ToVariableName(this string swaggerParameterName, List<string> keywords = null)
     {
         var sb = new StringBuilder();
         foreach (var c in swaggerParameterName)
@@ -32,7 +35,13 @@ public static class Extensions
             }
         }
 
-        return sb.ToString();
+        var newName = sb.ToString();
+        if (keywords != null && keywords.Contains(newName, StringComparer.OrdinalIgnoreCase))
+        {
+            return "_" + newName;
+        }
+
+        return newName;
     }
     
     /// <summary>
@@ -227,8 +236,8 @@ public static class Extensions
             {
                 var cleansedMarkdown = Regex.Replace(p.DescriptionMarkdown, "\\s+", " ").TrimEnd();
                 sb.AppendLine(!string.IsNullOrWhiteSpace(cleansedMarkdown)
-                    ? $"{prefix} * @param {p.Name} {cleansedMarkdown}"
-                    : $"{prefix} * @param {p.Name} Documentation pending");
+                    ? $"{prefix} * @param {p.Name.ToVariableName()} {cleansedMarkdown}"
+                    : $"{prefix} * @param {p.Name.ToVariableName()} Documentation pending");
             }
         }
 

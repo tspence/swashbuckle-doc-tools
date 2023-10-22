@@ -161,13 +161,13 @@ public static class Program
             if (context.Project?.Readme?.ApiKey != null)
             {
                 Console.WriteLine("Uploading to Readme...");
-                await MarkdownGenerator.UploadSchemas(context, "list");
+                await MarkdownGenerator.UploadSchemas(context, context.Project.Readme.Format ?? "list");
                 Console.WriteLine("Uploaded to Readme.");
             }
             else if (context.Project?.SwaggerSchemaFolder != null)
             {
                 Console.WriteLine($"Writing documentation to {context.Project.SwaggerSchemaFolder}...");
-                await MarkdownGenerator.WriteMarkdownFiles(context, "list");
+                await MarkdownGenerator.WriteMarkdownFiles(context, context.Project.Readme?.Format ?? "list");
                 Console.WriteLine("Finished writing documentation files.");
             }
             else

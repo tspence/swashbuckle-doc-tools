@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 
 import com.google.gson.Gson;
 
+
 /**
  * Represents a request to a remote web server
  */
@@ -45,18 +46,18 @@ public class RestRequest<@NotNull T> {
     private String method;
     private String path;
     private Object body;
-    private {{ project.java.module_name }} client;
+    private {{ project.java.class_name }} client;
 
     /**
      * <p>
      * Constructor for RestRequest.
      * </p>
      *
-     * @param client a {@link {{ project.java.namespace }}.{{ project.java.module_name }}} object.
+     * @param client a {@link {{ project.java.namespace }}.{{ project.java.class_name }}} object.
      * @param method a {@link java.lang.String} object.
      * @param path   a {@link java.lang.String} object.
      */
-    public RestRequest(@NotNull {{ project.java.module_name }} client, @NotNull String method, @NotNull String path) {
+    public RestRequest(@NotNull {{ project.java.class_name }} client, @NotNull String method, @NotNull String path) {
         this.client = client;
         this.method = method;
         this.path = path;
@@ -102,12 +103,11 @@ public class RestRequest<@NotNull T> {
     /**
      * Adapted from Apache simple request client example
      *
-     * @param classReference a {@link java.lang.reflect.Type} object.
      * @return a {@link {{ project.java.namespace }}.{{ project.java.response_class }}} object.
      */
     public @NotNull {{ project.java.response_class }}<T> Call(Type classReference) {
         Instant start = Instant.now();
-        {{ project.java.response_class }}<T> {{ project.java.response_class }} = new {{ project.java.response_class }}<T>();
+        {{ project.java.response_class }}<T> result = new {{ project.java.response_class }}<T>();
         try {
 
             CloseableHttpClient httpclient = HttpClients.createDefault();
@@ -167,50 +167,27 @@ public class RestRequest<@NotNull T> {
                 request.addHeader("Authorization", "Bearer " + bearerToken);
             }
 
-            // Add authentication
-            String apiKey = this.client.getApiKey();
-            if (apiKey != null) {
-                request.addHeader("Api-Key", apiKey);
-            }
-
             // If we have a request body
-            Gson gson = new Gson();
             if (body != null) {
+                Gson gson = new Gson();
                 StringEntity stringEntity = new StringEntity(gson.toJson(body));
                 request.setEntity(stringEntity);
             }
+            
             // Execute and parse results
             final CloseableHttpResponse response = httpclient.execute(request);
 
-            // get round trip time
-            long roundTripTime = Duration.between(start, Instant.now()).toMillis();
-
             // Did we succeed?
-            int code = response.getCode();
             long serverDuration = 0;
-
             if (response.getHeader("ServerDuration") != null) {
                 serverDuration = Long.parseLong(response.getHeader("ServerDuration").getValue());
             }
-
             String content = EntityUtils.toString(response.getEntity());
-
-            if (code >= 200 && code < 300) {
-                T t = gson.fromJson(content, classReference);
-                {{ project.java.response_class }}.setValue(t);
-                {{ project.java.response_class }}.setServerDuration(serverDuration);
-                {{ project.java.response_class }}.setRoundTripTime(roundTripTime);
-                {{ project.java.response_class }}.setSuccess(true);
-            } else {
-                ErrorResult errorResult = gson.fromJson(content, ErrorResult.class);
-                {{ project.java.response_class }}.setError(errorResult);
-                {{ project.java.response_class }}.setSuccess(false);
-            }
-            return {{ project.java.response_class }};
+            long roundTripTime = Duration.between(start, Instant.now()).toMillis();
+            result.Parse(classReference, content, response.getCode(), serverDuration, roundTripTime);
         } catch (Exception e) {
-            {{ project.java.response_class }}.setSuccess(false);
-            {{ project.java.response_class }}.setException(e);
+            result.Parse(classReference, e.toString(), -1, -1, -1);
         }
-        return {{ project.java.response_class }};
+        return result;
     }
 }

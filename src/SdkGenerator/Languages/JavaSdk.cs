@@ -27,6 +27,8 @@ public class JavaSdk : ILanguageSdk
                + " */\n\n";
     }
 
+    private List<string> _reserved = new() { "static" };
+
     private string JavaTypeName(GeneratorContext context, string typeName, bool isArray)
     {
         var s = context.Api.ReplaceEnumWithType(typeName);
@@ -66,9 +68,6 @@ public class JavaSdk : ILanguageSdk
             case "binary":
                 s = "byte[]";
                 break;
-            case "TestTimeoutException":
-                s = "ErrorResult";
-                break;
         }
 
         if (isArray)
@@ -76,15 +75,26 @@ public class JavaSdk : ILanguageSdk
             s += "[]";
         }
         
+        // Handle lists, which are congruent to an array
+        if (s.EndsWith("List", StringComparison.OrdinalIgnoreCase))
+        {
+            return JavaTypeName(context, s.Substring(0, s.Length - 4), true);
+        }
+        
         // Is this a generic class?
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
             if (s.EndsWith(genericName))
             {
-                s = $"{genericName}<{s[..^genericName.Length]}>";
+                var innerType = s[..^genericName.Length];
+                s = $"{genericName}<{JavaTypeName(context, innerType, false)}>";
             }
         }
 
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return "Object";
+        }
         return s;
     }
 
@@ -106,7 +116,7 @@ public class JavaSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null)
+            if (item.Fields != null && !context.Project.Java.HandwrittenClasses.Contains(item.Name))
             {
                 var sb = new StringBuilder();
                 sb.AppendLine(FileHeader(context.Project));
@@ -137,7 +147,7 @@ public class JavaSdk : ILanguageSdk
                     {
                         // This is the field; we collect all fields
                         sb.AppendLine(
-                            $"    private {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name.ToCamelCase()};");
+                            $"    private {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name.ToCamelCase().ToVariableName(_reserved)};");
                     }
                 }
 
@@ -150,7 +160,7 @@ public class JavaSdk : ILanguageSdk
                         // For whatever reason, Java wants the field description to be the "return" value of the getter
                         sb.Append(field.DescriptionMarkdown.ToJavaDoc(4, "The field " + field.Name));
                         sb.AppendLine(
-                            $"    public {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get{field.Name.ToProperCase()}() {{ return this.{field.Name.ToCamelCase()}; }}");
+                            $"    public {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get{field.Name.ToProperCase()}() {{ return this.{field.Name.ToCamelCase().ToVariableName(_reserved)}; }}");
 
                         // For whatever reason, Java wants the field description to be the "value" param of the setter
                         var pf = new ParameterField
@@ -160,7 +170,7 @@ public class JavaSdk : ILanguageSdk
                         };
                         sb.Append(field.DescriptionMarkdown.ToJavaDoc(4, null, new List<ParameterField> { pf }));
                         sb.AppendLine(
-                            $"    public void set{field.Name.ToProperCase()}({FixupType(context, field.DataType, field.IsArray, field.Nullable)} value) {{ this.{field.Name.ToCamelCase()} = value; }}");
+                            $"    public void set{field.Name.ToProperCase()}({FixupType(context, field.DataType, field.IsArray, field.Nullable)} value) {{ this.{field.Name.ToCamelCase().ToVariableName(_reserved)} = value; }}");
                     }
                 }
 
@@ -192,9 +202,9 @@ public class JavaSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ClassName};");
             sb.AppendLine($"import {context.Project.Java.Namespace}.RestRequest;");
-            sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ResponseClass};");
             sb.AppendLine("import org.jetbrains.annotations.NotNull;");
             sb.AppendLine("import org.jetbrains.annotations.Nullable;");
+            sb.AppendLine("import com.google.gson.reflect.TypeToken;");
             foreach (var import in GetImports(context, cat))
             {
                 sb.AppendLine(import);
@@ -231,11 +241,16 @@ public class JavaSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters
-                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name}");
+                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {p.Name.ToVariableName(_reserved)}");
 
                     // What is our return type?
-                    var returnType = JavaTypeName(context, endpoint.ReturnDataType.DataType,
-                        endpoint.ReturnDataType.IsArray);
+                    string rawReturnType = endpoint.ReturnDataType.DataType;
+                    if (rawReturnType.EndsWith(context.Project.Java.ResponseClass, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rawReturnType = rawReturnType.Substring(0,
+                            rawReturnType.Length - context.Project.Java.ResponseClass.Length);
+                    }
+                    var returnType = JavaTypeName(context, rawReturnType, endpoint.ReturnDataType.IsArray);
                     var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
 
                     // Write the method
@@ -251,13 +266,15 @@ public class JavaSdk : ILanguageSdk
                         switch (o.Location)
                         {
                             case "body":
-                                sb.AppendLine("        r.AddBody(body);");
+                                sb.AppendLine("        if (body != null) { r.AddBody(body); }");
                                 break;
                             case "query":
-                                sb.AppendLine($"        r.AddQuery(\"{o.Name}\", {o.Name}.toString());");
+                                sb.AppendLine(
+                                    $"        if ({o.Name.ToVariableName(_reserved)} != null) {{ r.AddQuery(\"{o.Name}\", {o.Name.ToVariableName(_reserved)}.toString()); }}");
                                 break;
                             case "path":
-                                sb.AppendLine($"        r.AddPath(\"{{{o.Name}}}\", {o.Name}.toString());");
+                                sb.AppendLine(
+                                    $"        r.AddPath(\"{{{o.Name}}}\", {o.Name.ToVariableName(_reserved)} == null ? \"\" : {o.Name.ToVariableName(_reserved)}.toString());");
                                 break;
                             case "form":
                                 break;
@@ -265,32 +282,7 @@ public class JavaSdk : ILanguageSdk
                                 throw new Exception("Unknown location " + o.Location);
                         }
                     }
-
-                    // Check if this is a generic
-                    bool isGeneric = false;
-                    foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
-                    {
-                        if (returnType.Contains(genericName))
-                        {
-                            sb.AppendLine($"        return r.Call(new TypeToken<{returnType}>() {{}}.getType());");
-                            isGeneric = true;
-                            break;
-                        }
-                    }
-                    
-                    // Other non-generic types
-                    if (!isGeneric)
-                    {
-                        if (returnType == "byte[]")
-                        {
-                            sb.AppendLine("        return r.Call();");
-                        }
-                        else
-                        {
-                            sb.AppendLine($"        return r.Call({returnType}.class);");
-                        }
-                    }
-
+                    sb.AppendLine($"        return r.Call(new TypeToken<AstroResult<{returnType}>>() {{}}.getType());");
                     sb.AppendLine("    }");
                 }
             }
@@ -306,30 +298,31 @@ public class JavaSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, string name, HashSet<string> list)
     {
-        bool isGeneric = false;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        if (name.EndsWith("List", StringComparison.OrdinalIgnoreCase))
+        {
+            AddImport(context, name.Substring(0, name.Length - 4), list);
+            return;
+        }
+        
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
             if (name.EndsWith(genericName))
             {
-                isGeneric = true;
                 list.Add(genericName);
-                list.Add("type-token");
-                var innerType = name[..^11];
+                var innerType = name[..^genericName.Length];
                 AddImport(context, innerType, list);
-                break;
+                return;
             }
         }
-
-        if (!isGeneric)
+        
+        if (context.Api.FindEnum(name) == null)
         {
-            if (name.Equals("TestTimeoutException"))
-            {
-                list.Add("ErrorResult");
-            }
-            else if (context.Api.FindEnum(name) == null)
-            {
-                list.Add(name);
-            }
+            list.Add(name);
         }
     }
 
@@ -383,6 +376,7 @@ public class JavaSdk : ILanguageSdk
             case "uuid":
             case "object":
             case "int32":
+            case "integer":
             case "boolean":
             case "double":
             case "array":
@@ -391,13 +385,10 @@ public class JavaSdk : ILanguageSdk
             case "float":
             case "date":
             case "date-time":
-                return null;
-            case "type-token":
-                return "import com.google.gson.reflect.TypeToken;";
             case "binary":
             case "File":
             case "byte[]":
-                return $"import {context.Project.Java.Namespace}.BlobRequest;";
+                return null;
             default:
                 return $"import {context.Project.Java.Namespace}.models.{type};";
         }
@@ -419,17 +410,13 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar),
                 context.Project.Java.ClassName + ".java"));
-        await ScribanFunctions.PatchOrTemplate(context, 
-            Path.Combine(context.Project.Java.Folder, "pom.xml"),
+        await ScribanFunctions.ExecuteTemplate(context,
             Path.Combine(".", "templates", "java", "pom.xml.scriban"),
-            $"<artifactId>{context.Project.Java.ModuleName.ToLower()}<\\/artifactId>\\s+<version>[\\d\\.]+<\\/version>",
-            $"<artifactId>{context.Project.Java.ModuleName.ToLower()}</artifactId>\r\n    <version>{context.OfficialVersion}</version>");
-        await ScribanFunctions.PatchOrTemplate(context, 
-            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
-                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"),
+            Path.Combine(context.Project.Java.Folder, "pom.xml"));
+        await ScribanFunctions.ExecuteTemplate(context, 
             Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
-            "request.addHeader\\(\"SdkVersion\", \"[\\d\\.]+\"\\);",
-            $"request.addHeader(\"SdkVersion\", \"{context.OfficialVersion}\");");
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
+                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
     }
     
     public string LanguageName()

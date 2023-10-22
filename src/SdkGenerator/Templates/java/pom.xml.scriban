@@ -6,7 +6,7 @@
 
     <groupId>{{ project.java.namespace }}</groupId>
     <artifactId>{{ project.java.module_name | string.downcase }}</artifactId>
-    <version>{{ api.semver4 }}</version>
+    <version>{{ api.semver3 }}</version>
 
     <name>{{ project.java.module_name }}</name>
     <description>{{ project.description }} for Java</description>
@@ -29,7 +29,7 @@
         <developer>
             <id>{{ project.java.namespace }}</id>
             <name>{{ project.author_name }}</name>
-            <email>{{ project.author_url }}</email>
+            <email>{{ project.author_email }}</email>
         </developer>
     </developers>
 
@@ -95,9 +95,6 @@
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
@@ -139,9 +136,6 @@
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
@@ -152,9 +146,6 @@
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
