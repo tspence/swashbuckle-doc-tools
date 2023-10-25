@@ -34,6 +34,7 @@
     <PackageReference
         Include="CommandLineParser"
         Version="2.9.1" />
+    <PackageReference Include="CompareNETObjects" Version="4.82.0" />
     <PackageReference
         Include="HtmlAgilityPack"
         Version="1.11.50" />

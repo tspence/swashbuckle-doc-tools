@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,7 @@ using SdkGenerator.Diff;
 using SdkGenerator.Languages;
 using SdkGenerator.Markdown;
 using SdkGenerator.Project;
+using Semver;
 
 namespace SdkGenerator;
 
@@ -46,12 +48,18 @@ public static class Program
     {
     }
 
-    
     [Verb("diff", HelpText = "Report on differences from previous swagger file")]
     private class DiffOptions : BaseOptions
     {
         [Option('o', "old", HelpText = "Path to the older version of the swagger file")]
         public string OldVersion { get; set; }
+    }
+
+    [Verb("patchnotes", HelpText = "Create unified patch notes for all swagger files")]
+    private class PatchNotesOptions
+    {
+        [Option('f', "folder", HelpText = "Path to the folder containing swagger files")]
+        public string Folder { get; set; }
     }
 
     private static Type[] LoadVerbs()
@@ -68,6 +76,7 @@ public static class Program
         await parsed.WithParsedAsync<BuildOptions>(BuildTask);
         await parsed.WithParsedAsync<DiffOptions>(DiffTask);
         await parsed.WithParsedAsync<CompareOptions>(CompareTask);
+        await parsed.WithParsedAsync<PatchNotesOptions>(PatchNotesTask);
         await parsed.WithNotParsedAsync(HandleErrors);
     }
 
@@ -76,6 +85,43 @@ public static class Program
         await Task.CompletedTask;
         var errList = errors.ToList();
         Console.WriteLine($"Found {errList.Count} errors.");
+    }
+
+    private static async Task PatchNotesTask(PatchNotesOptions arg)
+    {
+        // Collect all swagger files from the folder
+        var versions = new List<GeneratorContext>();
+        foreach (var file in Directory.GetFiles(arg.Folder))
+        {
+            if (file.EndsWith(".json"))
+            {
+                try
+                {
+                    Console.WriteLine($"Processing {file}...");
+                    var newContext = await GeneratorContext.FromSwaggerFileOnDisk(file, null);
+                    versions.Add(newContext);
+                }
+                catch
+                {
+                    Console.WriteLine($"Unable to parse {file} - not a swagger file?");
+                }
+            }
+        }
+        
+        // Sanity test
+        if (versions.Count < 2)
+        {
+            Console.WriteLine($"Only {versions.Count} swagger files in the folder.  Cannot generate patch notes.");
+            return;
+        }
+        
+        // Sort them based on their version numbers
+        versions.Sort(new ContextSorter());
+        for (int i = 1; i < versions.Count; i++)
+        {
+            var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
+            Console.WriteLine(diffs.ToSummaryMarkdown());
+        }
     }
 
     private static async Task DiffTask(DiffOptions options)
