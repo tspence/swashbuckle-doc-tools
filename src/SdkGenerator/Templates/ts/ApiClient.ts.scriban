@@ -17,7 +17,7 @@ import { {{ cat }}Client } from "./index.js";
 {{~ end ~}}
 import { {{ project.typescript.response_class }} } from "./index.js";
 
-import axios, { Method } from "axios";
+import axios, { AxiosRequestConfig, Method, ResponseType } from "axios";
 import { default as FormData } from "form-data";
 import fs from "fs";
 import os from "os";
@@ -165,7 +165,7 @@ export class {{ project.typescript.class_name }} {
       data: body,
       headers: await this.getHeaders(),
     };
-    const result = await axios.default.request(requestConfig);
+    const result = await axios.request(requestConfig);
     return result.data;
   }
 
@@ -176,14 +176,14 @@ export class {{ project.typescript.class_name }} {
     const fileBuffer = await fs.promises.readFile(filename);
     const formData = new FormData();
     formData.append("file", fileBuffer);
-    const requestConfig: axios.AxiosRequestConfig = {
+    const requestConfig: AxiosRequestConfig = {
       url: new url.URL(path, this.serverUrl).href,
       method,
       data: formData,
       params: options,
       headers: await this.getHeaders(),
     };
-    const result = await axios.default.request(requestConfig);
+    const result = await axios.request(requestConfig);
     return result.data;
   }
 
@@ -191,8 +191,8 @@ export class {{ project.typescript.class_name }} {
    * Make a GET request using this client and download the results as a blob
    */
   public async requestBlob(method: Method, path: string, options: unknown, body: unknown): Promise<{{ project.typescript.response_class }}<Blob>> {
-    const responseType: axios.ResponseType = "blob";
-    const requestConfig: axios.AxiosRequestConfig = {
+    const responseType: ResponseType = "blob";
+    const requestConfig: AxiosRequestConfig = {
       url: new url.URL(path, this.serverUrl).href,
       method,
       params: options,
@@ -200,7 +200,7 @@ export class {{ project.typescript.class_name }} {
       headers: await this.getHeaders(),
       responseType,
     };
-    const result = await axios.default.request(requestConfig);
+    const result = await axios.request(requestConfig);
     return result.data;
   }
 }

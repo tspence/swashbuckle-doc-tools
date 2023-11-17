@@ -64,7 +64,7 @@ public class TypescriptSdk : ILanguageSdk
 
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            if (typeName.EndsWith(genericName))
+            if (s.EndsWith(genericName))
             {
                 var innerType = s.Substring(0, s.Length - genericName.Length);
                 if (string.IsNullOrWhiteSpace(innerType))

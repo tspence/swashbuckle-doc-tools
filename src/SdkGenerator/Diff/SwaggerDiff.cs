@@ -93,16 +93,12 @@ public class SwaggerDiff
         // APIs with changes
         if (EndpointChanges.Count > 0)
         {
-            sb.AppendLine($"Changes to {EndpointChanges.Count} existing APIs:");
+            sb.AppendLine($"Changes to existing APIs:");
             foreach (var rename in EndpointChanges)
             {
-                if (rename.Value.Count == 1)
+                foreach (var change in rename.Value)
                 {
-                    sb.AppendLine($"* {rename.Value.FirstOrDefault()}");
-                }
-                else
-                {
-                    sb.AppendLine($"* {rename.Value.Count} changes to {rename.Key}");
+                    sb.AppendLine($"* {change}");
                 }
             }
 

@@ -91,6 +91,6 @@ public class ApiSchema
             return enumItem.EnumType;
         }
 
-        return typeName;
+        return typeName ?? string.Empty;
     }
 }

@@ -10,6 +10,12 @@ public static class SchemaFactory
 {
     public static object MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
     {
+        // Is this an OData schema?  If so, ignore it
+        if (jsonSchema.Name.StartsWith("IEdm") || jsonSchema.Name.StartsWith("Edm"))
+        {
+            return null;
+        }
+        
         if (jsonSchema.Value.TryGetProperty("properties", out var schemaPropertiesElement))
         {
             // Basic schema
@@ -248,10 +254,18 @@ public static class SchemaFactory
                     foreach (var paramProp in parameterListProp.EnumerateArray())
                     {
                         var p = new ParameterField();
-                        item.Parameters.Add(p);
                         p.Name = SafeGetPropString(context, paramProp, "name");
                         p.Location = SafeGetPropString(context, paramProp, "in");
                         p.DescriptionMarkdown = GetDescriptionMarkdown(context, paramProp, "description");
+                        
+                        // Check if this is ignored - some parameters shouldn't be in the SDK
+                        if (context.Project.IgnoredParameters != null &&
+                            context.Project.IgnoredParameters.Any(ip => 
+                                string.Equals(ip.Name, p.Name, StringComparison.OrdinalIgnoreCase) && 
+                                string.Equals(ip.Location, p.Location, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
 
                         // Parse the field's required status
                         paramProp.TryGetProperty("required", out var requiredProp);
@@ -268,6 +282,7 @@ public static class SchemaFactory
                                 p.IsArray = schemaRef.IsArray;
                             }
                         }
+                        item.Parameters.Add(p);
                     }
                 }
 

@@ -114,9 +114,13 @@ public class GeneratorContext : IDisposable
 
     public string RemoveGenericSchema(string typeName)
     {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            return string.Empty; 
+        }
         foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            if (typeName.EndsWith(genericName))
+            if (genericName != null && genericName.Length > 0 && typeName.EndsWith(genericName))
             {
                 typeName = RemoveGenericSchema(typeName[..^genericName.Length]);
             }

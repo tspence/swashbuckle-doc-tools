@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using KellermanSoftware.CompareNetObjects;
+using KellermanSoftware.CompareNetObjects.TypeComparers;
 using Newtonsoft.Json;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
@@ -161,10 +163,29 @@ public class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(EndpointItem item, EndpointItem prevItem)
     {
-        if (item.Parameters.Count > prevItem.Parameters.Count)
+        var cl = new CompareLogic();
+        cl.Config.IgnoreCollectionOrder = true;
+        cl.Config.MaxDifferences = int.MaxValue;
+        var result = cl.Compare(item.Parameters.ToDictionary(pf => pf.Name), prevItem.Parameters.ToDictionary(pf => pf.Name));
+        var differences = new List<string>();
+        foreach (var diff in result.Differences)
         {
-            return new List<string>() { $"Added new parameters to {item.Name}" };
+            if (diff.ChildPropertyName != "Count" && !diff.PropertyName.EndsWith("DescriptionMarkdown"))
+            {
+                if (diff.Object2 is ParameterField p2 && diff.Object1 == null)
+                {
+                    differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
+                }
+                else if (diff.Object1 is ParameterField p1 && diff.Object2 == null)
+                {
+                    differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
+                }
+                else
+                {
+                    differences.Add($"{MakeApiName(item)} changed {diff.PropertyName} from {diff.Object1Value} to {diff.Object2Value}");
+                }
+            }
         }
-        return new List<string>();
+        return differences;
     }
 }
