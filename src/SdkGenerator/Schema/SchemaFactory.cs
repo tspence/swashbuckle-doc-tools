@@ -11,7 +11,7 @@ public static class SchemaFactory
     public static object MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
     {
         // Is this an OData schema?  If so, ignore it
-        if (jsonSchema.Name.StartsWith("IEdm"))
+        if (jsonSchema.Name.StartsWith("IEdm") || jsonSchema.Name.StartsWith("Edm"))
         {
             return null;
         }
