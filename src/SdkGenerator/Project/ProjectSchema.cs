@@ -26,6 +26,7 @@ public class ProjectSchema
     /// by the official version of that generic.
     /// </summary>
     public string[] GenericSuffixes { get; set; }
+    public SwaggerParameterSchema[] IgnoredParameters { get; set; }
     
     public EnvironmentSchema[] Environments { get; set; }
     public string SwaggerSchemaFolder { get; set; }
@@ -57,6 +58,12 @@ public class ProjectSchema
     public LanguageSchema Typescript { get; set; }
     public LanguageSchema Workato { get; set; }
     public LanguageSchema Dart { get; set; }
+}
+
+public class SwaggerParameterSchema
+{
+    public string Name { get; set; }
+    public string Location { get; set; }
 }
 
 /// <summary>
