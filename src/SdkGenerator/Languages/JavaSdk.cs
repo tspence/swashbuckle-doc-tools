@@ -276,6 +276,8 @@ public class JavaSdk : ILanguageSdk
                                 sb.AppendLine(
                                     $"        r.AddPath(\"{{{o.Name}}}\", {o.Name.ToVariableName(_reserved)} == null ? \"\" : {o.Name.ToVariableName(_reserved)}.toString());");
                                 break;
+                            case "header":
+                                break;
                             case "form":
                                 break;
                             default:
