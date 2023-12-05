@@ -14,6 +14,7 @@
 package {{ project.java.namespace }};
 
 import java.lang.reflect.Type;
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.time.Duration;
@@ -104,7 +105,7 @@ public class BlobRequest {
      *
      * @return a {@link {{ project.java.namespace }}.{{ project.java.response_class }}} object.
      */
-    public @NotNull {{ project.java.response_class }}<byte[]> Call() {
+    public @NotNull {{ project.java.response_class }}<byte[]> Call(Type classReference) {
         Instant start = Instant.now();
         {{ project.java.response_class }}<byte[]> result = new {{ project.java.response_class }}<byte[]>();
         try {

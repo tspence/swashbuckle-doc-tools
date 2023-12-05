@@ -202,6 +202,7 @@ public class JavaSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ClassName};");
             sb.AppendLine($"import {context.Project.Java.Namespace}.RestRequest;");
+            sb.AppendLine($"import {context.Project.Java.Namespace}.BlobRequest;");
             sb.AppendLine("import org.jetbrains.annotations.NotNull;");
             sb.AppendLine("import org.jetbrains.annotations.Nullable;");
             sb.AppendLine("import com.google.gson.reflect.TypeToken;");
@@ -311,10 +312,10 @@ public class JavaSdk : ILanguageSdk
             return;
         }
 
-        // If we're using binaries, make sure to import blob requests
+        // If we're using binaries, make sure to import the generic class
         if (name.Equals("byte[]") || name.Equals("binary"))
         {
-            AddImport(context, "BlobRequest", list);
+            AddImport(context, context.Project.Java.ResponseClass, list);
         }
         
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
