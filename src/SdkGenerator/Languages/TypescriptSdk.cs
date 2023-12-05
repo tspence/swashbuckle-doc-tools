@@ -58,6 +58,7 @@ public class TypescriptSdk : ILanguageSdk
                 s = "string";
                 break;
             case "binary":
+            case "byte[]":
                 s = "Blob";
                 break;
         }
@@ -201,7 +202,16 @@ public class TypescriptSdk : ILanguageSdk
                     var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
 
                     // Are we using the blob method?
-                    var requestMethod = returnType == "Blob" ? "requestBlob" : $"request<{returnType}>";
+                    string requestMethod;
+                    if (returnType == "Blob")
+                    {
+                        requestMethod = "requestBlob";
+                        returnType = $"{context.Project.Typescript.ResponseClass}<Blob>";
+                    }
+                    else
+                    {
+                        requestMethod = $"request<{returnType}>";
+                    }
                     if (isFileUpload)
                     {
                         requestMethod = "fileUpload";
@@ -283,6 +293,7 @@ public class TypescriptSdk : ILanguageSdk
             case "double":
             case "float":
             case "uri":
+            case "byte[]":
                 return;
         }
 
