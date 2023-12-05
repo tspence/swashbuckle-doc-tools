@@ -310,6 +310,12 @@ public class JavaSdk : ILanguageSdk
             AddImport(context, name.Substring(0, name.Length - 4), list);
             return;
         }
+
+        // If we're using binaries, make sure to import blob requests
+        if (name.Equals("byte[]") || name.Equals("binary"))
+        {
+            AddImport(context, "BlobRequest", list);
+        }
         
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
