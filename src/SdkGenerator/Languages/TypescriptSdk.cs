@@ -293,7 +293,6 @@ public class TypescriptSdk : ILanguageSdk
             case "double":
             case "float":
             case "uri":
-            case "byte[]":
                 return;
         }
 
@@ -302,12 +301,19 @@ public class TypescriptSdk : ILanguageSdk
             return;
         }
 
-        var importStatement = (name == "binary") 
-            ? "import { Blob } from \"buffer\";" 
-            : "import { " + name + " } from \"../index.js\";";
-        if (!list.Contains(importStatement))
+        string importStatement;
+        if (name == "binary" || name == "byte[]")
         {
-            list.Add(importStatement);
+            // Make sure we have the response class; blob is a builtin
+            AddImport(context, context.Project.Typescript.ResponseClass, list);
+        }
+        else
+        {
+            importStatement = "import { " + name + " } from \"../index.js\";";
+            if (!list.Contains(importStatement))
+            {
+                list.Add(importStatement);
+            }
         }
     }
 

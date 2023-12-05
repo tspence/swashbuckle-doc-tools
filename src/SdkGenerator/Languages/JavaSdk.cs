@@ -419,6 +419,10 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
+        await ScribanFunctions.ExecuteTemplate(context, 
+            Path.Combine(".", "templates", "java", "BlobRequest.java.scriban"),
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
+                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "BlobRequest.java"));
     }
     
     public string LanguageName()
