@@ -240,14 +240,6 @@ public static class DownloadFile
     public static async Task<ApiSchema> GenerateApi(GeneratorContext context)
     {
         context.Version4 = await FindVersionNumber(context);
-
-        // If we couldn't download the version number, don't try generating anything
-        if (context.Version4 == "1.0.0.0")
-        {
-            context.LogError("Unable to find version number using regex");
-            return null;
-        }
-
         var segments = context.Version4.Split(".");
         context.Version2 = $"{segments[0]}.{segments[1]}";
         context.Version3 = $"{segments[0]}.{segments[1]}.{segments[2]}";
@@ -300,6 +292,7 @@ public static class DownloadFile
         var fullFileName = Path.Combine(context.Project.SwaggerSchemaFolder, mostRecentFile);
         var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(fullFileName, context.LogPath);
         oldContext.OfficialVersion = mostRecentVersion.ToString();
+        oldContext.Project = context.Project;
         return PatchNotesGenerator.Compare(oldContext, context);
     }
 }

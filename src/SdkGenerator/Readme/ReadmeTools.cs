@@ -142,7 +142,8 @@ public static class ReadmeTools
         var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme.ReadmeApiDefinitionId}")
         {
             AlwaysMultipartFormData = true,
-            FormBoundary = "----------" + Guid.NewGuid()
+            FormBoundary = "----------" + Guid.NewGuid(),
+            Method = Method.Put,
         };
         request.AddHeader("Accept", "application/json");
         request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
@@ -152,7 +153,20 @@ public static class ReadmeTools
         }
         request.AddFile("spec", context.SwaggerJsonPath);
 
-        var result =  await client.PutAsync(request);
-        return result.IsSuccessful;
+        try
+        {
+            var result = await client.ExecuteAsync(request);
+            if (!result.IsSuccessful)
+            {
+                Console.WriteLine($"Failed to upload Swagger file to Readme: {result.Content}");
+                return false;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception during upload of swagger file to Readme: {ex.Message}");
+            return false;
+        }
     }
 }
