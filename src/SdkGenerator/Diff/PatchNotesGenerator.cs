@@ -114,7 +114,7 @@ public class PatchNotesGenerator
                 diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
                 if (nameToEndpoint.TryGetValue(prevName, out prevItem))
                 {
-                    diff.EndpointChanges[name] = GetEndpointChanges(item, prevItem);
+                    diff.EndpointChanges[name] = GetEndpointChanges(current, item, prevItem);
                 }
             }
             else
@@ -131,7 +131,7 @@ public class PatchNotesGenerator
                 }
                 else
                 {
-                    var changes = GetEndpointChanges(item, prevItem);
+                    var changes = GetEndpointChanges(current, item, prevItem);
                     if (changes.Any())
                     {
                         diff.EndpointChanges[name] = changes;
@@ -161,7 +161,7 @@ public class PatchNotesGenerator
         return $"{item.Category}.{item.Name.ToProperCase()}";
     }
 
-    private static List<string> GetEndpointChanges(EndpointItem item, EndpointItem prevItem)
+    private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, EndpointItem prevItem)
     {
         var cl = new CompareLogic();
         cl.Config.IgnoreCollectionOrder = true;
@@ -174,11 +174,17 @@ public class PatchNotesGenerator
             {
                 if (diff.Object2 is ParameterField p2 && diff.Object1 == null)
                 {
-                    differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
+                    if (context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p2.Name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
+                    }
                 }
                 else if (diff.Object1 is ParameterField p1 && diff.Object2 == null)
                 {
-                    differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
+                    if (context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p1.Name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
+                    }
                 }
                 else
                 {
