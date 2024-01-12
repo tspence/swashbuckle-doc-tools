@@ -93,6 +93,8 @@ public class CSharpSdk : ILanguageSdk
             case "File":
                 s = "string"; // We convert "file" to "filename" in processing
                 break;
+            case "byte":
+            case "byte[]":
             case "binary":
                 s = "byte[]";
                 break;

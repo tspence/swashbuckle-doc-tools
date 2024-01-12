@@ -58,6 +58,7 @@ public class TypescriptSdk : ILanguageSdk
                 s = "string";
                 break;
             case "binary":
+            case "byte":
             case "byte[]":
                 s = "Blob";
                 break;
@@ -302,7 +303,7 @@ public class TypescriptSdk : ILanguageSdk
         }
 
         string importStatement;
-        if (name == "binary" || name == "byte[]")
+        if (name == "binary" || name == "byte[]" || name == "byte")
         {
             // Make sure we have the response class; blob is a builtin
             AddImport(context, context.Project.Typescript.ResponseClass, list);

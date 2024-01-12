@@ -66,6 +66,7 @@ public class JavaSdk : ILanguageSdk
                 break;
             case "File":
             case "binary":
+            case "byte":
                 s = "byte[]";
                 break;
         }
@@ -252,7 +253,8 @@ public class JavaSdk : ILanguageSdk
                             rawReturnType.Length - context.Project.Java.ResponseClass.Length);
                     }
                     var returnType = JavaTypeName(context, rawReturnType, endpoint.ReturnDataType.IsArray);
-                    var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
+                    var isFileDownload = returnType == "byte[]" || returnType == "byte";
+                    var requestType = isFileDownload ? "BlobRequest" : $"RestRequest<{returnType}>";
 
                     // Write the method
                     sb.AppendLine(
@@ -313,7 +315,7 @@ public class JavaSdk : ILanguageSdk
         }
 
         // If we're using binaries, make sure to import the generic class
-        if (name.Equals("byte[]") || name.Equals("binary"))
+        if (name.Equals("byte[]") || name.Equals("binary") || name.Equals("byte"))
         {
             AddImport(context, context.Project.Java.ResponseClass, list);
         }
@@ -397,6 +399,7 @@ public class JavaSdk : ILanguageSdk
             case "binary":
             case "File":
             case "byte[]":
+            case "byte":
                 return null;
             default:
                 return $"import {context.Project.Java.Namespace}.models.{type};";

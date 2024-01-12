@@ -62,7 +62,7 @@ public class PythonSdk : ILanguageSdk
                 break;
             case "binary":
             case "byte[]":
-                s = "Response";
+                s = "bytearray";
                 break;
         }
 
@@ -222,13 +222,13 @@ public class PythonSdk : ILanguageSdk
                     sb.AppendLine();
 
                     // Is this a file download API?
-                    var isFileDownload = endpoint.ReturnDataType.DataType is "byte[]" or "binary" or "File";
+                    var isFileDownload = endpoint.ReturnDataType.DataType is "byte[]" or "binary" or "File" or "byte";
                     var originalReturnDataType = FixupType(context, endpoint.ReturnDataType.DataType,
                         endpoint.ReturnDataType.IsArray, isReturnHint: true);
                     string returnDataType;
                     if (isFileDownload)
                     {
-                        returnDataType = "Response";
+                        returnDataType = context.Project.Python.ResponseClass + "[bytearray]";
                     }
                     else
                     {
@@ -340,9 +340,9 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 // The return type of a file download has special rules
-                if (endpoint.ReturnDataType.DataType is "File" or "byte[]" or "binary")
+                if (endpoint.ReturnDataType.DataType is "File" or "byte[]" or "binary" or "byte" or "bytearray")
                 {
-                    imports.Add("from requests.models import Response");
+                    // bytearray is supported natively
                 }
                 else
                 {
