@@ -12,18 +12,19 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2023</Copyright>
     <PackageReleaseNotes>
-      # 1.2.1
-      October 22, 2023
+      # 1.2.2
+      January 12, 2024
 
-      * Class and property generation can now avoid language-specific keywords
-      * Variable names are now cleansed for parameters (some APIs use $param=value)
-      * Java now uses semver3 as is becoming the standard in most places
-      * Generated API documentation will now only link to data model pages if specified
-      * Readme can now select between `list` and `table` style data model documentation
+      * Numerous small fixes for API endpoints that download octet-streams/byte arrays
+      * Better logic for excluding endpoints and excluding parameters - patch notes generate correctly
+      * SDKs now generate endpoints that download blobs and still parse errors correctly
+      * Treat both "byte" and "byte[]" as blob download endpoints
+      * Python uses immutable bytes object
+      * Fixes for readme uploads
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

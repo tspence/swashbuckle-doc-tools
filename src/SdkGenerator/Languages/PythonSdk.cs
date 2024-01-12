@@ -62,7 +62,7 @@ public class PythonSdk : ILanguageSdk
                 break;
             case "binary":
             case "byte[]":
-                s = "bytearray";
+                s = "bytes";
                 break;
         }
 
@@ -228,7 +228,7 @@ public class PythonSdk : ILanguageSdk
                     string returnDataType;
                     if (isFileDownload)
                     {
-                        returnDataType = context.Project.Python.ResponseClass + "[bytearray]";
+                        returnDataType = context.Project.Python.ResponseClass + "[bytes]";
                     }
                     else
                     {
@@ -268,8 +268,8 @@ public class PythonSdk : ILanguageSdk
                     string innerType = originalReturnDataType;
                     if (isFileDownload)
                     {
-                        sb.AppendLine($"            return {context.Project.Python.ResponseClass}[bytearray](None, True, False, result.status_code, result.content.__bytes__)");
-                        innerType = "bytearray";
+                        sb.AppendLine($"            return {context.Project.Python.ResponseClass}[bytes](None, True, False, result.status_code, result.content)");
+                        innerType = "bytes";
                     }
                     else
                     {
@@ -341,9 +341,9 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 // The return type of a file download has special rules
-                if (endpoint.ReturnDataType.DataType is "File" or "byte[]" or "binary" or "byte" or "bytearray")
+                if (endpoint.ReturnDataType.DataType is "File" or "byte[]" or "binary" or "byte" or "bytearray" or "bytes")
                 {
-                    // bytearray is supported natively
+                    // bytes, the immutable list of raw data, is supported natively
                 }
                 else
                 {
