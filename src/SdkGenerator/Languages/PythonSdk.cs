@@ -264,20 +264,21 @@ public class PythonSdk : ILanguageSdk
                     }
                     sb.AppendLine(
                         $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                    sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
+                    string innerType = originalReturnDataType;
                     if (isFileDownload)
                     {
-                        sb.AppendLine("        return result");
+                        sb.AppendLine($"            return {context.Project.Python.ResponseClass}[bytearray](None, True, False, result.status_code, result.content.__bytes__)");
+                        innerType = "bytearray";
                     }
                     else
                     {
                         // Remove the outer response class shell if present
-                        string innerType = originalReturnDataType;
                         if (originalReturnDataType.StartsWith(context.Project.Python.ResponseClass + "["))
                         {
                             innerType = innerType.Substring(context.Project.Python.ResponseClass.Length + 1,
                                 innerType.Length - context.Project.Python.ResponseClass.Length - 2);
                         }
-                        sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                         
                         // Deserialize lists in the python way
                         if (innerType.StartsWith("list["))
@@ -294,10 +295,10 @@ public class PythonSdk : ILanguageSdk
                             sb.AppendLine(
                                 $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
                         }
-                        sb.AppendLine("        else:");
-                        sb.AppendLine(
-                            $"            return {context.Project.Python.ResponseClass}[{innerType}](result.json(), False, True, result.status_code, None)");
                     }
+                    sb.AppendLine("        else:");
+                    sb.AppendLine(
+                        $"            return {context.Project.Python.ResponseClass}[{innerType}](result.json(), False, True, result.status_code, None)");
                 }
             }
 
