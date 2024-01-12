@@ -336,12 +336,30 @@ public static class SchemaFactory
                 {
                     if (response.Name.StartsWith("2"))
                     {
-                        response.Value.TryGetProperty("content", out var contentProp);
-                        contentProp.TryGetProperty("application/json", out var appJsonProp);
-                        foreach (var responseSchemaProp in appJsonProp.EnumerateObject())
+                        try
                         {
-                            item.ReturnDataType = GetTypeRef(context, responseSchemaProp);
-                            break;
+                            response.Value.TryGetProperty("content", out var contentProp);
+                            if (contentProp.ValueKind == JsonValueKind.Undefined)
+                            {
+                                item.ReturnDataType = new SchemaRef
+                                {
+                                    DataType = "byte[]"
+                                };
+                            }
+                            else
+                            {
+                                contentProp.TryGetProperty("application/json", out var appJsonProp);
+                                foreach (var responseSchemaProp in appJsonProp.EnumerateObject())
+                                {
+                                    item.ReturnDataType = GetTypeRef(context, responseSchemaProp);
+                                    break;
+                                }
+                            }
+                        }
+                        // If this response fails, it's probably intended to be an octet stream
+                        catch (Exception ex)
+                        {
+                            context.LogError($"Failed to process endpoint return data type - is it intended to be an octet-stream? {item?.Path ?? "Unknown Path"}: {ex.Message}");
                         }
                     }
                 }

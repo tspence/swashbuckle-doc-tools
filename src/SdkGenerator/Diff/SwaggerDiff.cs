@@ -115,6 +115,12 @@ public class SwaggerDiff
             }
             sb.AppendLine();
         }
+        
+        // If no major changes, let people know this was a minor release
+        if (DeprecatedEndpoints.Count + EndpointChanges.Count + Renames.Count + NewEndpoints.Count == 0)
+        {
+            sb.AppendLine("* Minor documentation changes, bugfixes, and performance improvements.");
+        }
 
         return sb.ToString();
     }

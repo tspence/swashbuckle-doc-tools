@@ -66,6 +66,7 @@ public class JavaSdk : ILanguageSdk
                 break;
             case "File":
             case "binary":
+            case "byte":
                 s = "byte[]";
                 break;
         }
@@ -202,6 +203,7 @@ public class JavaSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"import {context.Project.Java.Namespace}.{context.Project.Java.ClassName};");
             sb.AppendLine($"import {context.Project.Java.Namespace}.RestRequest;");
+            sb.AppendLine($"import {context.Project.Java.Namespace}.BlobRequest;");
             sb.AppendLine("import org.jetbrains.annotations.NotNull;");
             sb.AppendLine("import org.jetbrains.annotations.Nullable;");
             sb.AppendLine("import com.google.gson.reflect.TypeToken;");
@@ -251,7 +253,8 @@ public class JavaSdk : ILanguageSdk
                             rawReturnType.Length - context.Project.Java.ResponseClass.Length);
                     }
                     var returnType = JavaTypeName(context, rawReturnType, endpoint.ReturnDataType.IsArray);
-                    var requestType = returnType == "byte[]" ? "BlobRequest" : $"RestRequest<{returnType}>";
+                    var isFileDownload = returnType == "byte[]" || returnType == "byte";
+                    var requestType = isFileDownload ? "BlobRequest" : $"RestRequest<{returnType}>";
 
                     // Write the method
                     sb.AppendLine(
@@ -309,6 +312,12 @@ public class JavaSdk : ILanguageSdk
         {
             AddImport(context, name.Substring(0, name.Length - 4), list);
             return;
+        }
+
+        // If we're using binaries, make sure to import the generic class
+        if (name.Equals("byte[]") || name.Equals("binary") || name.Equals("byte"))
+        {
+            AddImport(context, context.Project.Java.ResponseClass, list);
         }
         
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
@@ -390,6 +399,7 @@ public class JavaSdk : ILanguageSdk
             case "binary":
             case "File":
             case "byte[]":
+            case "byte":
                 return null;
             default:
                 return $"import {context.Project.Java.Namespace}.models.{type};";
@@ -419,6 +429,10 @@ public class JavaSdk : ILanguageSdk
             Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
+        await ScribanFunctions.ExecuteTemplate(context, 
+            Path.Combine(".", "templates", "java", "BlobRequest.java.scriban"),
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
+                context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "BlobRequest.java"));
     }
     
     public string LanguageName()
