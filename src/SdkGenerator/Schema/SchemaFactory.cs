@@ -230,14 +230,6 @@ public static class SchemaFactory
                     DescriptionMarkdown = GetDescriptionMarkdown(context, endpointProp.Value, "description")
                 };
                 
-                // Is this an ignored endpoint?
-                if (context.Project.IgnoredEndpoints.Any(ignored =>
-                        string.Equals(ignored, item.Name, StringComparison.OrdinalIgnoreCase)))
-                {
-                    context.LogError($"Ignoring endpoint {item.Name}.");
-                    continue;
-                }
-                
                 // Skip any endpoints that don't have a name!
                 if (!item.Name.IsValidName())
                 {
@@ -245,6 +237,18 @@ public static class SchemaFactory
                     continue;
                 }
 
+                // Is this an ignored endpoint?
+                if (context.Project.IgnoredEndpoints != null)
+                {
+                    if (context.Project.IgnoredEndpoints.Contains(item.Name, StringComparer.OrdinalIgnoreCase)
+                        || context.Project.IgnoredEndpoints.Contains(path, StringComparer.OrdinalIgnoreCase))
+                    {
+
+                        context.LogError($"Ignoring endpoint {item.Name}.");
+                        continue;
+                    }
+                }
+                
                 // Determine category
                 endpointProp.Value.TryGetProperty("tags", out var tags);
                 item.Category = tags.ValueKind == JsonValueKind.Array

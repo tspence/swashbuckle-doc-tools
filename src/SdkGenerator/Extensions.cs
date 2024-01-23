@@ -69,7 +69,30 @@ public static class Extensions
         {
             return "UnknownName";
         }
-        return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
+
+        var sb = new StringBuilder();
+        bool isStartOfSegment = true;
+        foreach (var c in s)
+        {
+            if (c == ' ')
+            {
+                isStartOfSegment = true;
+            }
+            else
+            {
+                if (isStartOfSegment)
+                {
+                    sb.Append(Char.ToUpper(c));
+                    isStartOfSegment = false;
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
