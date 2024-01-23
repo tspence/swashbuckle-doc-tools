@@ -4,8 +4,11 @@ namespace SdkGenerator.Project;
 
 public class ProjectSchema
 {
+    public string CompanyName { get; set; }
     public string AuthorName { get; set; }
     public string AuthorEmail { get; set; }
+    public string DocumentationUrl { get; set; }
+        
     public string ProjectName { get; set; }
     public string CopyrightHolder { get; set; }
     public int ProjectStartYear { get; set; }
@@ -29,6 +32,10 @@ public class ProjectSchema
     
     public EnvironmentSchema[] Environments { get; set; }
     public string SwaggerSchemaFolder { get; set; }
+    public string Keywords { get; set; }
+    public string Description { get; set; }
+    public string AuthenticationHelp { get; set; }
+    public string ReleaseNotes { get; set; }
 
     /// <summary>
     /// If you use a readme site, provide this information
