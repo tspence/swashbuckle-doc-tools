@@ -244,7 +244,7 @@ public static class SchemaFactory
                         || context.Project.IgnoredEndpoints.Contains(path, StringComparer.OrdinalIgnoreCase))
                     {
 
-                        context.LogError($"Ignoring endpoint {item.Name}.");
+                        context.LogError($"Ignoring endpoint '{item.Name}'.");
                         continue;
                     }
                 }
