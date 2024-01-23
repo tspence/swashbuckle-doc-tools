@@ -230,6 +230,14 @@ public static class SchemaFactory
                     DescriptionMarkdown = GetDescriptionMarkdown(context, endpointProp.Value, "description")
                 };
                 
+                // Is this an ignored endpoint?
+                if (context.Project.IgnoredEndpoints.Any(ignored =>
+                        string.Equals(ignored, item.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    context.LogError($"Ignoring endpoint {item.Name}.");
+                    continue;
+                }
+                
                 // Skip any endpoints that don't have a name!
                 if (!item.Name.IsValidName())
                 {
