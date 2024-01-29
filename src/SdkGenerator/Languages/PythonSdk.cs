@@ -187,6 +187,7 @@ public class PythonSdk : ILanguageSdk
                 sb.AppendLine(import);
             }
 
+            sb.AppendLine($"from {context.Project.Python.Namespace}.tools import remove_empty_elements");
             sb.AppendLine("import dataclasses");
             sb.AppendLine("import json");
             sb.AppendLine("import dacite");
@@ -250,7 +251,7 @@ public class PythonSdk : ILanguageSdk
                         sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
                     }
                     sb.AppendLine(
-                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "json.dumps(dataclasses.asdict(body))" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "remove_empty_elements(dataclasses.asdict(body))" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
                     sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                     string innerType = originalReturnDataType;
                     if (isFileDownload)

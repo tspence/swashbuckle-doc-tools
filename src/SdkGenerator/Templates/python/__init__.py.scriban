@@ -1,5 +1,6 @@
 # API client
 from {{ project.python.namespace }}.{{ project.python.class_name | words_to_snake_case }} import {{ project.python.class_name }}
+from {{ project.python.namespace }}.tools import remove_empty_elements
 # API categories
 {{~ for cat in api.categories ~}}
 from {{ project.python.namespace }}.clients.{{ cat | words_to_snake_case }}client import {{ cat }}Client
