@@ -8,6 +8,7 @@ public class ProjectSchema
     public string AuthorName { get; set; }
     public string AuthorEmail { get; set; }
     public string DocumentationUrl { get; set; }
+        
     public string ProjectName { get; set; }
     public string CopyrightHolder { get; set; }
     public int ProjectStartYear { get; set; }
@@ -27,6 +28,7 @@ public class ProjectSchema
     /// </summary>
     public string[] GenericSuffixes { get; set; }
     public SwaggerParameterSchema[] IgnoredParameters { get; set; }
+    public string[] IgnoredEndpoints { get; set; }
     
     public EnvironmentSchema[] Environments { get; set; }
     public string SwaggerSchemaFolder { get; set; }

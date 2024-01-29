@@ -12,6 +12,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "dacite ~= 1.8.1"
+]
 
 [project.urls]
 "Homepage" = "{{ project.python.github_url }}"
