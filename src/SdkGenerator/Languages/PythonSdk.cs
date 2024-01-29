@@ -126,9 +126,9 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 // Add in all the rest of the imports
-                sb.AppendLine("from dataclasses import dataclass");
+                sb.AppendLine("import dataclasses");
                 sb.AppendLine();
-                sb.AppendLine("@dataclass");
+                sb.AppendLine("@dataclasses.dataclass");
                 sb.AppendLine($"class {item.Name}:");
                 sb.Append(MakePythonDoc(context, item.DescriptionMarkdown, 4, null));
                 sb.AppendLine();
@@ -145,21 +145,6 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 sb.AppendLine();
-
-                if (item.Name.Equals("ErrorResult", StringComparison.OrdinalIgnoreCase))
-                {
-                    sb.AppendLine($"    @classmethod");
-                    sb.AppendLine($"    def from_json(cls, data: dict):");
-                    sb.AppendLine($"        obj = cls()");
-                    sb.AppendLine($"        for key, value in data.items():");
-                    sb.AppendLine($"            if hasattr(obj, key):");
-                    sb.AppendLine($"                setattr(obj, key, value)");
-                    sb.AppendLine($"        return obj");
-                }
-
-                // Add helper methods for users to serialize objects
-                sb.AppendLine($"    def to_dict(self) -> dict:");
-                sb.AppendLine($"        return dataclass.asdict(self)");
 
                 var modelPath = Path.Combine(modelsDir, item.Name.WordsToSnakeCase() + ".py");
                 await File.WriteAllTextAsync(modelPath, sb.ToString());
@@ -202,7 +187,9 @@ public class PythonSdk : ILanguageSdk
                 sb.AppendLine(import);
             }
 
+            sb.AppendLine("import dataclasses");
             sb.AppendLine("import json");
+            sb.AppendLine("import dacite");
             sb.AppendLine();
             sb.AppendLine($"class {cat}Client:");
             sb.AppendLine("    \"\"\"");
@@ -263,7 +250,7 @@ public class PythonSdk : ILanguageSdk
                         sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
                     }
                     sb.AppendLine(
-                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "body" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "json.dumps(dataclasses.asdict(body))" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
                     sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                     string innerType = originalReturnDataType;
                     if (isFileDownload)
@@ -293,12 +280,15 @@ public class PythonSdk : ILanguageSdk
                         else
                         {
                             sb.AppendLine(
-                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, {innerType}(**json.loads(result.content)['data']))");
+                                $"            data = dacite.from_dict(data_class={innerType}, data=json.loads(result.content)['data'])");
+                            sb.AppendLine(
+                                $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, data)");
                         }
                     }
-                    sb.AppendLine("        else:");
-                    sb.AppendLine(
-                        $"            return {context.Project.Python.ResponseClass}[{innerType}](result.json(), False, True, result.status_code, None)");
+                    sb.AppendLine($"        else:");
+                    sb.AppendLine($"            response = {context.Project.Python.ResponseClass}[{innerType}](None, False, True, result.status_code, None)");
+                    sb.AppendLine($"            response.load_error(result)");
+                    sb.AppendLine($"            return response");
                 }
             }
 
