@@ -10,21 +10,18 @@
       easy-to-use markdown documentation or friendly software development kit libraries. Can be
       automated using Github Workflows.</Description>
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
-    <Copyright>Copyright 2021 - 2023</Copyright>
+    <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.2
-      January 12, 2024
+      # 1.2.3
+      January 29, 2024
 
-      * Numerous small fixes for API endpoints that download octet-streams/byte arrays
-      * Better logic for excluding endpoints and excluding parameters - patch notes generate correctly
-      * SDKs now generate endpoints that download blobs and still parse errors correctly
-      * Treat both "byte" and "byte[]" as blob download endpoints
-      * Python uses immutable bytes object
-      * Fixes for readme uploads
+      * Allow specific endpoints to be ignored during SDK generation
+      * Better capitalization for multi-word phrases converted to PascalCase
+      * Fixed issues with Python SDK generation, json double conversion
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
