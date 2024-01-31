@@ -69,30 +69,38 @@ public static class Extensions
         {
             return "UnknownName";
         }
-
-        var sb = new StringBuilder();
-        bool isStartOfSegment = true;
-        foreach (var c in s)
+        
+        // Case 1: If this string has spaces in it, we need full word-to-proper capitalization
+        if (s.IndexOf(' ') >= 0)
         {
-            if (c == ' ')
+            var sb = new StringBuilder();
+            bool isStartOfSegment = true;
+            foreach (var c in s)
             {
-                isStartOfSegment = true;
-            }
-            else
-            {
-                if (isStartOfSegment)
+                if (c == ' ')
                 {
-                    sb.Append(Char.ToUpper(c));
-                    isStartOfSegment = false;
+                    isStartOfSegment = true;
                 }
                 else
                 {
-                    sb.Append(c);
+                    if (isStartOfSegment)
+                    {
+                        sb.Append(Char.ToUpper(c));
+                        isStartOfSegment = false;
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
                 }
             }
+            return sb.ToString();
         }
-
-        return sb.ToString();
+        // Case 2: If the string doesn't have spaces in it, JUST capitalize the first letter
+        else
+        {
+            return $"{char.ToUpper(s[0])}{s[1..].Replace(" ", "")}";
+        }
     }
 
     /// <summary>
