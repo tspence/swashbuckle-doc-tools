@@ -12,16 +12,15 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.3
-      January 29, 2024
+      # 1.2.4
+      February 10, 2024
 
-      * Allow specific endpoints to be ignored during SDK generation
-      * Better capitalization for multi-word phrases converted to PascalCase
-      * Fixed issues with Python SDK generation, json double conversion
+      * More capitalization improvements - better handle imprecise inputs
+      * Fixed issues with Python SDK for array uploads
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.3</Version>
+    <Version>1.2.4</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
