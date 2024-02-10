@@ -47,7 +47,6 @@ namespace {{ project.csharp.namespace }}
         
         private string _appName;
         private string _bearerToken;
-        private string _apiKey;
     
     {{~ for cat in api.categories ~}}
         /// <summary>
@@ -60,9 +59,9 @@ namespace {{ project.csharp.namespace }}
         /// <summary>
         /// Internal constructor for the client. You should always begin with `WithEnvironment()` or `WithCustomEnvironment`.
         /// </summary>
-        /// <param name="url"></param>
+        /// <param name="baseEndpoint">The API endpoint to contact</param>
         /// <param name="clientHandler">Handler for the HTTP client, when null the default handler will be used</param>
-        private {{ project.csharp.class_name }}(string url, HttpClientHandler clientHandler)
+        private {{ project.csharp.class_name }}(Uri baseEndpoint, HttpClientHandler clientHandler)
         {
             // Add support for HTTP compression
             var handler = clientHandler ?? new HttpClientHandler();
@@ -71,8 +70,7 @@ namespace {{ project.csharp.namespace }}
             // We intentionally use a single HttpClient object for the lifetime of this API connection.
             // Best practices: https://bytedev.medium.com/net-core-httpclient-best-practices-4c1b20e32c6
             _client = new HttpClient(handler);
-            
-            _apiUrl = url;
+            _apiUrl = baseEndpoint.ToString();
     {{~ for cat in api.categories ~}}
             {{ cat }} = new {{ cat }}Client(this);
     {{~ end ~}}
@@ -93,11 +91,11 @@ namespace {{ project.csharp.namespace }}
         /// <returns>The API client to use</returns>
         public static {{ project.csharp.class_name }} WithEnvironment(string env, HttpClientHandler clientHandler = null)
         {
-            switch (env)
+            switch (env)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
             {
 {{~ for env in project.environments ~}}
                 case "{{ env.name }}":
-                    return new {{ project.csharp.class_name }}("{{ env.url }}", clientHandler);
+                    return new {{ project.csharp.class_name }}(new Uri("{{ env.url }}"), clientHandler);
 {{~ end ~}}
             }
     
@@ -109,12 +107,12 @@ namespace {{ project.csharp.namespace }}
         /// an API gateway.  Please be careful when using this mode.
         /// You should prefer to use `WithEnvironment()` instead wherever possible.
         /// </summary>
-        /// <param name="url">The custom URL to use for this client</param>
+        /// <param name="customEndpoint">The custom endpoint to use for this client</param>
         /// <param name="clientHandler">Optional handler to set specific settings for the HTTP client</param>
         /// <returns>The API client to use</returns>
-        public static {{ project.csharp.class_name }} WithCustomEnvironment(string url, HttpClientHandler clientHandler = null)
+        public static {{ project.csharp.class_name }} WithCustomEnvironment(Uri customEndpoint, HttpClientHandler clientHandler = null)
         {
-            return new {{ project.csharp.class_name }}(url, clientHandler);
+            return new {{ project.csharp.class_name }}(customEndpoint, clientHandler);
         }
         
         /// <summary>
@@ -138,21 +136,6 @@ namespace {{ project.csharp.namespace }}
         public {{ project.csharp.class_name }} WithBearerToken(string token)
         {
             _bearerToken = token;
-            _apiKey = null;
-            return this;
-        }
-    
-        /// <summary>
-        /// Configures this API client to use an API Key.
-        ///
-        /// {{ project.authentication_help }}
-        /// </summary>
-        /// <param name="apiKey">The API key to use for this API session</param>
-        /// <returns></returns>
-        public {{ project.csharp.class_name }} WithApiKey(string apiKey)
-        {
-            _apiKey = apiKey;
-            _bearerToken = null;
             return this;
         }
     
@@ -186,10 +169,6 @@ namespace {{ project.csharp.namespace }}
             if (!string.IsNullOrWhiteSpace(_bearerToken))
             {
                 request.Headers.Add("Authorization", "Bearer " + _bearerToken);
-            }
-            else if (!string.IsNullOrWhiteSpace(_apiKey))
-            {
-                request.Headers.Add("Api-Key", _apiKey);
             }
     
             // Construct the request URI and query string
