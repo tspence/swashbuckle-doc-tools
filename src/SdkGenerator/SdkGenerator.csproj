@@ -17,6 +17,7 @@
 
       * More capitalization improvements - better handle imprecise inputs
       * Fixed issues with Python SDK for array uploads
+      * C# SDK uses URI object instead of string for custom endpoint
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
