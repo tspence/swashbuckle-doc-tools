@@ -27,7 +27,7 @@ public class PythonSdk : ILanguageSdk
                + "#\n\n";
     }
 
-    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isParamHint = false, bool isReturnHint = false)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isReturnHint = false)
     {
         var s = context.Api.ReplaceEnumWithType(typeName);
 
@@ -87,14 +87,7 @@ public class PythonSdk : ILanguageSdk
 
         if (isArray)
         {
-            if (isParamHint)
-            {
-                s = "list[object]";
-            }
-            else
-            {
-                s = "list[" + s + "]";    
-            }
+            s = "list[" + s + "]";    
         }
 
         return s;
@@ -225,7 +218,7 @@ public class PythonSdk : ILanguageSdk
 
                     // Figure out the parameter list
                     var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
-                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}{(p.Nullable ? " | None" : "")}");
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray)}{(p.Nullable ? " | None" : "")}");
                     var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name.ToVariableName()}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
@@ -410,7 +403,7 @@ public class PythonSdk : ILanguageSdk
             sb.AppendLine($"{prefix}----------");
             foreach (var p in parameters)
             {
-                sb.AppendLine($"{prefix}{p.Name} : {FixupType(context, p.DataType, p.IsArray, isParamHint: true)}");
+                sb.AppendLine($"{prefix}{p.Name} : {FixupType(context, p.DataType, p.IsArray)}");
                 sb.AppendLine(p.DescriptionMarkdown.WrapMarkdown(72, $"{prefix}    "));
             }
         }
