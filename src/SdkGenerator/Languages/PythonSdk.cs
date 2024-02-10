@@ -217,7 +217,8 @@ public class PythonSdk : ILanguageSdk
                     }
 
                     // Figure out the parameter list
-                    var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
+                    var bodyParam = endpoint.Parameters.FirstOrDefault(p => p.Location == "body");
+                    var hasBody = bodyParam != null;
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray)}{(p.Nullable ? " | None" : "")}");
                     var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name.ToVariableName()}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
@@ -243,8 +244,20 @@ public class PythonSdk : ILanguageSdk
                         sb.AppendLine($"        if {p.Name.ToVariableName()}:");
                         sb.AppendLine($"            queryParams['{p.Name}'] = {p.Name.ToVariableName()}");
                     }
-                    sb.AppendLine(
-                        $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "remove_empty_elements(dataclasses.asdict(body))" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                    
+                    // Is this uploading a JSON array or object?
+                    if (bodyParam != null && bodyParam.IsArray)
+                    {
+                        sb.AppendLine("        bodyArray = []");
+                        sb.AppendLine("        for item in body:");
+                        sb.AppendLine("            bodyArray.append(remove_empty_elements(dataclasses.asdict(item)))");
+                        sb.AppendLine($"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, bodyArray, queryParams, None)");
+                    }
+                    else
+                    {
+                        sb.AppendLine(
+                            $"        result = self.client.send_request(\"{endpoint.Method.ToUpper()}\", path, {(hasBody ? "remove_empty_elements(dataclasses.asdict(body))" : "None")}, queryParams, {(fileUploadParam == null ? "None" : fileUploadParam.Name)})");
+                    }
                     sb.AppendLine("        if result.status_code >= 200 and result.status_code < 300:");
                     string innerType = originalReturnDataType;
                     if (isFileDownload)
