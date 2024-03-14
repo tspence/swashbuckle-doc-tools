@@ -82,30 +82,9 @@
     </Content>
   </ItemGroup>
 
-  <!-- These are all the Scriban template files to bundle with the app -->
+  <!-- These are all the Scriban template files to bundle with the app, using globbing -->
   <ItemGroup>
-    <EmbeddedResource Include="templates/csharp/nuget-publish.yml.scriban" />
-    <EmbeddedResource Include="templates/csharp/sdk.nuspec.scriban" />
-    <EmbeddedResource Include="templates/csharp/ApiClient.cs.scriban" />
-    <EmbeddedResource Include="templates/csharp/ApiInterface.cs.scriban" />
-
-    <EmbeddedResource Include="templates/dart/ApiClient.dart.scriban" />
-    <EmbeddedResource Include="templates/dart/ApiInterface.dart.scriban" />
-
-    <EmbeddedResource Include="templates/java/ApiClient.java.scriban" />
-    <EmbeddedResource Include="templates/java/BlobRequest.java.scriban" />
-    <EmbeddedResource Include="templates/java/pom.xml.scriban" />
-    <EmbeddedResource Include="templates/java/RestRequest.java.scriban" />
-
-    <EmbeddedResource Include="templates/python/__init__.py.scriban" />
-    <EmbeddedResource Include="templates/python/ApiClient.py.scriban" />
-    <EmbeddedResource Include="templates/python/pyproject.toml.scriban" />
-
-    <EmbeddedResource Include="templates/ruby/ApiClient.rb.scriban" />
-
-    <EmbeddedResource Include="templates/ts/ApiClient.ts.scriban" />
-    <EmbeddedResource Include="templates/ts/index.ts.scriban" />
-    <EmbeddedResource Include="templates/ts/package.json.scriban" />
+    <EmbeddedResource Include="templates/**/*.scriban" />
   </ItemGroup>
 
   <!-- This is a silly thing, but the Templates are included in the package as `content`, even
