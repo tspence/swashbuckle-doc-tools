@@ -359,10 +359,10 @@ public class TypescriptSdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.ts.ApiClient.ts.scriban",
+            "SdkGenerator.templates.ts.ApiClient.scriban",
             Path.Combine(context.Project.Typescript.Folder, "src", context.Project.Typescript.ClassName + ".ts"));
         await ScribanFunctions.ExecuteTemplate(context,
-            "SdkGenerator.templates.ts.index.ts.scriban",
+            "SdkGenerator.templates.ts.index.scriban",
             Path.Combine(context.Project.Typescript.Folder, "src", "index.ts"));
 
         // Patch the version number in package.json

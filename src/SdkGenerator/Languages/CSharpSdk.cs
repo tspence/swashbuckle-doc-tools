@@ -473,10 +473,10 @@ public class CSharpSdk : ILanguageSdk
             "SdkGenerator.templates.csharp.nuget-publish.yml.scriban",
             Path.Combine(context.Project.Csharp.Folder, ".github", "workflows", "nuget-publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.ApiClient.cs.scriban",
+            "SdkGenerator.templates.csharp.ApiClient.scriban",
             Path.Combine(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.ApiInterface.cs.scriban",
+            "SdkGenerator.templates.csharp.ApiInterface.scriban",
             Path.Combine(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.templates.csharp.sdk.nuspec.scriban",

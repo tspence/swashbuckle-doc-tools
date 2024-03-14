@@ -438,10 +438,10 @@ public class PythonSdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.python.ApiClient.py.scriban",
+            "SdkGenerator.templates.python.ApiClient.scriban",
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.python.__init__.py.scriban",
+            "SdkGenerator.templates.python.__init__.scriban",
             Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
         await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
             "SdkGenerator.templates.python.pyproject.toml.scriban",
