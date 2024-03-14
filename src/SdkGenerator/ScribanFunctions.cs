@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Scriban;
@@ -51,9 +52,26 @@ public static class ScribanFunctions
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
-            var templateText = await File.ReadAllTextAsync(templateName);
+            // Retrieve template from embedded resource
+            var assembly = typeof(Program).GetTypeInfo().Assembly;
+            var resource = assembly.GetManifestResourceStream(templateName);
+            if (resource == null)
+            {
+                var names = assembly.GetManifestResourceNames();
+                throw new Exception($"Could not find embedded resource {templateName}");
+            }
+            using var sr = new StreamReader(resource);
+            var templateText = await sr.ReadToEndAsync();
             var template = Template.Parse(templateText);
+
+            // Write output to a new directory
+            var dirName = Path.GetDirectoryName(outputFile);
+            if (dirName != null)
+            {
+                Directory.CreateDirectory(dirName);
+            }
+
+            // Construct scriban and execute
             var scriptObject1 = new ScriptObject();
             scriptObject1.Import(typeof(Extensions));
             var templateContext = new TemplateContext();

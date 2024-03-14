@@ -258,7 +258,7 @@ public class RubySdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            Path.Combine(".", "templates", "ruby", "ApiClient.rb.scriban"),
+            "SdkGenerator.templates.ruby.ApiClient.rb.scriban",
             Path.Combine(rubyModulePath, context.Project.Ruby.ClassName.ProperCaseToSnakeCase() + ".rb"));
         // TODO - Need to update the ruby generator with ability to build these files
         // await Extensions.PatchFile(context, Path.Combine(rubyModulePath, "version.rb"),

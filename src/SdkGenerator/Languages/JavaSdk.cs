@@ -418,19 +418,19 @@ public class JavaSdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            Path.Combine(".", "templates", "java", "ApiClient.java.scriban"),
+            "SdkGenerator.templates.java.ApiClient.java.scriban",
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar),
                 context.Project.Java.ClassName + ".java"));
         await ScribanFunctions.ExecuteTemplate(context,
-            Path.Combine(".", "templates", "java", "pom.xml.scriban"),
+            "SdkGenerator.templates.java.pom.xml.scriban",
             Path.Combine(context.Project.Java.Folder, "pom.xml"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            Path.Combine(".", "templates", "java", "RestRequest.java.scriban"),
+            "SdkGenerator.templates.java.RestRequest.java.scriban",
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            Path.Combine(".", "templates", "java", "BlobRequest.java.scriban"),
+            "SdkGenerator.templates.java.BlobRequest.java.scriban",
             Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "BlobRequest.java"));
     }
