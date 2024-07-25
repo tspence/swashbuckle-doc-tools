@@ -123,7 +123,10 @@ public static class DownloadFile
         }
 
         // Remove OAuth2 security definition - it's just for Swagger UI
-        jObject["components"]!["securitySchemes"]!["oauth2"]!.Parent!.Remove();
+        if (project.BlankOutSecuritySchemesSection == true)
+        {
+            jObject["components"]!["securitySchemes"]!["oauth2"]!.Parent!.Remove();
+        }
 
         // Add links to the document data definitions
         if (project.Readme != null)

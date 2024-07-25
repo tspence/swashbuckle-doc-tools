@@ -18,6 +18,7 @@
       * Fix issue with path combining
       * Upgrade to DotNet 8.0
       * Do not generate markdown files if not requested
+      * Make security schemes section blankout optional if users don't want to save keys
       * Python: Fix capitalization/list issue
       * TypeScript: Fix duplicated import for nested classes
     </PackageReleaseNotes>
