@@ -17,8 +17,9 @@
 
       * Fix issue with path combining
       * Upgrade to DotNet 8.0
-      * Python capitalization/list issue
       * Do not generate markdown files if not requested
+      * Python: Fix capitalization/list issue
+      * TypeScript: Fix duplicated import for nested classes
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

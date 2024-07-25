@@ -339,9 +339,13 @@ public class TypescriptSdk : ILanguageSdk
     private List<string> GetImports(GeneratorContext context, SchemaItem item)
     {
         var imports = new List<string>();
-        foreach (var field in (item?.Fields).EmptyIfNull())
+        foreach (var field in item.Fields.EmptyIfNull())
         {
-            AddImport(context, field?.DataType, imports);
+            // Avoid adding a reference to ourselves for nested classes
+            if (field?.DataType != item.Name)
+            {
+                AddImport(context, field?.DataType, imports);
+            }
         }
 
         return imports;
