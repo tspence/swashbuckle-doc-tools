@@ -32,6 +32,8 @@ public class ProjectSchema
     
     public EnvironmentSchema[] Environments { get; set; }
     public string SwaggerSchemaFolder { get; set; }
+    public bool GenerateMarkdownFiles { get; set; }
+    public bool? BlankOutSecuritySchemesSection { get; set; }
     public string Keywords { get; set; }
     public string Description { get; set; }
     public string AuthenticationHelp { get; set; }

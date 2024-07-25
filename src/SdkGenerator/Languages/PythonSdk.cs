@@ -80,14 +80,14 @@ public class PythonSdk : ILanguageSdk
         }
 
         // Is this a generic list?
-        if (s.EndsWith("list", StringComparison.OrdinalIgnoreCase))
+        if (s.EndsWith("List", StringComparison.OrdinalIgnoreCase))
         {
-            return $"list[{FixupType(context, s[..^4], false, false)}]";
+            return $"List[{FixupType(context, s[..^4], false, false)}]";
         }
 
         if (isArray)
         {
-            s = "list[" + s + "]";    
+            s = "List[" + s + "]";    
         }
 
         return s;
@@ -275,7 +275,7 @@ public class PythonSdk : ILanguageSdk
                         }
                         
                         // Deserialize lists in the python way
-                        if (innerType.StartsWith("list["))
+                        if (innerType.StartsWith("List["))
                         {
                             var elementType = innerType.Substring(5, innerType.Length - 6);
                             sb.AppendLine("            data = []");
@@ -317,6 +317,7 @@ public class PythonSdk : ILanguageSdk
         }
 
         imports.Sort();
+        AddListImport(imports);
         return imports.Distinct().ToList();
     }
 
@@ -349,6 +350,7 @@ public class PythonSdk : ILanguageSdk
             }
         }
 
+        AddListImport(imports);
         imports.Sort();
         return imports.Distinct().ToList();
     }
@@ -362,6 +364,7 @@ public class PythonSdk : ILanguageSdk
 
         if (dataType.EndsWith("List", StringComparison.OrdinalIgnoreCase))
         {
+            AddListImport(imports);
             AddImport(context, imports, dataType.Substring(0, dataType.Length - 4));
             return;
         }
@@ -381,6 +384,15 @@ public class PythonSdk : ILanguageSdk
         if (!imports.Contains(importText))
         {
             imports.Add(importText);
+        }
+    }
+
+    private static void AddListImport(List<string> imports)
+    {
+        string importListText = "from typing import List";
+        if (!imports.Contains(importListText))
+        {
+            imports.Add(importListText);
         }
     }
 

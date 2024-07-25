@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>SdkGenerator</ToolCommandName>
     <PackageReadmeFile>docs/README.md</PackageReadmeFile>
@@ -12,14 +12,19 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.5
-      March 13, 2024
+      # 1.2.6
+      July 25, 2024
 
-      * Fix issues with embedded resources so this can work from DotNet tool
+      * Fix issue with path combining
+      * Upgrade to DotNet 8.0
+      * Do not generate markdown files if not requested
+      * Make security schemes section blankout optional if users don't want to save keys
+      * Python: Fix capitalization/list issue
+      * TypeScript: Fix duplicated import for nested classes
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.5</Version>
+    <Version>1.2.6</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

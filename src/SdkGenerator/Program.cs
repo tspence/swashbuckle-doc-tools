@@ -210,7 +210,8 @@ public static class Program
                 await MarkdownGenerator.UploadSchemas(context, context.Project.Readme.Format ?? "list");
                 Console.WriteLine("Uploaded to Readme.");
             }
-            else if (context.Project?.SwaggerSchemaFolder != null)
+            
+            if (context.Project?.GenerateMarkdownFiles == true)
             {
                 Console.WriteLine($"Writing documentation to {context.Project.SwaggerSchemaFolder}...");
                 await MarkdownGenerator.WriteMarkdownFiles(context, context.Project.Readme?.Format ?? "list");
@@ -218,8 +219,7 @@ public static class Program
             }
             else
             {
-                Console.WriteLine(
-                    "To output documentation files, specify either a Readme API key or a swagger folder.");
+                Console.WriteLine("To output documentation files in markdown, set GenerateMarkdownFiles to TRUE and specify a swagger folder.");
             }
         }
 

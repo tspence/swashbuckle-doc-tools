@@ -123,7 +123,10 @@ public static class DownloadFile
         }
 
         // Remove OAuth2 security definition - it's just for Swagger UI
-        jObject["components"]!["securitySchemes"]!["oauth2"]!.Parent!.Remove();
+        if (project.BlankOutSecuritySchemesSection == true)
+        {
+            jObject["components"]!["securitySchemes"]!["oauth2"]!.Parent!.Remove();
+        }
 
         // Add links to the document data definitions
         if (project.Readme != null)
@@ -289,8 +292,7 @@ public static class DownloadFile
         }
         
         // Compare these two files
-        var fullFileName = Path.Combine(context.Project.SwaggerSchemaFolder, mostRecentFile);
-        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(fullFileName, context.LogPath);
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(mostRecentFile, context.LogPath);
         oldContext.OfficialVersion = mostRecentVersion.ToString();
         oldContext.Project = context.Project;
         return PatchNotesGenerator.Compare(oldContext, context);
