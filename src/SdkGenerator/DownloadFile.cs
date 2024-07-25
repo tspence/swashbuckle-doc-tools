@@ -289,8 +289,7 @@ public static class DownloadFile
         }
         
         // Compare these two files
-        var fullFileName = Path.Combine(context.Project.SwaggerSchemaFolder, mostRecentFile);
-        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(fullFileName, context.LogPath);
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(mostRecentFile, context.LogPath);
         oldContext.OfficialVersion = mostRecentVersion.ToString();
         oldContext.Project = context.Project;
         return PatchNotesGenerator.Compare(oldContext, context);
