@@ -107,7 +107,7 @@ public class JavaSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = context.MakePath(context.Project.Java.Folder, "src", "main", "java",
+        var modelsDir = Path.Combine(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.java"))
@@ -184,7 +184,7 @@ public class JavaSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = context.MakePath(context.Project.Java.Folder, "src", "main", "java",
+        var clientsDir = Path.Combine(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.java"))
@@ -420,19 +420,19 @@ public class JavaSdk : ILanguageSdk
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.java.ApiClient.java.scriban",
-            context.MakePath(context.Project.Java.Folder, "src", "main", "java",
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar),
                 context.Project.Java.ClassName + ".java"));
         await ScribanFunctions.ExecuteTemplate(context,
             "SdkGenerator.Templates.java.pom.xml.scriban",
-            context.MakePath(context.Project.Java.Folder, "pom.xml"));
+            Path.Combine(context.Project.Java.Folder, "pom.xml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.java.RestRequest.java.scriban",
-            context.MakePath(context.Project.Java.Folder, "src", "main", "java",
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "RestRequest.java"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.java.BlobRequest.java.scriban",
-            context.MakePath(context.Project.Java.Folder, "src", "main", "java",
+            Path.Combine(context.Project.Java.Folder, "src", "main", "java",
                 context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "BlobRequest.java"));
     }
     

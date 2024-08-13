@@ -12,15 +12,14 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.9
+      # 1.2.8
       August 13, 2024
 
-      * Fix path issues 
-      * Improvements to patch notes generator
+      * Fix issue with embedded resources
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.7</Version>
+    <Version>1.2.8</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
@@ -78,8 +77,9 @@
   </ItemGroup>
 
   <!-- These are all the Scriban template files to bundle with the app, using globbing -->
+  <!-- Note that there's a capitalization issue that only affects actions running on linux -->
   <ItemGroup>
-    <EmbeddedResource Include="templates/**/*.scriban" />
+    <EmbeddedResource Include="Templates/**/*.scriban" />
   </ItemGroup>
 
   <!-- This is a silly thing, but the Templates are included in the package as `content`, even

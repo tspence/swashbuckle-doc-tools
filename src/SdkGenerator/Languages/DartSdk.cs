@@ -25,15 +25,15 @@ public class DartSdk : ILanguageSdk
 
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.dart.ApiInterface.dart.scriban",
-            context.MakePath(context.Project.Dart.Folder, context.Project.Dart.ClassName + ".dart"));
+            Path.Combine(context.Project.Dart.Folder, context.Project.Dart.ClassName + ".dart"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.dart.ApiClient.dart.scriban",
-            context.MakePath(context.Project.Dart.Folder, context.Project.Dart.ClassName + "Impl.dart"));
+            Path.Combine(context.Project.Dart.Folder, context.Project.Dart.ClassName + "Impl.dart"));
     }
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = context.MakePath(context.Project.Dart.Folder, "clients");
+        var clientsDir = Path.Combine(context.Project.Dart.Folder, "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.dart"))
         {
@@ -158,7 +158,7 @@ public class DartSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = context.MakePath(context.Project.Dart.Folder, "models");
+        var modelsDir = Path.Combine(context.Project.Dart.Folder, "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.dart"))
         {
