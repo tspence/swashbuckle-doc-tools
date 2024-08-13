@@ -105,6 +105,21 @@ public class SwaggerDiff
             sb.AppendLine();
         }
         
+        // Schemas with changes
+        if (SchemaChanges.Count > 0)
+        {
+            sb.AppendLine($"Changes to data models:");
+            foreach (var rename in SchemaChanges)
+            {
+                foreach (var change in rename.Value)
+                {
+                    sb.AppendLine($"* {change}");
+                }
+            }
+
+            sb.AppendLine();
+        }
+
         // Explain which APIs were removed
         if (DeprecatedEndpoints.Count > 0)
         {
@@ -117,7 +132,7 @@ public class SwaggerDiff
         }
         
         // If no major changes, let people know this was a minor release
-        if (DeprecatedEndpoints.Count + EndpointChanges.Count + Renames.Count + NewEndpoints.Count == 0)
+        if (DeprecatedEndpoints.Count + EndpointChanges.Count + Renames.Count + NewEndpoints.Count + SchemaChanges.Count == 0)
         {
             sb.AppendLine("* Minor documentation changes, bugfixes, and performance improvements.");
         }

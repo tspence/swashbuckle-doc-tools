@@ -48,6 +48,15 @@ public static class ScribanFunctions
         }
     }
 
+    public static async Task ExecuteTemplateIfNotExists(GeneratorContext context, string templateName,
+        string outputFile)
+    {
+        if (!Path.Exists(outputFile))
+        {
+            await ExecuteTemplate(context, templateName, outputFile);
+        }
+    }
+    
     public static async Task ExecuteTemplate(GeneratorContext context, string templateName, string outputFile)
     {
         try

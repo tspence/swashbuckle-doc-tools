@@ -95,7 +95,7 @@ public class PythonSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
+        var modelsDir = context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(context, modelsDir);
         await File.WriteAllTextAsync(Path.Combine(modelsDir, "__init__.py"), string.Empty);
 
@@ -161,7 +161,7 @@ public class PythonSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
+        var clientsDir = context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
         await CleanModuleDirectory(context, clientsDir);
         await File.WriteAllTextAsync(Path.Combine(clientsDir, "__init__.py"), string.Empty);
 
@@ -452,11 +452,11 @@ public class PythonSdk : ILanguageSdk
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.python.ApiClient.scriban",
-            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
+            context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.python.__init__.scriban",
-            Path.Combine(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
-        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Python.Folder, "pyproject.toml"), 
+            context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "__init__.py"));
+        await ScribanFunctions.PatchOrTemplate(context, context.MakePath(context.Project.Python.Folder, "pyproject.toml"), 
             "SdkGenerator.Templates.python.pyproject.toml.scriban",
             "version = \"[\\d\\.]+\"",
             $"version = \"{context.Api.Semver3}\"");

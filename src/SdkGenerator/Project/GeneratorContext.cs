@@ -10,6 +10,11 @@ namespace SdkGenerator.Project;
 
 public class GeneratorContext : IDisposable
 {
+    /// <summary>
+    /// The folder where the project file lives - all paths should be relative to this
+    /// </summary>
+    public string ProjectFolder { get; set; }
+
     public ProjectSchema Project { get; set; }
     public ApiSchema Api { get; set; }
     private StreamWriter ErrorStream { get; set; }
@@ -36,7 +41,7 @@ public class GeneratorContext : IDisposable
         {
             if (ErrorStream == null && Project.SwaggerSchemaFolder != null)
             {
-                ErrorStream = new StreamWriter(Path.Combine(Project.SwaggerSchemaFolder, "errors.log"));
+                ErrorStream = new StreamWriter(MakePath(Project.SwaggerSchemaFolder, "errors.log"));
             }
 
             if (ErrorStream != null)
@@ -73,6 +78,7 @@ public class GeneratorContext : IDisposable
         var context = new GeneratorContext()
         {
             Project = project,
+            ProjectFolder = Path.GetDirectoryName(filename),
             Api = null,
             LogPath = logPath,
         };
@@ -140,5 +146,18 @@ public class GeneratorContext : IDisposable
         }
 
         return typeName;
+    }
+
+    public string MakePath(params string[] elements)
+    {
+        var filteredElements = elements.Where(s => s != null).ToList();
+        filteredElements.Insert(0, ProjectFolder);
+        return Path.Combine(filteredElements.ToArray());
+    }
+
+    public bool IsIgnoredEndpoint(string itemName, string path)
+    {
+        return Project.IgnoredEndpoints != null && (Project.IgnoredEndpoints.Contains(itemName, StringComparer.OrdinalIgnoreCase)
+                || Project.IgnoredEndpoints.Contains(path, StringComparer.OrdinalIgnoreCase));
     }
 }

@@ -252,7 +252,7 @@ public static class DownloadFile
         // Save to the swagger folder
         if (Directory.Exists(context.Project.SwaggerSchemaFolder))
         {
-            context.SwaggerJsonPath = Path.Combine(context.Project.SwaggerSchemaFolder, $"swagger-{context.OfficialVersion}.json");
+            context.SwaggerJsonPath = context.MakePath(context.Project.SwaggerSchemaFolder, $"swagger-{context.OfficialVersion}.json");
             await File.WriteAllTextAsync(context.SwaggerJsonPath, context.SwaggerJson);
         }
 
@@ -265,7 +265,7 @@ public static class DownloadFile
         // List all files in the swagger folder
         string mostRecentFile = null;
         SemVersion mostRecentVersion = null;
-        foreach (var file in Directory.GetFiles(context.Project.SwaggerSchemaFolder))
+        foreach (var file in Directory.GetFiles(context.MakePath(context.Project.SwaggerSchemaFolder)))
         {
             // Determine semantic version of the file
             var fileName = Path.GetFileNameWithoutExtension(file);

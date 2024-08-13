@@ -54,7 +54,7 @@ public class WorkatoSdk : ILanguageSdk
             }
         }
 
-        var schemasPath = Path.Combine(context.Project.Workato.Folder, "schemas.rb");
+        var schemasPath = context.MakePath(context.Project.Workato.Folder, "schemas.rb");
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
@@ -182,7 +182,7 @@ public class WorkatoSdk : ILanguageSdk
         }
 
         // Write this category to a file
-        var schemasPath = Path.Combine(context.Project.Workato.Folder, "endpoints.rb");
+        var schemasPath = context.MakePath(context.Project.Workato.Folder, "endpoints.rb");
         await File.WriteAllTextAsync(schemasPath, sb.ToString());
     }
 
