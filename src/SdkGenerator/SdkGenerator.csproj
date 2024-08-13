@@ -12,16 +12,14 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.9
+      # 1.3.0
       August 13, 2024
 
-      * All paths are now relative to the location of the project schema file
-      * Patch notes generation now identifies schema item changes
-      * Correct an issue where an ignored endpoint would continually show up in patch notes
+      * New modes to calculate patch notes and release name for use with automated PRs 
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.9</Version>
+    <Version>1.3.0</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
