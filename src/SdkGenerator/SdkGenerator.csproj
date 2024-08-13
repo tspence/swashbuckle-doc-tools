@@ -12,14 +12,16 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.8
+      # 1.2.9
       August 13, 2024
 
-      * Fix issue with embedded resources
+      * All paths are now relative to the location of the project schema file
+      * Patch notes generation now identifies schema item changes
+      * Correct an issue where an ignored endpoint would continually show up in patch notes
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.8</Version>
+    <Version>1.2.9</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
