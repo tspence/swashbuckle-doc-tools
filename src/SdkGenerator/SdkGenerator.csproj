@@ -77,8 +77,9 @@
   </ItemGroup>
 
   <!-- These are all the Scriban template files to bundle with the app, using globbing -->
+  <!-- Note that there's a capitalization issue that only affects actions running on linux -->
   <ItemGroup>
-    <EmbeddedResource Include="templates/**/*.scriban" />
+    <EmbeddedResource Include="Templates/**/*.scriban" />
   </ItemGroup>
 
   <!-- This is a silly thing, but the Templates are included in the package as `content`, even

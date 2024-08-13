@@ -471,16 +471,16 @@ public class CSharpSdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.nuget-publish.yml.scriban",
+            "SdkGenerator.Templates.csharp.nuget-publish.yml.scriban",
             Path.Combine(context.Project.Csharp.Folder, ".github", "workflows", "nuget-publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.ApiClient.scriban",
+            "SdkGenerator.Templates.csharp.ApiClient.scriban",
             Path.Combine(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.ApiInterface.scriban",
+            "SdkGenerator.Templates.csharp.ApiInterface.scriban",
             Path.Combine(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.csharp.sdk.nuspec.scriban",
+            "SdkGenerator.Templates.csharp.sdk.nuspec.scriban",
             Path.Combine(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
     }
 
