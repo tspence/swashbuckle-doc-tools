@@ -357,6 +357,7 @@ public class TypescriptSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting JavaScript/TypeScript...");
 
         await ExportSchemas(context);
         await ExportEndpoints(context);

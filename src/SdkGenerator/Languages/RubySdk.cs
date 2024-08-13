@@ -248,6 +248,7 @@ public class RubySdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting Ruby...");
 
         await ExportSchemas(context.Project, context.Api);
         await ExportEndpoints(context.Project, context.Api);

@@ -18,6 +18,7 @@ public class DartSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting Dart...");
         
         await ExportSchemas(context);
         await ExportEndpoints(context);
