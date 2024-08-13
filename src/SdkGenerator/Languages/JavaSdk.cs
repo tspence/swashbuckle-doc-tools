@@ -412,6 +412,7 @@ public class JavaSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting Java...");
 
         await ExportSchemas(context);
         await ExportEndpoints(context);

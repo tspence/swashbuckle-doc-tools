@@ -17,6 +17,7 @@ public class WorkatoSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting Workato...");
 
         await ExportSchemas(context);
         await ExportEndpoints(context);

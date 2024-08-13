@@ -463,6 +463,7 @@ public class CSharpSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting DotNet/C#...");
 
         await ExportSchemas(context);
         await ExportEnums(context);

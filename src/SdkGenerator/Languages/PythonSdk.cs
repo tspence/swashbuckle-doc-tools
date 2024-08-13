@@ -444,6 +444,7 @@ public class PythonSdk : ILanguageSdk
         {
             return;
         }
+        Console.WriteLine("Exporting Python...");
 
         await ExportSchemas(context);
         await ExportEndpoints(context);

@@ -57,7 +57,6 @@ public static class ScribanFunctions
             var resource = assembly.GetManifestResourceStream(templateName);
             if (resource == null)
             {
-                var names = assembly.GetManifestResourceNames();
                 throw new Exception($"Could not find embedded resource {templateName}");
             }
             using var sr = new StreamReader(resource);
