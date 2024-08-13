@@ -12,19 +12,14 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.2.6
+      # 1.2.7
       July 25, 2024
 
-      * Fix issue with path combining
-      * Upgrade to DotNet 8.0
-      * Do not generate markdown files if not requested
-      * Make security schemes section blankout optional if users don't want to save keys
-      * Python: Fix capitalization/list issue
-      * TypeScript: Fix duplicated import for nested classes
+      * Fix issue with embedded resources
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.2.6</Version>
+    <Version>1.2.7</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

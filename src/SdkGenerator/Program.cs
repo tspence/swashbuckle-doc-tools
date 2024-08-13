@@ -36,6 +36,11 @@ public static class Program
         public string LogPath { get; set; }
     }
 
+    [Verb("embedded", HelpText = "List embedded resources")]
+    private class ListEmbeddedResourcesOptions
+    {
+    }
+
     [Verb("build", HelpText = "Build the SDK")]
     private class BuildOptions : BaseOptions
     {
@@ -72,12 +77,25 @@ public static class Program
     {
         var types = LoadVerbs();
         var parsed = Parser.Default.ParseArguments(args, types);
+        await parsed.WithParsedAsync<ListEmbeddedResourcesOptions>(ListEmbeddedResourcesTask);
         await parsed.WithParsedAsync<CreateOptions>(CreateTask);
         await parsed.WithParsedAsync<BuildOptions>(BuildTask);
         await parsed.WithParsedAsync<DiffOptions>(DiffTask);
         await parsed.WithParsedAsync<CompareOptions>(CompareTask);
         await parsed.WithParsedAsync<PatchNotesOptions>(PatchNotesTask);
         await parsed.WithNotParsedAsync(HandleErrors);
+    }
+
+    private static Task ListEmbeddedResourcesTask(ListEmbeddedResourcesOptions arg)
+    {
+        var assembly = typeof(Program).GetTypeInfo().Assembly;
+        Console.WriteLine("Embedded resources within this assembly:");
+        foreach (var name in assembly.GetManifestResourceNames())
+        {
+            Console.WriteLine($"* {name}");
+        }
+
+        return Task.CompletedTask;
     }
 
     private static async Task HandleErrors(IEnumerable<Error> errors)
@@ -193,7 +211,6 @@ public static class Program
                 var obj = (ILanguageSdk)Activator.CreateInstance(t);
                 if (obj != null && (options.TemplateName is null || string.Equals(options.TemplateName, obj.LanguageName(), StringComparison.OrdinalIgnoreCase)))
                 {
-                    Console.WriteLine($"Exporting {obj.LanguageName()}");
                     await obj.Export(context);
                     anyExported = true;
                 }
