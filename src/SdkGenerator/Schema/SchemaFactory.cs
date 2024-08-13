@@ -238,15 +238,10 @@ public static class SchemaFactory
                 }
 
                 // Is this an ignored endpoint?
-                if (context.Project.IgnoredEndpoints != null)
+                if (context.IsIgnoredEndpoint(item.Name, path))
                 {
-                    if (context.Project.IgnoredEndpoints.Contains(item.Name, StringComparer.OrdinalIgnoreCase)
-                        || context.Project.IgnoredEndpoints.Contains(path, StringComparer.OrdinalIgnoreCase))
-                    {
-
-                        context.LogError($"Ignoring endpoint '{item.Name}'.");
-                        continue;
-                    }
+                    context.LogError($"Ignoring endpoint '{item.Name}'.");
+                    continue;
                 }
                 
                 // Determine category

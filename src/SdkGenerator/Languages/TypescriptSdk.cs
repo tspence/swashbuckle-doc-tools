@@ -98,7 +98,7 @@ public class TypescriptSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(context.Project.Typescript.Folder, "src", "models");
+        var modelsDir = context.MakePath(context.Project.Typescript.Folder, "src", "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.ts"))
         {
@@ -147,7 +147,7 @@ public class TypescriptSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(context.Project.Typescript.Folder, "src", "clients");
+        var clientsDir = context.MakePath(context.Project.Typescript.Folder, "src", "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.ts"))
         {
@@ -364,15 +364,15 @@ public class TypescriptSdk : ILanguageSdk
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.ts.ApiClient.scriban",
-            Path.Combine(context.Project.Typescript.Folder, "src", context.Project.Typescript.ClassName + ".ts"));
+            "SdkGenerator.Templates.ts.ApiClient.scriban",
+            context.MakePath(context.Project.Typescript.Folder, "src", context.Project.Typescript.ClassName + ".ts"));
         await ScribanFunctions.ExecuteTemplate(context,
-            "SdkGenerator.templates.ts.index.scriban",
-            Path.Combine(context.Project.Typescript.Folder, "src", "index.ts"));
+            "SdkGenerator.Templates.ts.index.scriban",
+            context.MakePath(context.Project.Typescript.Folder, "src", "index.ts"));
 
         // Patch the version number in package.json
-        await ScribanFunctions.PatchOrTemplate(context, Path.Combine(context.Project.Typescript.Folder, "package.json"),
-            "SdkGenerator.templates.ts.package.json.scriban",
+        await ScribanFunctions.PatchOrTemplate(context, context.MakePath(context.Project.Typescript.Folder, "package.json"),
+            "SdkGenerator.Templates.ts.package.json.scriban",
             "\"version\": \"[\\d\\.]+\",",
             $"\"version\": \"{context.OfficialVersion}\",");
     }

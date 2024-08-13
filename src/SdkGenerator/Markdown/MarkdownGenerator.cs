@@ -67,7 +67,7 @@ public static class MarkdownGenerator
                     _ => ""
                 };
 
-                var filename = Path.Combine(context.Project.SwaggerSchemaFolder, schema.Name.ToLower() + ".md");
+                var filename = context.MakePath(context.Project.SwaggerSchemaFolder, schema.Name.ToLower() + ".md");
                 await File.WriteAllTextAsync(filename, markdownText);
             }
             catch (Exception e)

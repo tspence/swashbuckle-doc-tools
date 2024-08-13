@@ -27,24 +27,24 @@ public class RubySdk : ILanguageSdk
                + "#\n\n";
     }
 
-    private async Task ExportSchemas(ProjectSchema project, ApiSchema api)
+    private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(project.Ruby.Folder, "lib", project.Ruby.Namespace, "models");
+        var modelsDir = context.MakePath(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace, "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.rb"))
         {
             File.Delete(modelFile);
         }
 
-        foreach (var item in api.Schemas)
+        foreach (var item in context.Api.Schemas)
         {
             if (item.Fields != null)
             {
                 var sb = new StringBuilder();
-                sb.AppendLine(FileHeader(project));
+                sb.AppendLine(FileHeader(context.Project));
                 sb.AppendLine("require 'json'");
                 sb.AppendLine();
-                sb.AppendLine($"module {project.Ruby.ModuleName}");
+                sb.AppendLine($"module {context.Project.Ruby.ModuleName}");
                 sb.AppendLine();
 
                 // Ruby likes to have comments padded to the length of the longest field
@@ -96,9 +96,9 @@ public class RubySdk : ILanguageSdk
         }
     }
 
-    private async Task ExportEndpoints(ProjectSchema project, ApiSchema api)
+    private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(project.Ruby.Folder, "lib", project.Ruby.Namespace, "clients");
+        var clientsDir = context.MakePath(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace, "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.rb"))
         {
@@ -106,26 +106,26 @@ public class RubySdk : ILanguageSdk
         }
 
         // Gather a list of unique categories
-        foreach (var cat in api.Categories)
+        foreach (var cat in context.Api.Categories)
         {
             var sb = new StringBuilder();
 
             // Construct header
-            sb.AppendLine(FileHeader(project));
+            sb.AppendLine(FileHeader(context.Project));
             sb.AppendLine("require 'awrence'");
             sb.AppendLine();
             sb.AppendLine($"class {cat.ToProperCase()}Client");
             sb.AppendLine();
             sb.AppendLine("    ##");
             sb.AppendLine($"    # Initialize the {cat.ToProperCase()}Client class with an API client instance.");
-            sb.AppendLine($"    # @param connection [{project.Ruby.ClassName}] The API client object for this connection");
+            sb.AppendLine($"    # @param connection [{context.Project.Ruby.ClassName}] The API client object for this connection");
             sb.AppendLine("    def initialize(connection)");
             sb.AppendLine("        @connection = connection");
             sb.AppendLine("    end");
             sb.AppendLine();
 
             // Run through all APIs
-            foreach (var endpoint in api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
+            foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
             {
                 sb.AppendLine();
                 sb.Append(MakeRubyDoc(endpoint.DescriptionMarkdown, 4, endpoint.Parameters));
@@ -250,17 +250,17 @@ public class RubySdk : ILanguageSdk
         }
         Console.WriteLine("Exporting Ruby...");
 
-        await ExportSchemas(context.Project, context.Api);
-        await ExportEndpoints(context.Project, context.Api);
+        await ExportSchemas(context);
+        await ExportEndpoints(context);
 
         // Some paths we'll need
-        var rubyModulePath = Path.Combine(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace);
-        var rubyGemspecPath = Path.Combine(context.Project.Ruby.Folder, context.Project.Ruby.ModuleName + ".gemspec");
+        var rubyModulePath = context.MakePath(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace);
+        //var rubyGemspecPath = context.MakePath(context.Project.Ruby.Folder, context.Project.Ruby.ModuleName + ".gemspec");
 
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.ruby.ApiClient.rb.scriban",
-            Path.Combine(rubyModulePath, context.Project.Ruby.ClassName.ProperCaseToSnakeCase() + ".rb"));
+            "SdkGenerator.Templates.ruby.ApiClient.rb.scriban",
+            context.MakePath(rubyModulePath, context.Project.Ruby.ClassName.ProperCaseToSnakeCase() + ".rb"));
         // TODO - Need to update the ruby generator with ability to build these files
         // await Extensions.PatchFile(context, Path.Combine(rubyModulePath, "version.rb"),
         //     "VERSION = \"[\\d\\.]+\"",

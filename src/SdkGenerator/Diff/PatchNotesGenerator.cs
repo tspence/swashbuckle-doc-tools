@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using KellermanSoftware.CompareNetObjects;
 using KellermanSoftware.CompareNetObjects.TypeComparers;
@@ -79,7 +80,31 @@ public class PatchNotesGenerator
 
     private static List<string> GetSchemaChanges(SchemaItem item, SchemaItem prevItem)
     {
-        return new List<string>();
+        var result = new List<string>();
+        
+        // Detect if there are any new or removed fields
+        var existingFieldNames = prevItem.Fields.Select(f => f.Name).ToHashSet();
+        var newFieldNames = item.Fields.Select(f => f.Name).ToHashSet();
+        
+        // Find newly added field names
+        foreach (var newFieldName in newFieldNames)
+        {
+            if (!existingFieldNames.Contains(newFieldName))
+            {
+                result.Add($"{item.Name}: Added new field `{newFieldName}`");
+            }
+        }
+        
+        // Find removed fields
+        foreach (var existingFieldName in existingFieldNames)
+        {
+            if (!newFieldNames.Contains(existingFieldName))
+            {
+                result.Add($"{item.Name}: Removed field `{existingFieldName}`");
+            }
+        }
+
+        return result;
     }
 
     private static void CompareEndpoints(GeneratorContext previous, GeneratorContext current, SwaggerDiff diff)
@@ -146,7 +171,7 @@ public class PatchNotesGenerator
         foreach (var oldItem in previous.Api.Endpoints)
         {
             var name = MakeApiName(oldItem);
-            if (!compared.Contains(name))
+            if (!compared.Contains(name) && !previous.IsIgnoredEndpoint(name, oldItem.Path))
             {
                 diff.DeprecatedEndpoints.Add(name);
             }
