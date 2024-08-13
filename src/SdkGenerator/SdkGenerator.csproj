@@ -73,10 +73,6 @@
         Include="PatchNotes.md"
         PackagePath="/docs"
         Pack="true" />
-    <None
-        Include="Templates/**/*"
-        Pack="true"
-        CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>
