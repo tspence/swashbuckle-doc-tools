@@ -24,10 +24,10 @@ public class DartSdk : ILanguageSdk
         await ExportEndpoints(context);
 
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.dart.ApiInterface.dart.scriban",
+            "SdkGenerator.Templates.dart.ApiInterface.dart.scriban",
             Path.Combine(context.Project.Dart.Folder, context.Project.Dart.ClassName + ".dart"));
         await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.templates.dart.ApiClient.dart.scriban",
+            "SdkGenerator.Templates.dart.ApiClient.dart.scriban",
             Path.Combine(context.Project.Dart.Folder, context.Project.Dart.ClassName + "Impl.dart"));
     }
 
