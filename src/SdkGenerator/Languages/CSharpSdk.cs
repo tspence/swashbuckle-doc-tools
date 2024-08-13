@@ -157,13 +157,13 @@ public class CSharpSdk : ILanguageSdk
                 sb.AppendLine("    }");
             }
             sb.AppendLine("}");
-            await File.WriteAllTextAsync(Path.Combine(context.Project.Csharp.Folder, "src", "Enums.cs"), sb.ToString());
+            await File.WriteAllTextAsync(context.MakePath(context.Project.Csharp.Folder, "src", "Enums.cs"), sb.ToString());
         }
     }
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Models");
+        var modelsDir = context.MakePath(context.Project.Csharp.Folder, "src", "Models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.cs"))
         {
@@ -278,8 +278,8 @@ public class CSharpSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = Path.Combine(context.Project.Csharp.Folder, "src", "Clients");
-        var interfacesDir = Path.Combine(context.Project.Csharp.Folder, "src", "Interfaces");
+        var clientsDir = context.MakePath(context.Project.Csharp.Folder, "src", "Clients");
+        var interfacesDir = context.MakePath(context.Project.Csharp.Folder, "src", "Interfaces");
         Directory.CreateDirectory(clientsDir);
         Directory.CreateDirectory(interfacesDir);
         foreach (var clientFile in Directory.EnumerateFiles(clientsDir, "*.cs"))
@@ -472,16 +472,16 @@ public class CSharpSdk : ILanguageSdk
         // Let's try using Scriban to populate these files
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.nuget-publish.yml.scriban",
-            Path.Combine(context.Project.Csharp.Folder, ".github", "workflows", "nuget-publish.yml"));
+            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "nuget-publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.ApiClient.scriban",
-            Path.Combine(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));
+            context.MakePath(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.ApiInterface.scriban",
-            Path.Combine(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
+            context.MakePath(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.sdk.nuspec.scriban",
-            Path.Combine(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
+            context.MakePath(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
     }
 
     public string LanguageName()
