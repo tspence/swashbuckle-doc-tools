@@ -33,12 +33,10 @@ public class GeneratorContext : IDisposable
 
     public void LogError(string message)
     {
-        if (string.IsNullOrEmpty(LogPath))
+        if (!string.IsNullOrEmpty(LogPath))
         {
             Console.WriteLine("  " + message);
-        }
-        else
-        {
+            
             if (ErrorStream == null && Project.SwaggerSchemaFolder != null)
             {
                 ErrorStream = new StreamWriter(MakePath(Project.SwaggerSchemaFolder, "errors.log"));

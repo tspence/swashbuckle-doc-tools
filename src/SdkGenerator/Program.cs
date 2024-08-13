@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -56,15 +57,25 @@ public static class Program
     [Verb("diff", HelpText = "Report on differences from previous swagger file")]
     private class DiffOptions : BaseOptions
     {
-        [Option('o', "old", HelpText = "Path to the older version of the swagger file")]
+        [Option('o', "old", Required = true, HelpText = "Path to the older version of the swagger file")]
         public string OldVersion { get; set; }
     }
 
-    [Verb("patchnotes", HelpText = "Create unified patch notes for all swagger files")]
-    private class PatchNotesOptions
+    [Verb("complete-patch-notes", HelpText = "Create unified patch notes for all swagger files in a folder")]
+    private class CompletePatchNotesOptions
     {
-        [Option('f', "folder", HelpText = "Path to the folder containing swagger files")]
+        [Option('f', "folder", Required = true, HelpText = "Path to the folder containing swagger files")]
         public string Folder { get; set; }
+    }
+
+    [Verb("get-patch-notes", HelpText = "Get patch notes in Markdown for the current build")]
+    private class GetPatchNotesOptions : BaseOptions
+    {
+    }
+
+    [Verb("get-release-name", HelpText = "Get the release name for the current build")]
+    private class GetReleaseNameOptions : BaseOptions
+    {
     }
 
     private static Type[] LoadVerbs()
@@ -82,8 +93,45 @@ public static class Program
         await parsed.WithParsedAsync<BuildOptions>(BuildTask);
         await parsed.WithParsedAsync<DiffOptions>(DiffTask);
         await parsed.WithParsedAsync<CompareOptions>(CompareTask);
-        await parsed.WithParsedAsync<PatchNotesOptions>(PatchNotesTask);
+        await parsed.WithParsedAsync<CompletePatchNotesOptions>(CompletePatchNotesTask);
+        await parsed.WithParsedAsync<GetPatchNotesOptions>(GetPatchNotesTask);
+        await parsed.WithParsedAsync<GetReleaseNameOptions>(GetReleaseNameTask);
         await parsed.WithNotParsedAsync(HandleErrors);
+    }
+
+    private static async Task GetReleaseNameTask(GetReleaseNameOptions options)
+    {
+        var rootContext = await GeneratorContext.FromFile(options.ProjectFile, null);
+        var allSwaggerFiles = Directory.GetFiles(rootContext.MakePath(rootContext.Project.SwaggerSchemaFolder)).ToList();
+        if (allSwaggerFiles.Count < 2)
+        {
+            return;
+        }
+        allSwaggerFiles.Sort(new SwaggerFileSemVerSorter());
+        var currentFile = allSwaggerFiles[0];
+        Console.WriteLine($"Release {Path.GetFileNameWithoutExtension(currentFile.Substring(currentFile.LastIndexOf('-') + 1))}");
+    }
+
+    private static async Task GetPatchNotesTask(GetPatchNotesOptions options)
+    {
+        // Scan the folder for patch notes files
+        var rootContext = await GeneratorContext.FromFile(options.ProjectFile, null);
+        
+        // List all files in the swagger folder
+        var allSwaggerFiles = Directory.GetFiles(rootContext.MakePath(rootContext.Project.SwaggerSchemaFolder)).ToList();
+        if (allSwaggerFiles.Count < 2)
+        {
+            return;
+        }
+        allSwaggerFiles.Sort(new SwaggerFileSemVerSorter());
+        var currentFile = allSwaggerFiles[0];
+        var mostRecentFile = allSwaggerFiles[1];
+        
+        // Load in the current and previous files
+        var prevContext = await GeneratorContext.FromSwaggerFileOnDisk(mostRecentFile, null);
+        var currentContext = await GeneratorContext.FromSwaggerFileOnDisk(currentFile, null);
+        var patchNotes = PatchNotesGenerator.Compare(prevContext, currentContext);
+        Console.WriteLine(patchNotes.ToSummaryMarkdown());
     }
 
     private static Task ListEmbeddedResourcesTask(ListEmbeddedResourcesOptions arg)
@@ -105,7 +153,7 @@ public static class Program
         Console.WriteLine($"Found {errList.Count} errors.");
     }
 
-    private static async Task PatchNotesTask(PatchNotesOptions arg)
+    private static async Task CompletePatchNotesTask(CompletePatchNotesOptions arg)
     {
         // Collect all swagger files from the folder
         var versions = new List<GeneratorContext>();
