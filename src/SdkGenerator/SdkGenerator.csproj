@@ -12,14 +12,14 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.3.0
-      August 13, 2024
+      # 1.3.1
+      August 18, 2024
 
-      * New modes to calculate patch notes and release name for use with automated PRs 
+      * Make automated publishing workflow scripts create-only so updates do not trigger GitHub security 
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.0</Version>
+    <Version>1.3.1</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
