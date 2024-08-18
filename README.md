@@ -33,6 +33,58 @@ Here's how to use this program.
 
 You can automate these steps in a Github workflow to execute this program automatically on new releases.
 
+## Automating SDK patches
+
+If you publish updates to your API regularly, you can use GitHub Actions to automatically check for changes to your
+OpenAPI / Swagger file and generate a new software development kit.
+
+Create a GitHub action using this template:
+
+```yaml
+name: Check for OpenAPI updates
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Run once per week
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Core @ Latest
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Add the SDK Generator
+        run: dotnet tool install SdkGenerator --global
+
+      - name: Generate the latest SDK
+        run: SdkGenerator build -p ./sdk-config.json
+
+      - name: Save patch notes
+        id: patch-notes
+        run: SdkGenerator get-patch-notes -p ./sdk-config.json
+
+      - name: Save pull request name
+        id: pr-name
+        run: SdkGenerator get-release-name -p ./sdk-config.json
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: ${{ steps.patch-notes.outputs }}
+          title: ${{ steps.pr-name.outputs }}
+```
+
 ## Supported Languages
 
 | Language   | Supported   | Github Workflows | Notes              |

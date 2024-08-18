@@ -450,6 +450,9 @@ public class PythonSdk : ILanguageSdk
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
+        await ScribanFunctions.ExecuteTemplateIfNotExists(context, 
+            "SdkGenerator.Templates.python.publish.yml.scriban",
+            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.python.ApiClient.scriban",
             context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, context.Project.Python.ClassName.WordsToSnakeCase() + ".py"));

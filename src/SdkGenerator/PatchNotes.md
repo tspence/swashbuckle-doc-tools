@@ -1,3 +1,72 @@
+# 1.3.1
+August 18, 2024
+
+* Make automated publishing workflow scripts create-only so updates do not trigger GitHub security
+
+# 1.3.0
+August 13, 2024
+
+* New modes to calculate patch notes and release name for use with automated PRs 
+
+# 1.2.6
+July 25, 2024
+
+* Fix issue with path combining
+* Upgrade to DotNet 8.0
+* Do not generate markdown files if not requested
+* Make security schemes section blankout optional if users don't want to save keys
+* Python: Fix capitalization/list issue
+* TypeScript: Fix duplicated import for nested classes
+
+# 1.2.5
+March 13, 2024
+
+* Fix issues with embedded resources so this can work from DotNet tool
+
+# 1.2.4
+February 10, 2024
+
+* More capitalization improvements - better handle imprecise inputs
+* Fixed issues with Python SDK for array uploads
+* C# SDK uses URI object instead of string for custom endpoint
+
+# 1.2.3
+January 29, 2024
+
+* Allow specific endpoints to be ignored during SDK generation
+* Better capitalization for multi-word phrases converted to PascalCase
+* Fixed issues with Python SDK generation, json double conversion
+
+# 1.2.2
+January 12, 2024
+
+* Numerous small fixes for API endpoints that download octet-streams/byte arrays
+* Better logic for excluding endpoints and excluding parameters - patch notes generate correctly
+* SDKs now generate endpoints that download blobs and still parse errors correctly
+* Treat both "byte" and "byte[]" as blob download endpoints
+* Python uses immutable bytes object
+* Fixes for readme uploads
+
+# 1.2.1
+October 22, 2023
+
+* Class and property generation can now avoid language-specific keywords
+* Variable names are now cleansed for parameters (some APIs use $param=value)
+* Java now uses semver3 as is becoming the standard in most places
+* Generated API documentation will now only link to data model pages if specified
+* Readme can now select between `list` and `table` style data model documentation
+
+# 1.2.0
+October 11, 2023
+
+* Verified that Python and TypeScript work correctly, at least for my current SDKs
+
+# 1.1.9
+October 9, 2023
+
+* Improvements for patch notes generation
+* Cleaned up the Python export to use the latest idioms and to work with single-result-object
+
 # 1.1.8
 September 14, 2023
 

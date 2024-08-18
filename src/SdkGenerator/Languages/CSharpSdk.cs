@@ -470,9 +470,9 @@ public class CSharpSdk : ILanguageSdk
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
-        await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.Templates.csharp.nuget-publish.yml.scriban",
-            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "nuget-publish.yml"));
+        await ScribanFunctions.ExecuteTemplateIfNotExists(context, 
+            "SdkGenerator.Templates.csharp.publish.yml.scriban",
+            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.ApiClient.scriban",
             context.MakePath(context.Project.Csharp.Folder, "src", context.Project.Csharp.ClassName + ".cs"));

@@ -1,0 +1,34 @@
+name: Publish to NPM CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.18.0
+          registry-url: 'https://registry.npmjs.org'
+      - name: npm install
+        run: npm install
+      - name: npm audit
+        run: npm audit
+      - name: ESLint
+        run: npm run lint
+      - name: npm compile
+        run: npm run compile
+      - name: Publish NPM Package
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run:
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
