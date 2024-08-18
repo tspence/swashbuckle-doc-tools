@@ -363,6 +363,9 @@ public class TypescriptSdk : ILanguageSdk
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
+        await ScribanFunctions.ExecuteTemplateIfNotExists(context, 
+            "SdkGenerator.Templates.ts.publish.yml.scriban",
+            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.ts.ApiClient.scriban",
             context.MakePath(context.Project.Typescript.Folder, "src", context.Project.Typescript.ClassName + ".ts"));

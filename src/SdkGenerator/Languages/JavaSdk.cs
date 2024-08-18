@@ -418,6 +418,9 @@ public class JavaSdk : ILanguageSdk
         await ExportEndpoints(context);
 
         // Let's try using Scriban to populate these files
+        await ScribanFunctions.ExecuteTemplateIfNotExists(context, 
+            "SdkGenerator.Templates.java.publish.yml.scriban",
+            context.MakePath(context.Project.Csharp.Folder, ".github", "workflows", "publish.yml"));
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.java.ApiClient.java.scriban",
             context.MakePath(context.Project.Java.Folder, "src", "main", "java",
