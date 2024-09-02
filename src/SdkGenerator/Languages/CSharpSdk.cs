@@ -90,6 +90,7 @@ public class CSharpSdk : ILanguageSdk
             case "uri":
             case "tel":
             case "email":
+            case "HttpStatusCode":
             case "File":
                 s = "string"; // We convert "file" to "filename" in processing
                 break;
@@ -349,6 +350,10 @@ public class CSharpSdk : ILanguageSdk
             // Do we need to specify options?
             var options = (from p in endpoint.Parameters where p.Location == "query" select p).ToList();
             var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
+            if (isFileUpload)
+            {
+                paramList.Add("byte[] fileBytes");
+            }
 
             // What is our return type?  Note that we're assuming this can be non-nullable since the
             // response class already handles the case where the value ends up being null.
@@ -383,13 +388,24 @@ public class CSharpSdk : ILanguageSdk
                 method = "new HttpMethod(\"PATCH\")";
             }
 
-            // Send the request
-            var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
+            // There are three types of requests: basic, with body, and with multipart file upload
             var optionsStr = options.Count > 0 ? ", options" : ", null";
-            var bodyStr = hasBody ? ", body" : ", null";
-            var fileStr = isFileUpload ? ", filename" : ", null";
-            sb.AppendLine(
-                $"            return await _client.Request<{returnType}>({method}, url{optionsStr}{bodyStr}{fileStr});");
+            var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
+            if (hasBody)
+            {
+                sb.AppendLine(
+                    $"            return await _client.RequestWithBody<{returnType}>({method}, url{optionsStr}, body);");
+            } 
+            else if (isFileUpload)
+            {
+                sb.AppendLine(
+                    $"            return await _client.RequestWithFile<{returnType}>({method}, url{optionsStr}, fileBytes, fileName);");
+            }
+            else
+            {
+                sb.AppendLine(
+                    $"            return await _client.Request<{returnType}>({method}, url{optionsStr});");
+            }
             sb.AppendLine("        }");
         }
 
@@ -431,12 +447,17 @@ public class CSharpSdk : ILanguageSdk
 
             // Figure out the parameter list
             var paramList = new List<string>();
+            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             foreach (var p in from p in endpoint.Parameters orderby p.Required descending select p)
             {
                 var isNullable = !p.Required || p.Nullable;
                 var typeName = FixupType(context, p.DataType, p.IsArray, isNullable);
                 var paramText = $"{typeName} {p.Name.ToVariableName()}{(isNullable ? " = null" : "")}";
                 paramList.Add(paramText);
+            }
+            if (isFileUpload)
+            {
+                paramList.Add("byte[] fileBytes");
             }
 
             // What is our return type?  Note that we're assuming this can be non-nullable since the
