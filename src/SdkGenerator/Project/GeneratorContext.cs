@@ -115,6 +115,11 @@ public class GeneratorContext : IDisposable
             context.LogPath = logPath ?? context.LogPath;
             context.SwaggerJson = swaggerJson;
             context.OfficialVersion = DownloadFile.GetVersion(swaggerJson);
+            context.Version4 = context.OfficialVersion;
+            var segments = context.Version4.Split(".");
+            context.Version2 = $"{segments[0]}.{segments[1]}";
+            context.Version3 = $"{segments[0]}.{segments[1]}.{segments[2]}";
+            Console.WriteLine($"Official version number is {context.OfficialVersion}");
         }
         context.Api = DownloadFile.GatherSchemas(context);
         return context;
