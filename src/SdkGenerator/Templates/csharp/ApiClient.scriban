@@ -203,7 +203,7 @@ namespace {{ project.csharp.namespace }}
             return await InternalRequest<T>(method, path, query, null);
         }
         
-        public async Task<{{ project.csharp.response_class }}<T>> InternalRequest<T>(HttpMethod method, string path,
+        private async Task<{{ project.csharp.response_class }}<T>> InternalRequest<T>(HttpMethod method, string path,
             Dictionary<string, object> query, HttpContent content) where T : class
         {
             var sw = new Stopwatch();
