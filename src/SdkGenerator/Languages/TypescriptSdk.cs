@@ -280,6 +280,7 @@ public class TypescriptSdk : ILanguageSdk
         // Ignore base types
         switch (name)
         {
+            case "HttpStatusCode":
             case "string":
             case "uuid":
             case "object":
