@@ -35,6 +35,7 @@ public class TypescriptSdk : ILanguageSdk
         {
             case "tel":
             case "Uri":
+            case "HttpStatusCode":
                 s = "string";
                 break;
             case "TestTimeoutException":
