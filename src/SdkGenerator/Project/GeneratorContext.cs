@@ -88,7 +88,7 @@ public class GeneratorContext : IDisposable
         return context;
     }
 
-    public static async Task<GeneratorContext> FromSwaggerFileOnDisk(string swaggerFilename, string logPath)
+    public static async Task<GeneratorContext> FromSwaggerFileOnDisk(GeneratorContext context, string swaggerFilename, string logPath)
     {
         // Retrieve project
         if (!File.Exists(swaggerFilename))
@@ -99,14 +99,28 @@ public class GeneratorContext : IDisposable
 
         // Ensure the folder for collecting swagger files exists
         var swaggerJson = await File.ReadAllTextAsync(swaggerFilename);
-        var context = new GeneratorContext()
+        if (context == null)
         {
-            Project = new ProjectSchema(),
-            Api = null,
-            LogPath = logPath,
-            SwaggerJson = swaggerJson,
-            OfficialVersion = DownloadFile.GetVersion(swaggerJson)
-        };
+            context = new GeneratorContext()
+            {
+                Project = new ProjectSchema(),
+                Api = null,
+                LogPath = logPath,
+                SwaggerJson = swaggerJson,
+                OfficialVersion = DownloadFile.GetVersion(swaggerJson)
+            };
+        }
+        else
+        {
+            context.LogPath = logPath ?? context.LogPath;
+            context.SwaggerJson = swaggerJson;
+            context.OfficialVersion = DownloadFile.GetVersion(swaggerJson);
+            context.Version4 = context.OfficialVersion;
+            var segments = context.Version4.Split(".");
+            context.Version2 = $"{segments[0]}.{segments[1]}";
+            context.Version3 = $"{segments[0]}.{segments[1]}.{segments[2]}";
+            Console.WriteLine($"Official version number is {context.OfficialVersion}");
+        }
         context.Api = DownloadFile.GatherSchemas(context);
         return context;
     }

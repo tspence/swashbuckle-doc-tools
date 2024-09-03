@@ -325,7 +325,7 @@ public static class SchemaFactory
                         {
                             item.Parameters.Add(new ParameterField
                             {
-                                Name = "filename",
+                                Name = "fileName",
                                 Location = "form",
                                 DescriptionMarkdown = "The full path of a file to upload to the API",
                                 Required = true,

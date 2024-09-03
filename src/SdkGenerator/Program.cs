@@ -47,6 +47,9 @@ public static class Program
     {
         [Option('t', "template", HelpText = "To build only one single template, specify this option")]
         public string TemplateName { get; set; }
+        
+        [Option('f', "file", HelpText = "Use a specific OpenAPI/Swagger file and do not attempt to download from source")]
+        public string SwaggerFile { get; set; }
     }
     
     [Verb("create", HelpText = "Create a new template file for a new SDK")]
@@ -128,8 +131,8 @@ public static class Program
         var mostRecentFile = allSwaggerFiles[1];
         
         // Load in the current and previous files
-        var prevContext = await GeneratorContext.FromSwaggerFileOnDisk(mostRecentFile, null);
-        var currentContext = await GeneratorContext.FromSwaggerFileOnDisk(currentFile, null);
+        var prevContext = await GeneratorContext.FromSwaggerFileOnDisk(null, mostRecentFile, null);
+        var currentContext = await GeneratorContext.FromSwaggerFileOnDisk(null, currentFile, null);
         var patchNotes = PatchNotesGenerator.Compare(prevContext, currentContext);
         Console.WriteLine(patchNotes.ToSummaryMarkdown());
     }
@@ -164,7 +167,7 @@ public static class Program
                 try
                 {
                     Console.WriteLine($"Processing {file}...");
-                    var newContext = await GeneratorContext.FromSwaggerFileOnDisk(file, null);
+                    var newContext = await GeneratorContext.FromSwaggerFileOnDisk(null, file, null);
                     versions.Add(newContext);
                 }
                 catch
@@ -198,7 +201,7 @@ public static class Program
         Console.WriteLine($"Comparing {newContext.Project.SwaggerUrl} against old version {options.OldVersion}");
         
         // Load the previous version of the swagger file from disk, and compare it
-        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldVersion, options.LogPath);
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(null, options.OldVersion, options.LogPath);
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
@@ -208,8 +211,8 @@ public static class Program
     private static async Task CompareTask(CompareOptions options)
     {
         // Load the current state of the project
-        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(options.OldFile, null);
-        var newContext = await GeneratorContext.FromSwaggerFileOnDisk(options.NewFile, null);
+        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(null, options.OldFile, null);
+        var newContext = await GeneratorContext.FromSwaggerFileOnDisk(null, options.NewFile, null);
         Console.WriteLine($"Comparing {oldContext.Version4} against old version {newContext.Version4}");
         
         // Load the previous version of the swagger file from disk, and compare it
@@ -238,15 +241,23 @@ public static class Program
         var context = await GeneratorContext.FromFile(options.ProjectFile, options.LogPath);
 
         // Fetch the environment and version number
-        Console.WriteLine($"Retrieving swagger file from {context.Project.SwaggerUrl}");
-        context.Api = await DownloadFile.GenerateApi(context);
-        if (context.Api == null)
+        if (options.SwaggerFile == null)
         {
-            Console.WriteLine("Unable to retrieve API and version number successfully.");
-            return;
+            Console.WriteLine($"Retrieving swagger file from {context.Project.SwaggerUrl}");
+            context.Api = await DownloadFile.GenerateApi(context);
+            if (context.Api == null)
+            {
+                Console.WriteLine("Unable to retrieve API and version number successfully.");
+                return;
+            }
+
+            Console.WriteLine($"Retrieved swagger file. Version: {context.Version4}");
         }
-        Console.WriteLine($"Retrieved swagger file. Version: {context.Version4}");
-        
+        else
+        {
+            context = await GeneratorContext.FromSwaggerFileOnDisk(context, options.SwaggerFile, context.LogPath);
+        }
+
         // Generate patch notes
         context.PatchNotes = await DownloadFile.GeneratePatchNotes(context);
         
