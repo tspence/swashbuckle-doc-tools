@@ -33,29 +33,20 @@
     <PackageReference
         Include="CommandLineParser"
         Version="2.9.1" />
-    <PackageReference Include="CompareNETObjects" Version="4.82.0" />
-    <PackageReference
-        Include="HtmlAgilityPack"
-        Version="1.11.50" />
+    <PackageReference Include="CompareNETObjects" Version="4.83.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.65" />
     <PackageReference
         Include="JsonDiffPatch.Net"
         Version="2.3.0" />
     <PackageReference
         Include="Newtonsoft.Json"
         Version="13.0.3" />
-    <PackageReference
-        Include="RestSharp"
-        Version="110.2.0" />
-    <PackageReference
-        Include="Scriban"
-        Version="5.7.0" />
+    <PackageReference Include="RestSharp" Version="112.0.0" />
+    <PackageReference Include="Scriban" Version="5.10.0" />
     <PackageReference
         Include="Semver"
         Version="2.3.0" />
-    <PackageReference
-        Include="Microsoft.SourceLink.GitHub"
-        Version="1.1.1"
-        PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
