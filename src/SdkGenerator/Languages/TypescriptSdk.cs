@@ -236,7 +236,7 @@ public class TypescriptSdk : ILanguageSdk
 
                     var hasBody = (from p in endpoint.Parameters where p.Location == "body" select p).Any();
                     var optionsStr = options.Count > 0 ? ", options" : ", null";
-                    var bodyStr = isFileUpload ? ", filename" : hasBody ? ", body" : ", null";
+                    var bodyStr = isFileUpload ? ", fileName" : hasBody ? ", body" : ", null";
                     sb.AppendLine($"    return this.client.{requestMethod}(\"{endpoint.Method}\", url{optionsStr}{bodyStr});");
                     sb.AppendLine("  }");
                 }
