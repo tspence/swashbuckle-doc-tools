@@ -43,6 +43,7 @@ public class JavaSdk : ILanguageSdk
             case "Uri":
             case "tel":
             case "email":
+            case "HttpStatusCode":
                 s = "String";
                 break;
             case "int32":
