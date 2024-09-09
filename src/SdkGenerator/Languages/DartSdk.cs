@@ -165,6 +165,12 @@ public class DartSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
+            var handwritten = (context.Project.Dart.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
+            handwritten.Add(context.Project.Dart.ResponseClass);
+            if (handwritten.Contains(item.Name))
+            {
+                continue;
+            }
             if (item.Fields != null)
             {
                 var sb = new StringBuilder();
@@ -200,8 +206,31 @@ public class DartSdk : ILanguageSdk
                         sb.AppendLine("    }");
                     }
                 }
+                
+                // Implement JSON conversion logic
+                // https://stackoverflow.com/questions/55292633/how-to-convert-json-string-to-json-object-in-dart-flutter
+                sb.AppendLine($"  {item.Name}.fromJson(Map<String, dynamic> json) {{");
+                foreach (var field in item.Fields)
+                {
+                    if (!field.Deprecated)
+                    {
+                        sb.AppendLine($"    {field.Name} = json['{field.Name}'];");
+                    }
+                }
+                sb.AppendLine($"  }}");
+                sb.AppendLine($"  Map<String, dynamic> toJson() {{");
+                sb.AppendLine($"    final Map<String, dynamic> data = new Map<String, dynamic>();");
+                foreach (var field in item.Fields)
+                {
+                    if (!field.Deprecated)
+                    {
+                        sb.AppendLine($"    data['{field.Name}'] = this.{field.Name};");
+                    }
+                }
+                sb.AppendLine($"    return data;");
+                sb.AppendLine($"  }}");
 
-                sb.AppendLine("};");
+                sb.AppendLine("}");
                 var classPath = Path.Combine(modelsDir, item.Name + ".dart");
                 await File.WriteAllTextAsync(classPath, sb.ToString());
             }

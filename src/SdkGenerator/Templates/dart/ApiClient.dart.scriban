@@ -13,7 +13,7 @@ import 'package:http/io_client.dart';
 {{~ for cat in api.categories ~}}
 import 'clients/{{ cat }}Client.dart';
 {{~ end ~}}
-import 'models/{{ project.dart.response_class }}.dart';
+import '{{ project.dart.response_class }}.dart';
 import 'ProjectManagerClient.dart';
 import '../flavours/BuildConfig.dart';
 
