@@ -67,7 +67,11 @@ public class DartSdk : ILanguageSdk
             // Run through all APIs
             foreach (var endpoint in context.Api.Endpoints)
             {
-                if (endpoint.Category == cat && !endpoint.Deprecated)
+                // File handling is still TBD
+                var isFileApi = 
+                    (from p in endpoint.Parameters where p.Location == "form" select p).Any()
+                    || endpoint.ReturnDataType.DataType == "byte";
+                if (endpoint.Category == cat && !endpoint.Deprecated && !isFileApi)
                 {
                     sb.AppendLine();
                     sb.Append(endpoint.DescriptionMarkdown.ToDartDoc(2,
@@ -106,7 +110,16 @@ public class DartSdk : ILanguageSdk
 
                     if (bodyParam != null)
                     {
-                        sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", {bodyParam.DataType}.toJson(body));");
+                        if (bodyParam.IsArray)
+                        {
+                            sb.AppendLine(
+                                $"    var json = jsonEncode(body, toEncodable: (e) => {bodyParam.DataType}.toJson(e as {bodyParam.DataType}));");
+                            sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", jsonDecode(json));");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", {bodyParam.DataType}.toJson(body));");
+                        }
                     }
                     else
                     {
@@ -170,6 +183,12 @@ public class DartSdk : ILanguageSdk
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
             {
+                // Do we have a list body parameter?
+                var bodyParam = (from p in endpoint.Parameters where p.Location == "body" select p).FirstOrDefault();
+                if (bodyParam is { IsArray: true } && !imports.Contains("import 'dart:convert';"))
+                {
+                    imports.Add("import 'dart:convert';");
+                }
                 foreach (var p in endpoint.Parameters)
                 {
                     if (p.DataTypeRef != null)
@@ -207,13 +226,9 @@ public class DartSdk : ILanguageSdk
             return;
         }
 
+        // File handling is still TBD 
         if (dataType == "byte" || dataType == "byte[]")
         {
-            var thisImport = $"import '../models/{rawDataType}.dart';";
-            if (!imports.Contains(thisImport))
-            {
-                imports.Add(thisImport);
-            }
             return;
         }
 
