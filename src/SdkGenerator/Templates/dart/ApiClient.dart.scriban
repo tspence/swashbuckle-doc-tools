@@ -1,33 +1,32 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_toolkit/data/LiveData.dart';
 import 'package:flutter_toolkit/http/APIClient.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:brotli/brotli.dart';
 
 {{~ for cat in api.categories ~}}
 import 'clients/{{ cat }}Client.dart';
 {{~ end ~}}
 import '{{ project.dart.response_class }}.dart';
-import 'ProjectManagerClient.dart';
+import 'AstroError.dart';
 import '../flavours/BuildConfig.dart';
+import '../client/AuthService.dart';
+import '{{ project.dart.class_name }}.dart';
+
 
 class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }} {
-  late BuildConfig config = BuildConfig();
+  BuildConfig config;
 
   Map<String, String>? headers;
 
-  late APIClient api;
+  AuthService authService;
+  APIClient api;
 
-  {{ project.dart.class_name }}Impl() {
-    _updateClient(
-        APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
-  }
+  {{ project.dart.class_name }}Impl(this.authService, this.api, this.config);
   
 {{~ for cat in api.categories ~}}
 
@@ -39,56 +38,6 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   }
 {{~ end ~}}
 
-  Future<void> _updateClient(APIClient client, [bool authed = false]) async {
-    api = client;
-
-    String token = '';
-    if (await auth0service.isValidCredential()) {
-      final credentials = await auth0service.credentials;
-      token = "Bearer ${credentials.accessToken}";
-    }
-    client.headerInterceptor = (headers) {
-      headers["Connection"] = "keep-alive";
-      headers["Accept-Encoding"] = "gzip, deflate, br";
-      headers["Accept"] = "*/*";
-      headers["Authorization"] = token;
-    };
-    //Any time we either refresh or login, we should resync our push status.
-    //Clearing is handled on logout.
-    if (authed) {
-      //We dont need to await sockets or push , they can spinup in the backgrond.
-      PushNotification().syncNotificationStatus();
-      sockets.start(client: this);
-    }
-  }
-
-  @override
-  Future<bool> handleAuth0Redirect() async {
-    final isLoggedIn = await Auth0Service().isLoggedIn();
-    if (isLoggedIn) {
-      await attemptRestore();
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  @override
-  Future<void> attemptRestore() async {
-    final client =
-        APIClient(baseUrl: config.baseUrl, basePath: config.basePath);
-    await _updateClient(client, true);
-  }
-
-  @override
-  Future<void> clearTokens() async {
-    final isLogOut = await auth0service.logOut();
-    if (isLogOut) {
-      await _updateClient(
-          APIClient(baseUrl: config.baseUrl, basePath: config.basePath));
-    }
-  }
-
   ClientResponse _logRequest(
       String action, String path, int startMillis, value) {
     if (!BuildConfig.isRelease) {
@@ -99,106 +48,117 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
     return value;
   }
 
-  {{ project.dart.response_class }} _handleAPIError(error) {
+  {{ project.dart.response_class }}<dynamic> _handleAPIError(error) {
     debugPrint("API Error $error");
 
     if (error is TimeoutException) {
-      return ErrorResponse("Request timed out");
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "Request timed out";
+      result.statusCode = 408;
+      return result;
     }
 
     if (error is SocketException) {
-      return ConnectionErrorResponse("No connection");
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "No connection";
+      result.statusCode = 408;
+      return result;
     }
 
-    if (error is AuthErrorResponse) {
-      // clearTokens();
-      return AuthErrorResponse();
-    }
-
-    return ErrorResponse("An error occurred");
+    var result = {{ project.dart.response_class }}<dynamic>();
+    result.error = AstroError();
+    result.error!.message = "An error occurred";
+    result.statusCode = 500;
+    return result;
   }
 
   //Shortcut for typing
-  {{ project.dart.response_class }} _handleAPISuccess(value) {
-    final response = WrappedClientResponse(value);
-    if (!response.isSuccess && response.code == 401) {
-      return _handleAPIError(null);
+  {{ project.dart.response_class }}<dynamic> _handleAPISuccess(raw) {
+    Map<String, dynamic>? json;
+    if (raw.headers.containsKey("content-encoding") && raw.headers["content-encoding"] == "br") {
+      json = jsonDecode(utf8.decode(brotli.decode(raw.bodyBytes)));
     } else {
-      return response;
+      json = raw.json;
     }
+    var result = {{ project.dart.response_class }}<dynamic>();
+    if (json?.containsKey("data") ?? false) {
+      result.data = json!["data"];
+    }
+    result.success = true;
+    return result;
   }
 
   @override
-  Future<{{ project.dart.response_class }}> get(String path,
+  Future<{{ project.dart.response_class }}<dynamic>> get(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    if (!auth0service.checkAuthValid()) {
-      return AuthErrorResponse();
+    if (authService.isValidCredential) {
+      headers = headers ?? {};
+      headers['Authorization'] = 'Bearer ${authService.credentials.accessToken}';
     }
 
     int startMillis = DateTime.now().millisecondsSinceEpoch;
     return api
-        .get(path, params, headers)
+        .get(path, params: params, headers: headers, basePath: config.basePath)
         .then((value) => _logRequest("GET", path, startMillis, value))
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
   }
 
   @override
-  Future<{{ project.dart.response_class }}> delete(String path,
+  Future<{{ project.dart.response_class }}<dynamic>> delete(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    if (!auth0service.checkAuthValid()) {
-      return AuthErrorResponse();
+    if (!authService.isValidCredential) {
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "Unauthorized";
+      result.statusCode = 401;
+      return result;
     }
     int startMillis = DateTime.now().millisecondsSinceEpoch;
     return api
-        .delete(path, params, headers)
+        .delete(path, params: params, headers: headers, basePath: config.basePath)
         .then((value) => _logRequest("DELETE", path, startMillis, value))
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
   }
 
   @override
-  Future<{{ project.dart.response_class }}> changeset(String path,
+  Future<{{ project.dart.response_class }}<dynamic>> put(String path,
       [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    if (params != null) {
-      final changeSets = <Map<String, dynamic>>[];
-      for (var key in params.keys) {
-        changeSets.add({'property': key, 'value': params[key]});
-      }
-
-      params = {'changesets': changeSets};
-    }
-
-    return put(path, params, headers);
-  }
-
-  @override
-  Future<{{ project.dart.response_class }}> put(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
-    if (!auth0service.checkAuthValid()) {
-      return AuthErrorResponse();
+    if (!authService.isValidCredential) {
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "Unauthorized";
+      result.statusCode = 401;
+      return result;
     }
 
     int startMillis = DateTime.now().millisecondsSinceEpoch;
     return api
-        .put(path, params, headers)
+        .put(path, params: params, headers: headers, basePath: config.basePath)
         .then((value) => _logRequest("PUT", path, startMillis, value))
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
   }
 
   @override
-  Future<{{ project.dart.response_class }}> post(String path,
+  Future<{{ project.dart.response_class }}<dynamic>> post(String path,
       [Map<String, dynamic>? params,
       Map<String, String>? headers,
       bool ignoreAuth = false]) async {
-    if (!auth0service.checkAuthValid()) {
-      return AuthErrorResponse();
+    if (!authService.isValidCredential) {
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "Unauthorized";
+      result.statusCode = 401;
+      return result;
     }
     int startMillis = DateTime.now().millisecondsSinceEpoch;
 
     final apiCall = api
-        .post(path, params, headers)
+        .post(path, params: params, headers: headers, basePath: config.basePath)
         .then((value) => _logRequest("POST", path, startMillis, value))
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
@@ -206,25 +166,14 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   }
 
   @override
-  Future<String?> getRedirectUrl(String url) async {
-    String token = '';
-    if (await Auth0Service().isValidCredential()) {
-      final credentials = await Auth0Service().credentials;
-      token = "Bearer ${credentials.accessToken}";
-    }
-    oauthClient = http.Client() as http.BaseClient?;
-    final request = http.Request("Get", Uri.parse(url))
-      ..followRedirects = false;
-    request.headers.addAll({"Authorization": token});
-    final response = await oauthClient?.send(request);
-    return response?.isRedirect == true ? response?.headers['location'] : null;
-  }
-
-  @override
-  Future<{{ project.dart.response_class }}> postFiles(String path, List<String> filePaths,
+  Future<{{ project.dart.response_class }}<dynamic>> postFiles(String path, List<String> filePaths,
       [Map<String, String>? headers]) async {
-    if (!auth0service.checkAuthValid()) {
-      return AuthErrorResponse();
+    if (!authService.isValidCredential) {
+      var result = {{ project.dart.response_class }}<dynamic>();
+      result.error = AstroError();
+      result.error!.message = "Unauthorized";
+      result.statusCode = 401;
+      return result;
     }
 
     int startMillis = DateTime.now().millisecondsSinceEpoch;
@@ -233,7 +182,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
       files.add(await http.MultipartFile.fromPath('file', filePath));
     }
     return api
-        .postFiles(path, files, headers)
+        .postFiles(path, files, headers:headers)
         .then((value) => _logRequest("SEND", path, startMillis, value))
         .then(_handleAPISuccess)
         .catchError(_handleAPIError);
