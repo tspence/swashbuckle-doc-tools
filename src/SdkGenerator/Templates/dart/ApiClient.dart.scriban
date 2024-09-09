@@ -83,9 +83,13 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
       json = raw.json;
     }
     var result = {{ project.dart.response_class }}<dynamic>();
-    if (json?.containsKey("data") ?? false) {
-      result.data = json!["data"];
+    if (json != null) {
+      result.success = json["success"];    
+      if (json.containsKey("data")) {
+        result.data =  json["data"];
+      }
     }
+    result.statusCode = raw.statusCode;
     result.success = true;
     return result;
   }
