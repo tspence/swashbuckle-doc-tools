@@ -10,6 +10,13 @@ import 'package:flutter_toolkit/http/APIClient.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
+{{~ for cat in api.categories ~}}
+import 'clients/{{ cat }}Client.dart';
+{{~ end ~}}
+import 'models/{{ project.dart.response_class }}.dart';
+import 'ProjectManagerClient.dart';
+import '../flavours/BuildConfig.dart';
+
 class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }} {
   late BuildConfig config = BuildConfig();
 
@@ -23,9 +30,12 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   }
   
 {{~ for cat in api.categories ~}}
+
+  late {{ cat }}Client? _{{ cat | to_camel_case }}Client;
+  
   @override
-  {{ cat }}() {
-    return {{ cat }}Client(api, this);
+  {{ cat | to_camel_case }}() {
+    return _{{ cat | to_camel_case }}Client ??= {{ cat }}Client(this);
   }
 {{~ end ~}}
 

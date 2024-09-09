@@ -99,15 +99,13 @@ public class DartSdk : ILanguageSdk
 
                     if (hasBodyParams)
                     {
-                        sb.AppendLine($"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", body)");
+                        sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\", body);");
                     }
                     else
                     {
-                        sb.AppendLine($"    return _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\")");
+                        sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\");");
                     }
-                    sb.AppendLine("      .then((value) {");
-                    sb.AppendLine($"        return {context.Project.Dart.ResponseClass}.fromContent(value);");
-                    sb.AppendLine("      });");
+                    sb.AppendLine($"    return {context.Project.Dart.ResponseClass}.fromContent(value);");
                     sb.AppendLine("  }");
                 }
             }
@@ -185,9 +183,21 @@ public class DartSdk : ILanguageSdk
                     if (!field.Deprecated)
                     {
                         sb.AppendLine();
+                        sb.AppendLine($"    {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name};");
+                        sb.AppendLine();
                         sb.Append(field.DescriptionMarkdown.ToDartDoc(4));
                         sb.AppendLine(
-                            $"    {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get {field.Name.ToCamelCase()} => {GetDefaultValue(context, field)};");
+                            $"    {FixupType(context, field.DataType, field.IsArray, field.Nullable)} get get{field.Name.ToProperCase()} {{");
+                        sb.AppendLine(
+                            $"      return {field.Name};");
+                        sb.AppendLine("    }");
+                        sb.AppendLine();
+                        sb.Append(field.DescriptionMarkdown.ToDartDoc(4));
+                        sb.AppendLine(
+                            $"    set set{field.Name.ToProperCase()}({FixupType(context, field.DataType, field.IsArray, field.Nullable)} newValue) {{");
+                        sb.AppendLine(
+                            $"      {field.Name} = newValue;");
+                        sb.AppendLine("    }");
                     }
                 }
 
