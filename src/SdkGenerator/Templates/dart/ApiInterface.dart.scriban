@@ -4,6 +4,10 @@ import 'package:flutter_toolkit/http/APIClient.dart';
 import '../client/AuthService.dart';
 import '../flavours/BuildConfig.dart';
 
+{{~ for cat in api.categories ~}}
+import 'clients/{{ cat }}Client.dart';
+{{~ end ~}}
+
 import '{{ project.dart.response_class }}.dart';
 import '{{ project.dart.class_name }}Impl.dart';
 
@@ -16,7 +20,7 @@ class {{ project.dart.class_name }} {
 
 {{~ for cat in api.categories ~}}
   /// A collection of API methods related to {{ cat }}
-  {{ cat | to_camel_case }}() {
+  {{ cat }}Client {{ cat | to_camel_case }}() {
     throw UnimplementedError();
   }
 {{~ end ~}}

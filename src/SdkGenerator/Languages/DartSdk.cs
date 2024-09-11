@@ -125,27 +125,32 @@ public class DartSdk : ILanguageSdk
                     {
                         sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\");");
                     }
-                    sb.AppendLine($"    var result = {context.Project.Dart.ResponseClass}<{returnType}>();");
-                    sb.AppendLine($"    result.success = value.success;");
-                    sb.AppendLine($"    result.hasError = value.hasError;");
-                    sb.AppendLine($"    result.error = value.error;");
-                    sb.AppendLine($"    result.statusCode = value.statusCode;");
+
+                    // Construct the result
+                    sb.AppendLine($"    {returnType}? data;");
                     sb.AppendLine($"    if (value.data != null)");
                     sb.AppendLine($"    {{");
                     if (returnType == "dynamic")
                     {
-                        sb.AppendLine($"      result.data = value.data;");
+                        sb.AppendLine($"      data = value.data;");
                     } 
                     else if (returnType.StartsWith("List<"))
                     {
-                        sb.AppendLine($"      result.data = {returnType}.from(value.data.map((i) => {returnType.Substring(5,returnType.Length-6)}.fromJson(i)));");
+                        sb.AppendLine($"      data = {returnType}.from(value.data.map((i) => {returnType.Substring(5,returnType.Length-6)}.fromJson(i)));");
                     }
                     else
                     {
-                        sb.AppendLine($"      result.data = {returnType}.fromJson(value.data);");
+                        sb.AppendLine($"      data = {returnType}.fromJson(value.data);");
                     }
                     sb.AppendLine($"    }}");
-                    sb.AppendLine($"    return result;");
+                    sb.AppendLine(
+                        $"    return {context.Project.Dart.ResponseClass}<{returnType}>(value.success, value.error, value.statusCode, data);");
+                    // sb.AppendLine($"    var result = {context.Project.Dart.ResponseClass}<{returnType}>();");
+                    // sb.AppendLine($"    result.success = value.success;");
+                    // sb.AppendLine($"    result.hasError = value.hasError;");
+                    // sb.AppendLine($"    result.error = value.error;");
+                    // sb.AppendLine($"    result.statusCode = value.statusCode;");
+                    // sb.AppendLine($"    return result;");
                     sb.AppendLine("  }");
                 }
             }
@@ -344,6 +349,18 @@ public class DartSdk : ILanguageSdk
                     }
                 }
                 
+                // Basic constructor
+                sb.AppendLine();
+                sb.AppendLine($"  {item.Name}({{");
+                foreach (var field in item.Fields)
+                {
+                    if (!field.Deprecated)
+                    {
+                        sb.AppendLine($"    {(field.Nullable ? "" : "required ")}this.{field.Name.ToCamelCase()},");
+                    }
+                }
+                sb.AppendLine($"  }});");
+                
                 // Implement JSON deserialization logic
                 // https://stackoverflow.com/questions/55292633/how-to-convert-json-string-to-json-object-in-dart-flutter
                 sb.AppendLine();
@@ -389,7 +406,6 @@ public class DartSdk : ILanguageSdk
         {
             case "string":
             case "uuid":
-            case "date-time":
             case "date":
             case "uri":
             case "Uri":
@@ -397,6 +413,9 @@ public class DartSdk : ILanguageSdk
             case "email":
             case "HttpStatusCode":
                 s = "String";
+                break;
+            case "date-time":
+                s = "DateTime";
                 break;
             case "int32":
             case "integer":
