@@ -77,9 +77,15 @@ public class DartSdk : ILanguageSdk
                     sb.Append(endpoint.DescriptionMarkdown.ToDartDoc(2,
                         endpoint.Parameters));
 
-                    // Figure out the parameter list
-                    var paramListStr = string.Join(", ", from p in endpoint.Parameters
+                    // Figure out the parameter list - optional ones separate from required
+                    var paramListStr = string.Join(", ", from p in endpoint.Parameters where p.Required
                         select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {FixupVariableName(p.Name)}");
+                    var optionalParamListStr = string.Join(", ", from p in endpoint.Parameters where p.Required == false
+                        select $"{FixupType(context, p.DataType, p.IsArray, !p.Required)} {FixupVariableName(p.Name)}");
+                    if (!string.IsNullOrWhiteSpace(optionalParamListStr))
+                    {
+                        paramListStr += $@", {{ {optionalParamListStr} }}";
+                    }
 
                     // What is our return type?
                     var returnType = FixupType(context, endpoint.ReturnDataType.DataType,
@@ -90,11 +96,7 @@ public class DartSdk : ILanguageSdk
                     var bodyParam = (from p in endpoint.Parameters where p.Location == "body" select p).FirstOrDefault();
                     
                     // Write the method
-                    var cleansedPath  = endpoint.Path.Replace("{", "${");
-                    if (hasQueryParams)
-                    {
-                        cleansedPath += "?${queryString}";
-                    }
+                    var cleansedPath = endpoint.Path.Replace("{", "${");
                     sb.AppendLine(
                         $"  Future<{context.Project.Dart.ResponseClass}<{returnType}>> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
                     if (hasQueryParams)
@@ -105,7 +107,6 @@ public class DartSdk : ILanguageSdk
                             where p.Location == "query"
                             select $"      '{FixupStringLiteral(p.Name)}': {FixupVariableName(p.Name)},\n"));
                         sb.AppendLine($"    }};");
-                        sb.AppendLine("    String queryString = Uri(queryParameters: queryParameters).query;");
                     }
 
                     if (bodyParam != null)
@@ -123,7 +124,7 @@ public class DartSdk : ILanguageSdk
                     }
                     else
                     {
-                        sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\");");
+                        sb.AppendLine($"    var value = await _client.{endpoint.Method.ToLower()}(\"{cleansedPath}\"{(hasQueryParams ? ", queryParameters" : "")});");
                     }
 
                     // Construct the result
@@ -369,7 +370,14 @@ public class DartSdk : ILanguageSdk
                 {
                     if (!field.Deprecated)
                     {
-                        sb.AppendLine($"    {field.Name} = json['{field.Name}'],");
+                        if (field.IsArray)
+                        {
+                            sb.AppendLine($"    {field.Name} = List<{field.DataType}>.from(json['{field.Name}'].map((i) => {field.DataType}.fromJson(i))),");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"    {field.Name} = json['{field.Name}'],");
+                        }
                     }
                 }
 

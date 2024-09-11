@@ -31,7 +31,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
 {{~ for cat in api.categories ~}}
 
   {{ cat }}Client? _{{ cat | to_camel_case }}Client;
-  
+
   @override
   {{ cat | to_camel_case }}() {
     return _{{ cat | to_camel_case }}Client ??= {{ cat }}Client(this);
