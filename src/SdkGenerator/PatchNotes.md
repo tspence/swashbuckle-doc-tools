@@ -1,3 +1,16 @@
+# 1.3.3
+September 14, 2024
+
+* Improvements for Dart SDK - maybe not functional for everyone but works for one client
+
+# 1.3.2
+September 2, 2024
+
+* Reduced dependencies for C# / DotNet SDK
+* Made Environment.MachineName optional
+* Modified file upload APIs to take byte arrays rather than filenames
+* New option -f for testing - ability to specify a Swagger/OpenAPI file on disk for builds
+
 # 1.3.1
 August 18, 2024
 
