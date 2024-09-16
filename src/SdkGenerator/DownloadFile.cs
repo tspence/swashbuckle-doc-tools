@@ -236,7 +236,7 @@ public static class DownloadFile
             Schemas = schemaList.OrderBy(s => s.Name).ToList(),
             Enums = enumList.ToList(),
             Endpoints = endpointList,
-            Categories = (from e in endpointList where !e.Deprecated orderby e.Category select e.Category).Distinct().ToList()
+            Categories = (from e in endpointList where !e.Deprecated orderby e.Category select e.Category).Distinct().Where(cat => !context.IsIgnoredCategory(cat)).ToList()
         };
     }
 

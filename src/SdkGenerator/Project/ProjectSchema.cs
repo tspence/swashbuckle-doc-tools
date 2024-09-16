@@ -29,6 +29,7 @@ public class ProjectSchema
     public string[] GenericSuffixes { get; set; }
     public SwaggerParameterSchema[] IgnoredParameters { get; set; }
     public string[] IgnoredEndpoints { get; set; }
+    public string[] IgnoredCategories { get; set; }
     
     public EnvironmentSchema[] Environments { get; set; }
     public string SwaggerSchemaFolder { get; set; }

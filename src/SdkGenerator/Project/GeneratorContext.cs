@@ -172,4 +172,9 @@ public class GeneratorContext : IDisposable
         return Project.IgnoredEndpoints != null && (Project.IgnoredEndpoints.Contains(itemName, StringComparer.OrdinalIgnoreCase)
                 || Project.IgnoredEndpoints.Contains(path, StringComparer.OrdinalIgnoreCase));
     }
+
+    public bool IsIgnoredCategory(string cat)
+    {
+        return Project.IgnoredCategories != null && Project.IgnoredCategories.Contains(cat, StringComparer.OrdinalIgnoreCase);
+    }
 }
