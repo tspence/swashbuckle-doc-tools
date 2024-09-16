@@ -1,22 +1,24 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:flutter_toolkit/http/APIClient.dart';
+import 'package:http/io_client.dart';
+
 import '../client/AuthService.dart';
 import '../flavours/BuildConfig.dart';
 
 {{~ for cat in api.categories ~}}
-import 'clients/{{ cat }}Client.dart';
+import './clients/{{ cat | camel_case_to_snake_case }}_client.dart';
 {{~ end ~}}
 
-import '{{ project.dart.response_class }}.dart';
-import '{{ project.dart.class_name }}Impl.dart';
+import '{{ project.dart.response_class | camel_case_to_snake_case }}.dart';
+import '{{ project.dart.class_name | camel_case_to_snake_case }}_impl.dart';
 
-class {{ project.dart.class_name }} {
-  static final {{ project.dart.class_name }} _instance = {{ project.dart.class_name }}Impl(AuthService(), APIClient(baseUrl: BuildConfig().baseUrl), BuildConfig());
-
+abstract class {{ project.dart.class_name }} {
   factory {{ project.dart.class_name }}() {
     return _instance;
   }
+
+  static final {{ project.dart.class_name }} _instance = {{ project.dart.class_name }}Impl(AuthService(), IOClient(HttpClient()), BuildConfig().baseUrl);
 
 {{~ for cat in api.categories ~}}
   /// A collection of API methods related to {{ cat }}
@@ -25,30 +27,23 @@ class {{ project.dart.class_name }} {
   }
 {{~ end ~}}
 
-  Future<{{ project.dart.response_class }}<dynamic>> get(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+  Future<{{ project.dart.response_class }}<T>> get<T>(String path, { Map<String, dynamic>? queryParameters, Map<String, String>? headers }) async {
     throw UnimplementedError();
   }
 
-  Future<{{ project.dart.response_class }}<dynamic>> delete(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+  Future<{{ project.dart.response_class }}<T>> delete<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     throw UnimplementedError();
   }
 
-  Future<{{ project.dart.response_class }}<dynamic>> put(String path,
-      [Map<String, dynamic>? params, Map<String, String>? headers]) async {
+  Future<{{ project.dart.response_class }}<T>> put<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     throw UnimplementedError();
   }
 
-  Future<{{ project.dart.response_class }}<dynamic>> post(String path,
-      [Map<String, dynamic>? params,
-      Map<String, String>? headers,
-      bool ignoreAuth = false]) async {
+  Future<{{ project.dart.response_class }}<T>> post<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     throw UnimplementedError();
   }
 
-  Future<{{ project.dart.response_class }}<dynamic>> postFiles(String path, List<String> filePaths,
-      [Map<String, String>? headers]) async {
+  Future<{{ project.dart.response_class }}<T>> postFiles<T>(String path, List<String> filePaths, { Map<String, String>? headers }) async {
     throw UnimplementedError();
   }
 }
