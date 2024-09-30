@@ -1,3 +1,8 @@
+# 1.3.4
+September 30, 2024
+
+* Updated C# / DotNet client generation to permit external HttpClient objects
+
 # 1.3.3
 September 14, 2024
 

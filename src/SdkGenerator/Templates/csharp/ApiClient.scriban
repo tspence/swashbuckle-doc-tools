@@ -61,16 +61,26 @@ namespace {{ project.csharp.namespace }}
         /// Internal constructor for the client. You should always begin with `WithEnvironment()` or `WithCustomEnvironment`.
         /// </summary>
         /// <param name="baseEndpoint">The API endpoint to contact</param>
+        /// <param name="client">HTTP Client, when null a new one will be constructed</param>
         /// <param name="clientHandler">Handler for the HTTP client, when null the default handler will be used</param>
-        private {{ project.csharp.class_name }}(Uri baseEndpoint, HttpClientHandler clientHandler)
+        private {{ project.csharp.class_name }}(Uri baseEndpoint, HttpClient client, HttpClientHandler clientHandler)
         {
-            // Add support for HTTP compression
-            var handler = clientHandler ?? new HttpClientHandler();
-            handler.AutomaticDecompression = DecompressionMethods.GZip;
-            
-            // We intentionally use a single HttpClient object for the lifetime of this API connection.
-            // Best practices: https://bytedev.medium.com/net-core-httpclient-best-practices-4c1b20e32c6
-            _client = new HttpClient(handler);
+            // If customer wants to use a custom client, let them
+            if (client != null)
+            {
+                _client = client;
+            }
+            else
+            {
+                // Add support for HTTP compression
+                var handler = clientHandler ?? new HttpClientHandler();
+                handler.AutomaticDecompression = DecompressionMethods.GZip;
+
+                // We intentionally use a single HttpClient object for the lifetime of this API connection.
+                // Best practices: https://bytedev.medium.com/net-core-httpclient-best-practices-4c1b20e32c6
+                _client = new HttpClient(handler);
+            }
+
             _apiUrl = baseEndpoint.ToString();
     {{~ for cat in api.categories ~}}
             {{ cat }} = new {{ cat }}Client(this);
@@ -96,7 +106,7 @@ namespace {{ project.csharp.namespace }}
             {
 {{~ for env in project.environments ~}}
                 case "{{ env.name }}":
-                    return new {{ project.csharp.class_name }}(new Uri("{{ env.url }}"), clientHandler);
+                    return new {{ project.csharp.class_name }}(new Uri("{{ env.url }}"), null, clientHandler);
 {{~ end ~}}
             }
     
@@ -111,11 +121,33 @@ namespace {{ project.csharp.namespace }}
         /// <param name="customEndpoint">The custom endpoint to use for this client</param>
         /// <param name="clientHandler">Optional handler to set specific settings for the HTTP client</param>
         /// <returns>The API client to use</returns>
-        public static {{ project.csharp.class_name }} WithCustomEnvironment(Uri customEndpoint, HttpClientHandler clientHandler = null)
+        public static {{ project.csharp.class_name }} WithCustomEnvironment(Uri customEndpoint, HttpClientHandler clientHandler)
         {
-            return new {{ project.csharp.class_name }}(customEndpoint, clientHandler);
+            return new {{ project.csharp.class_name }}(customEndpoint, null, clientHandler);
         }
         
+        /// <summary>
+        /// Construct a client that uses a custom HTTP Client object.  You can use this method to implement your own
+        /// patterns for HttpClient tracking, usage, or to implement a mocked HTTP client during testing.
+        /// Note that for performance reasons your HttpClient should support connection pooling (to avoid unnecessary
+        /// delays in SSL validation) and you should also support GZip encoding.
+        /// </summary>
+        /// <param name="env">The named environment to use; should be "production"</param>
+        /// <param name="client">The HttpClient object to use</param>
+        /// <returns>The API client to use</returns>
+        public static {{ project.csharp.class_name }} WithCustomHttpClient(string env, HttpClient client)
+        {
+            switch (env)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+            {
+{{~ for env in project.environments ~}}
+                case "{{ env.name }}":
+                    return new {{ project.csharp.class_name }}(new Uri("{{ env.url }}"), client, null);
+{{~ end ~}}
+            }
+    
+            throw new InvalidOperationException($"Unknown environment: {env}");
+        }        
+
         /// <summary>
         /// Configure this SDK client to set an application name which will be sent with each API call for debugging
         /// purposes.

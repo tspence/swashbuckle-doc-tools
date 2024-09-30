@@ -12,14 +12,14 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.3.3
-      September 14, 2024
+      # 1.3.4
+      September 30, 2024
 
-      * Improvements for Dart SDK - maybe not functional for everyone but works for one client
+      * Updated C# / DotNet client generation to permit external HttpClient objects
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.3</Version>
+    <Version>1.3.4</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
