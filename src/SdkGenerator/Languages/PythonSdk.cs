@@ -280,7 +280,7 @@ public class PythonSdk : ILanguageSdk
                             var elementType = innerType.Substring(5, innerType.Length - 6);
                             sb.AppendLine("            data = []");
                             sb.AppendLine("            for dict in json.loads(result.content)['data']:");
-                            sb.AppendLine($"                data.append({elementType}(**dict))");
+                            sb.AppendLine($"                data.append(dacite.from_dict(data_class={elementType}, data=dict))");
                             sb.AppendLine(
                                 $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, data)");
                         }
