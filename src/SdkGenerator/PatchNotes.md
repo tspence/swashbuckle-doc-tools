@@ -1,3 +1,11 @@
+# 1.3.5
+October 4, 2024
+
+* Improvements to Java pom.xml format to deploy via SonaType Central
+* Python package names are properly sorted
+* Python array results are properly parsed, even if they have extra fields
+* Nested references no longer generate incorrect imports in Python
+
 # 1.3.4
 September 30, 2024
 

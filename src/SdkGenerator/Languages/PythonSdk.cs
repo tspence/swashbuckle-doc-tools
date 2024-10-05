@@ -113,7 +113,7 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 // Produce imports
-                foreach (var import in BuildImports(context, item.Fields))
+                foreach (var import in BuildImports(context, item.Name, item.Fields))
                 {
                     sb.AppendLine(import);
                 }
@@ -280,7 +280,7 @@ public class PythonSdk : ILanguageSdk
                             var elementType = innerType.Substring(5, innerType.Length - 6);
                             sb.AppendLine("            data = []");
                             sb.AppendLine("            for dict in json.loads(result.content)['data']:");
-                            sb.AppendLine($"                data.append({elementType}(**dict))");
+                            sb.AppendLine($"                data.append(dacite.from_dict(data_class={elementType}, data=dict))");
                             sb.AppendLine(
                                 $"            return {context.Project.Python.ResponseClass}[{innerType}](None, True, False, result.status_code, data)");
                         }
@@ -305,12 +305,12 @@ public class PythonSdk : ILanguageSdk
         }
     }
 
-    private List<string> BuildImports(GeneratorContext context, List<SchemaField> fields)
+    private List<string> BuildImports(GeneratorContext context, string selfName, List<SchemaField> fields)
     {
         var imports = new List<string>();
         foreach (var field in fields)
         {
-            if (!field.Deprecated && field.DataTypeRef != null)
+            if (!field.Deprecated && field.DataTypeRef != null && field.DataType != selfName)
             {
                 AddImport(context, imports, field.DataType);
             }
@@ -445,6 +445,9 @@ public class PythonSdk : ILanguageSdk
             return;
         }
         Console.WriteLine("Exporting Python...");
+
+        // Sort categories for Python
+        context.Api.Categories = context.Api.Categories.OrderBy(s => $"{s.WordsToSnakeCase()}client").ToList();
 
         await ExportSchemas(context);
         await ExportEndpoints(context);
