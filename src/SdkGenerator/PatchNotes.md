@@ -1,3 +1,8 @@
+# 1.3.6
+October 18, 2024
+
+* Fixed a minor typo that caused Java-only SDK builds to fail
+
 # 1.3.5
 October 4, 2024
 
