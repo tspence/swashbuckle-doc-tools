@@ -12,10 +12,10 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2024</Copyright>
     <PackageReleaseNotes>
-      # 1.3.6
-      October 18, 2024
+      # 1.3.7
+      October 20, 2024
 
-      * Fixed a minor typo that caused Java-only SDK builds to fail
+      * Fixed a minor typo that caused Typescript and Python-only build configs to fail
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
