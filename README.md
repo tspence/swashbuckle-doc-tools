@@ -6,7 +6,7 @@ This program allows you to generate a hand-optimized software development kit fo
 your REST API.  It can also generate documentation in Markdown or Readme formats.
 
 Example usage of this program:
-* [ProjectManager](https://developer.projectmanager.com)
+* [ProjectManager](https://developer.projectmanager.com/getting-started/software-development-kits)
 
 This opinionated software makes assumptions about your API and attempts to create a SDK that matches good practices in 
 each programming language.  The OpenAPI / Swagger spec permits lots of different ways of doing things; this tool is 
