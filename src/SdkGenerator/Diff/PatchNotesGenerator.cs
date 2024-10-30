@@ -199,14 +199,14 @@ public class PatchNotesGenerator
             {
                 if (diff.Object2 is ParameterField p2 && diff.Object1 == null)
                 {
-                    if (context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p2.Name, StringComparison.OrdinalIgnoreCase)))
+                    if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p2.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
                     }
                 }
                 else if (diff.Object1 is ParameterField p1 && diff.Object2 == null)
                 {
-                    if (context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p1.Name, StringComparison.OrdinalIgnoreCase)))
+                    if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p1.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
                     }
