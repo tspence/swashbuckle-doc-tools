@@ -1,3 +1,8 @@
+# 1.3.8
+October 20, 2024
+
+* Fixed issue where ignored parameters could be null
+
 # 1.3.7
 October 20, 2024
 
