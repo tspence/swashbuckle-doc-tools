@@ -15,8 +15,8 @@
       # 1.3.9
       December 9, 2024
 
-      * Option to avoid generation if no significant OpenAPI changes are detected
-      * Update System.Text.Json package version
+      * By default, avoid SDK generation if no significant OpenAPI changes are detected
+      * Update System.Text.Json package version [DotNet]
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

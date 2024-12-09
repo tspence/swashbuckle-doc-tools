@@ -51,8 +51,8 @@ public static class Program
         [Option('f', "file", HelpText = "Use a specific OpenAPI/Swagger file and do not attempt to download from source")]
         public string SwaggerFile { get; set; }
         
-        [Option(HelpText = "Skip generation if only minor changes are found")]
-        public bool SkipMinorChanges { get; set; }
+        [Option(HelpText = "Still generate SDK even if changes are minor")]
+        public bool GenerateIfMinor { get; set; }
     }
     
     [Verb("create", HelpText = "Create a new template file for a new SDK")]
@@ -264,7 +264,7 @@ public static class Program
         // Generate patch notes and detect if this is a meaningful change
         context.PatchNotes = await DownloadFile.GeneratePatchNotes(context);
         Console.WriteLine($"Comparing with previous version {context.PatchNotes.OldVersion}...");
-        if (options.SkipMinorChanges == true && context.PatchNotes.IsMinorChange)
+        if (options.GenerateIfMinor != true && context.PatchNotes.IsMinorChange)
         {
             Console.WriteLine("Skipping SDK generation since this is a minor change.");
             if (context.SwaggerJsonPath != null && File.Exists(context.SwaggerJsonPath))
