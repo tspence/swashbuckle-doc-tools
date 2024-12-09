@@ -50,6 +50,9 @@ public static class Program
         
         [Option('f', "file", HelpText = "Use a specific OpenAPI/Swagger file and do not attempt to download from source")]
         public string SwaggerFile { get; set; }
+        
+        [Option(HelpText = "Skip generation if only minor changes are found")]
+        public bool? SkipMinorChanges { get; set; }
     }
     
     [Verb("create", HelpText = "Create a new template file for a new SDK")]
@@ -258,8 +261,13 @@ public static class Program
             context = await GeneratorContext.FromSwaggerFileOnDisk(context, options.SwaggerFile, context.LogPath);
         }
 
-        // Generate patch notes
+        // Generate patch notes and detect if this is a meaningful change
         context.PatchNotes = await DownloadFile.GeneratePatchNotes(context);
+        if (options.SkipMinorChanges == true && context.PatchNotes.IsMinorChange)
+        {
+            Console.WriteLine("Skipping SDK generation since this is a minor change.");
+            return;
+        }
         
         // Let's do some software development kits, if selected
         bool anyExported = false;
