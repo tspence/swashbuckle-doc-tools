@@ -56,7 +56,18 @@ public class SwaggerDiff
     /// <summary>
     /// True if this change is trivial - e.g. no schemas or endpoints have changed
     /// </summary>
-    public bool IsMinorChange { get; set; }
+    public bool IsMinorChange {
+        get
+        {
+            return !(SchemaChanges.Any() 
+                   || EndpointChanges.Any()
+                   || DeprecatedEndpoints.Any() 
+                   || DeprecatedSchemas.Any() 
+                   || NewSchemas.Any() 
+                   || NewEndpoints.Any() 
+                   || Renames.Any());
+        }
+    }
 
     /// <summary>
     /// Convert this diff into a shortened summary of patch notes in Markdown format 
