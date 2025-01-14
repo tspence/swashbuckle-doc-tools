@@ -16,13 +16,13 @@ public class TypescriptSdk : ILanguageSdk
         return "/**\n"
                + $" * {project.ProjectName} for TypeScript\n"
                + " *\n"
-               + $" * (c) {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $" * (c) {project.CopyrightHolder}\n"
                + " *\n"
                + " * For the full copyright and license information, please view the LICENSE\n"
                + " * file that was distributed with this source code.\n"
                + " *\n"
                + $" * @author     {project.AuthorName} <{project.AuthorEmail}>\n"
-               + $" * @copyright  {project.ProjectStartYear}-{DateTime.UtcNow.Year} {project.CopyrightHolder}\n"
+               + $" * @copyright  {project.CopyrightHolder}\n"
                + $" * @link       {project.Typescript.GithubUrl}\n"
                + " */\n";
     }

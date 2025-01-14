@@ -1,14 +1,14 @@
 /***
  * {{ project.project_name }} for C#
  *
- * (c) {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * (c) {{ project.copyright_holder }}
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
  * @author     {{ project.author_name }} <{{ project.author_email }}>
  *             {{ project.csharp.extra_credit }}
- * @copyright  {{ project.project_start_year }}-{{ date.now.year }} {{ project.copyright_holder }}
+ * @copyright  {{ project.copyright_holder }}
  * @version    {{ api.semver3 }}
  * @link       {{ project.csharp.github_url }}
  */

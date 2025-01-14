@@ -1,3 +1,15 @@
+# 1.3.10
+January 14, 2025
+
+* Removed copyright years from file templates to avoid unnecessary changes
+* Upgraded to DotNet 9.0
+
+# 1.3.9
+December 9, 2024
+
+* By default, avoid SDK generation if no significant OpenAPI changes are detected
+* Update System.Text.Json package version [DotNet]
+
 # 1.3.8
 October 20, 2024
 
