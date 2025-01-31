@@ -1,3 +1,8 @@
+# 1.3.11
+January 31, 2025
+
+* Downgraded to DotNet 8.0 for compatibility with existing GitHub actions workflows
+
 # 1.3.10
 January 14, 2025
 
