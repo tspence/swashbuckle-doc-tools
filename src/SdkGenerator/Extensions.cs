@@ -59,6 +59,31 @@ public static class Extensions
     }
 
     /// <summary>
+    /// To Keyword Array: Converts a list of strings with spaces in them to a comma separated
+    /// array of items
+    /// Input:
+    ///     "a b c d"
+    /// Output:
+    ///     "a", "b", "c", "d"
+    /// </summary>
+    /// <param name="s"></param>
+    /// <returns></returns>
+    public static string ToKeywordArray(this string s)
+    {
+        var sb = new StringBuilder();
+        foreach (var item in s.Split(' '))
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(", ");
+            }
+            sb.Append($"\"{item.Replace("\"", "\\\"")}\"");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// ProperCase: All word segments start with a capital letter
     /// </summary>
     /// <param name="s"></param>

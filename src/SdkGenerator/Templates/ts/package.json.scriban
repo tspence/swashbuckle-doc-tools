@@ -5,7 +5,7 @@
     "repository": "{{ project.typescript.github_url }}",
     "license": "MIT",
     "author": "{{ project.author_name }} {{ project.author_email }} ({{ project.documentation_url }})",
-    "keywords": ["{{ project.keywords }}"],
+    "keywords": [{{ project.keywords | to_keyword_array }}],
     "homepage": "{{ project.documentation_url }}",
     "dependencies": {
         "@types/node": "^17.0.13",
