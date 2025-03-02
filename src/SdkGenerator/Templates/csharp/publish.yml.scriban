@@ -20,22 +20,17 @@ jobs:
       - name: Setup .NET Core @ Latest
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: |
+            8.x
+            9.x
 
       - name: Build solution and generate NuGet package
         run: dotnet build -c Release
 
-      - name: Setup Nuget
+      - name: Run DotNet pack
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: nuget/setup-nuget@v2
-        with:
-          nuget-api-key: ${{ "{{ secrets.NUGET_API_KEY }}" }}
-          nuget-version: "5.x"
-
-      - name: Run Nuget pack
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: nuget pack {{ project.csharp.class_name }}.nuspec
+        run: dotnet pack
 
       - name: Push generated package to GitHub registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: nuget push *.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{ "{{ secrets.NUGET_API_KEY }}" }}
+        run: dotnet nuget push src/bin/Release/*.nupkg --source 'https://api.nuget.org/v3/index.json' --api-key ${{ secrets.NUGET_API_KEY }}
