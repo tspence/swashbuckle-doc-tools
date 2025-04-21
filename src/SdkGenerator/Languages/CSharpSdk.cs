@@ -500,9 +500,20 @@ public class CSharpSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.ApiInterface.scriban",
             context.MakePath(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
-        await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.Templates.csharp.sdk.nuspec.scriban",
-            context.MakePath(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
+        
+        // C# libraries now use csproj files rather than nuspec files; let's find the csproj file first and then apply updates to it
+        var srcFolder = context.MakePath(context.Project.Csharp.Folder, "src");
+        var di = new DirectoryInfo(srcFolder);
+        foreach (var csprojFile in di.GetFiles("*.csproj"))
+        {
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "version", context.Api.Semver3);
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Authors", context.Project.AuthorName);
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Description", context.Project.Description + " for DotNet");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Summary", context.Project.ProjectName + " for DotNet");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageReleaseNotes", context.PatchNotes.ToSummaryMarkdown());
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Copyright", $"Copyright {context.Project.ProjectStartYear}");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageTags", context.Project.Keywords);
+        }
     }
 
     public string LanguageName()
