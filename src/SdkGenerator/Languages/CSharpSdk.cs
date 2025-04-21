@@ -191,7 +191,7 @@ public class CSharpSdk : ILanguageSdk
             if (item.Fields != null)
             {
                 sb.AppendLine();
-                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4));
+                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4, false));
                 sb.AppendLine($"    public class {item.Name} : ApiModel");
                 sb.AppendLine("    {");
                 foreach (var field in item.Fields)
@@ -217,7 +217,7 @@ public class CSharpSdk : ILanguageSdk
                         }
 
                         sb.AppendLine();
-                        sb.Append(MarkdownToDocblock(context, markdown, 8));
+                        sb.Append(MarkdownToDocblock(context, markdown, 8, false));
                         sb.AppendLine($"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
                     }
                 }
@@ -231,7 +231,8 @@ public class CSharpSdk : ILanguageSdk
         }
     }
 
-    private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, List<ParameterField> parameterList = null)
+    private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, bool isFileUpload, 
+        List<ParameterField> parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -272,6 +273,13 @@ public class CSharpSdk : ILanguageSdk
                 sb.AppendLine(
                     $"{prefix} <param name=\"{p.Name.ToVariableName()}\">{desc.ToSingleLineMarkdown()}</param>");
             }
+        }
+        
+        // For file uploads, add docblock for file bytes
+        if (isFileUpload)
+        {
+            sb.AppendLine(
+                $"{prefix} <param name=\"fileBytes\">The contents of the file to upload as a `byte[]` array</param>");
         }
 
         return sb.ToString();
@@ -334,8 +342,10 @@ public class CSharpSdk : ILanguageSdk
         // Run through all APIs
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
+            // Check if upload and adjust docblock
+            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, isFileUpload, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
@@ -349,7 +359,6 @@ public class CSharpSdk : ILanguageSdk
 
             // Do we need to specify options?
             var options = (from p in endpoint.Parameters where p.Location == "query" select p).ToList();
-            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             if (isFileUpload)
             {
                 paramList.Add("byte[] fileBytes");
@@ -442,12 +451,12 @@ public class CSharpSdk : ILanguageSdk
         // Run through all APIs
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
+            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, isFileUpload, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
-            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             foreach (var p in from p in endpoint.Parameters orderby p.Required descending select p)
             {
                 var isNullable = !p.Required || p.Nullable;
@@ -500,9 +509,20 @@ public class CSharpSdk : ILanguageSdk
         await ScribanFunctions.ExecuteTemplate(context, 
             "SdkGenerator.Templates.csharp.ApiInterface.scriban",
             context.MakePath(context.Project.Csharp.Folder, "src", "I" + context.Project.Csharp.ClassName + ".cs"));
-        await ScribanFunctions.ExecuteTemplate(context, 
-            "SdkGenerator.Templates.csharp.sdk.nuspec.scriban",
-            context.MakePath(context.Project.Csharp.Folder, context.Project.Csharp.ClassName + ".nuspec"));
+        
+        // C# libraries now use csproj files rather than nuspec files; let's find the csproj file first and then apply updates to it
+        var srcFolder = context.MakePath(context.Project.Csharp.Folder, "src");
+        var di = new DirectoryInfo(srcFolder);
+        foreach (var csprojFile in di.GetFiles("*.csproj"))
+        {
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "version", context.Api.Semver3);
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Authors", context.Project.AuthorName);
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Description", context.Project.Description + " for DotNet");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Summary", context.Project.ProjectName + " for DotNet");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageReleaseNotes", context.PatchNotes.ToSummaryMarkdown());
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Copyright", $"Copyright {context.Project.ProjectStartYear} - {DateTime.Now.Year}");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageTags", context.Project.Keywords);
+        }
     }
 
     public string LanguageName()

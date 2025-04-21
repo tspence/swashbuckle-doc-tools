@@ -10,16 +10,16 @@
       easy-to-use markdown documentation or friendly software development kit libraries. Can be
       automated using Github Workflows.</Description>
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
-    <Copyright>Copyright 2021 - 2024</Copyright>
+    <Copyright>Copyright 2021 - 2025</Copyright>
     <PackageReleaseNotes>
-      # 1.3.11
-      January 31, 2025
+      April 21, 2025
 
-      * Downgraded to DotNet 8.0 for compatibility with existing GitHub actions workflows
+      * DotNet: Fixed DotNet SDKs to use csproj files rather than nuspec
+      * DotNet: Added xmldoc for fileBytes parameters for file uploads
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.11</Version>
+    <Version>1.3.12</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

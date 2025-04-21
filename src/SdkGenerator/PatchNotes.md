@@ -1,3 +1,9 @@
+# 1.3.12
+April 21, 2025
+
+* DotNet: Fixed DotNet SDKs to use csproj files rather than nuspec
+* DotNet: Added xmldoc for fileBytes parameters for file uploads
+
 # 1.3.11
 January 31, 2025
 

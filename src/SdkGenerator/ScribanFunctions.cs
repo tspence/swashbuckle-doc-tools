@@ -26,7 +26,21 @@ public static class ScribanFunctions
             await ExecuteTemplate(context, templateName, outputFilename);
         }
     }
-        
+
+    public static async Task PatchXml(GeneratorContext context, string filename, int indent, string tag, string content)
+    {
+        if (content.Contains('\n'))
+        {
+            var indentStr = String.Format("{0," + indent +"}", "");
+            await PatchFile(context, filename, $"<{tag}>([\\s\\S]*)</{tag}>",
+                $"<{tag}>\n{content}\n{indentStr}</{tag}>");
+        }
+        else
+        {
+            await PatchFile(context, filename, $"<{tag}>([\\s\\S]*)</{tag}>", $"<{tag}>{content}</{tag}>");
+        }
+    }
+    
     private static async Task PatchFile(GeneratorContext context, string filename, string regex, string replacement)
     {
         if (!File.Exists(filename))
