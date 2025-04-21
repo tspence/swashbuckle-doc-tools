@@ -191,7 +191,7 @@ public class CSharpSdk : ILanguageSdk
             if (item.Fields != null)
             {
                 sb.AppendLine();
-                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4));
+                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4, false));
                 sb.AppendLine($"    public class {item.Name} : ApiModel");
                 sb.AppendLine("    {");
                 foreach (var field in item.Fields)
@@ -217,7 +217,7 @@ public class CSharpSdk : ILanguageSdk
                         }
 
                         sb.AppendLine();
-                        sb.Append(MarkdownToDocblock(context, markdown, 8));
+                        sb.Append(MarkdownToDocblock(context, markdown, 8, false));
                         sb.AppendLine($"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
                     }
                 }
@@ -231,7 +231,8 @@ public class CSharpSdk : ILanguageSdk
         }
     }
 
-    private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, List<ParameterField> parameterList = null)
+    private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, bool isFileUpload, 
+        List<ParameterField> parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -272,6 +273,13 @@ public class CSharpSdk : ILanguageSdk
                 sb.AppendLine(
                     $"{prefix} <param name=\"{p.Name.ToVariableName()}\">{desc.ToSingleLineMarkdown()}</param>");
             }
+        }
+        
+        // For file uploads, add docblock for file bytes
+        if (isFileUpload)
+        {
+            sb.AppendLine(
+                $"{prefix} <param name=\"fileBytes\">The contents of the file to upload as a `byte[]` array</param>");
         }
 
         return sb.ToString();
@@ -334,8 +342,10 @@ public class CSharpSdk : ILanguageSdk
         // Run through all APIs
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
+            // Check if upload and adjust docblock
+            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, isFileUpload, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
@@ -349,7 +359,6 @@ public class CSharpSdk : ILanguageSdk
 
             // Do we need to specify options?
             var options = (from p in endpoint.Parameters where p.Location == "query" select p).ToList();
-            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             if (isFileUpload)
             {
                 paramList.Add("byte[] fileBytes");
@@ -442,12 +451,12 @@ public class CSharpSdk : ILanguageSdk
         // Run through all APIs
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => endpoint.Category == cat && !endpoint.Deprecated))
         {
+            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             sb.AppendLine();
-            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, endpoint.Parameters));
+            sb.Append(MarkdownToDocblock(context, endpoint.DescriptionMarkdown, 8, isFileUpload, endpoint.Parameters));
 
             // Figure out the parameter list
             var paramList = new List<string>();
-            var isFileUpload = (from p in endpoint.Parameters where p.Location == "form" select p).Any();
             foreach (var p in from p in endpoint.Parameters orderby p.Required descending select p)
             {
                 var isNullable = !p.Required || p.Nullable;

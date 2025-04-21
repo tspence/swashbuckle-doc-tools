@@ -14,7 +14,8 @@
     <PackageReleaseNotes>
       April 21, 2025
 
-      * Fixed DotNet SDKs to use csproj files rather than nuspec
+      * DotNet: Fixed DotNet SDKs to use csproj files rather than nuspec
+      * DotNet: Added xmldoc for fileBytes parameters for file uploads
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
