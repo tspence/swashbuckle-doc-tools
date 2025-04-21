@@ -511,7 +511,7 @@ public class CSharpSdk : ILanguageSdk
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Description", context.Project.Description + " for DotNet");
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Summary", context.Project.ProjectName + " for DotNet");
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageReleaseNotes", context.PatchNotes.ToSummaryMarkdown());
-            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Copyright", $"Copyright {context.Project.ProjectStartYear}");
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Copyright", $"Copyright {context.Project.ProjectStartYear} - {DateTime.Now.Year}");
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageTags", context.Project.Keywords);
         }
     }
