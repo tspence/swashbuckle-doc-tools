@@ -8,7 +8,7 @@
 
     <name>{{ project.java.module_name }}</name>
     <description>{{ project.description }} for Java</description>
-    <url>{{ project.documentation_url }}</url>
+    <url>{{ project.documentation_url ?? project.java.github_url }}</url>
 
     <licenses>
         <license>
@@ -28,6 +28,7 @@
             <id>{{ project.java.namespace }}</id>
             <name>{{ project.author_name }}</name>
             <email>{{ project.author_email }}</email>
+            <url>{{ project.java.github_url }}</url>
         </developer>
     </developers>
 
