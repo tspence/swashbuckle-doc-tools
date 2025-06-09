@@ -2,6 +2,7 @@
 June 9, 2025
 
 * Java: Added null coalescing for project/url to pom.xml; this is a SonaType requirement for publishing so it can't be null
+* Python: Stop using Pyre for type checking; it no longer works reliably on GitHub actions
 
 # 1.3.12
 April 21, 2025
