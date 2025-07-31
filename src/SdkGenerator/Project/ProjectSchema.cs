@@ -127,6 +127,7 @@ public class LanguageSchema
     public string Folder { get; set; }
     public string ClassName { get; set; }
     public string ResponseClass { get; set; }
+    public string ResponseErrorClass { get; set; }
     public string Namespace { get; set; }
     public string GithubUrl { get; set; }
     public List<string> HandwrittenClasses { get; set; }
