@@ -12,14 +12,13 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2025</Copyright>
     <PackageReleaseNotes>
-      June 9, 2025
+      July 31, 2025
 
-      * Java: Added null coalescing for project/url to pom.xml; this is a SonaType requirement for publishing so it can't be null
-      * Python: Stop using Pyre for type checking; it no longer works reliably on GitHub actions
+      * Dart: Continuing improvements on our pre-release Dart language SDK generator
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.13</Version>
+    <Version>1.3.14</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

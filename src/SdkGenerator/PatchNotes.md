@@ -1,3 +1,8 @@
+# 1.3.14
+July 31, 2025
+
+* Dart: Continuing improvements on our pre-release Dart language SDK generator
+
 # 1.3.13
 June 9, 2025
 
