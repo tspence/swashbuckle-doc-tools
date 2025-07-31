@@ -6,23 +6,22 @@ import 'package:brotli/brotli.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
-import '../client/AuthService.dart';
-import '../flavours/BuildConfig.dart';
+import './{{ project.dart.response_error_class | camel_case_to_snake_case }}.dart';
+import './{{ project.dart.response_class | camel_case_to_snake_case }}.dart';
 
 {{~ for cat in api.categories ~}}
 import './clients/{{ cat | camel_case_to_snake_case }}_client.dart';
 {{~ end ~}}
 
-import 'astro_error.dart';
-import '{{ project.dart.response_class | camel_case_to_snake_case }}.dart';
-import '{{ project.dart.class_name | camel_case_to_snake_case }}.dart';
+import './{{ project.dart.class_name | camel_case_to_snake_case }}.dart';
 
 class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }} {
-  {{ project.dart.class_name }}Impl(this.authService, this._client, this.apiUrl);
+  {{ project.dart.class_name }}Impl(this._client, this.apiUrl, this.getAccessToken, { this.logRequest = false });
 
   final BaseClient _client;
   final String apiUrl;
-  final AuthService authService;
+  final bool logRequest;
+  final Future<String> Function() getAccessToken;
 {{~ for cat in api.categories ~}}
 
   {{ cat }}Client? _{{ cat | to_camel_case }}Client;
@@ -33,7 +32,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
 {{~ end ~}}
 
   Response _logRequest(String action, String path, int startMillis, Response value) {
-    if (!BuildConfig.isRelease) {
+    if (logRequest) {
       debugPrint('$action $path took ${DateTime.now().millisecondsSinceEpoch - startMillis}ms');
     }
 
@@ -44,14 +43,14 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
     debugPrint('API Error $error');
 
     if (error is TimeoutException) {
-      return {{ project.dart.response_class }}<T>.fromError(AstroError(message: 'Request timed out'), 408);
+      return {{ project.dart.response_class }}<T>.fromError({{ project.dart.response_error_class }}(message: 'Request timed out'), 408);
     }
 
     if (error is SocketException) {
-      return {{ project.dart.response_class }}<T>.fromError(AstroError(message: 'No connection'), 408);
+      return {{ project.dart.response_class }}<T>.fromError({{ project.dart.response_error_class }}(message: 'No connection'), 408);
     }
 
-    return {{ project.dart.response_class }}<T>.fromError(AstroError(message: 'An error occurred'), 500);
+    return {{ project.dart.response_class }}<T>.fromError({{ project.dart.response_error_class }}(message: 'An error occurred'), 500);
   }
 
   //Shortcut for typing
@@ -72,23 +71,35 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
     }
 
     if (json.containsKey('data')) {
-      data =  json['data'] as T;
+      if (json['data'] is List) {
+        data = (json['data'] as List).map((item) => item as Map<String, dynamic>).toList() as T;
+      } else if (json['data'] is Map) {
+        data = json['data'] as T;
+      } else {
+        data = json['data'] as T?;
+      }
     }
 
     if (json.containsKey('error')) {
-      error = AstroError.fromJson(json['error'] as Map<String, dynamic>);
+      error = {{ project.dart.response_error_class }}.fromJson(json['error'] as Map<String, dynamic>);
       success = false;
     }
 
     if (!success) {
-      return AstroResult<T>.fromError(error as AstroError, raw.statusCode);
+      return {{ project.dart.response_class }}<T>.fromError(error as {{ project.dart.response_error_class }}, raw.statusCode);
     }
 
-    return AstroResult<T>.fromSuccess(data, raw.statusCode);
+    return {{ project.dart.response_class }}<T>.fromSuccess(data, raw.statusCode);
   }
 
   Uri _buildFullUrl(String path, Map<String, dynamic>? queryParameters) {
-    return Uri.https(apiUrl, path, queryParameters);
+    final cleanParameters = <String, dynamic>{};
+    queryParameters?.forEach((key, value) {
+      if (value != null) {
+        cleanParameters[key] = value.toString();
+      }
+    });
+    return Uri.https(apiUrl, path, cleanParameters);
   }
 
   Future<Map<String, String>> _buildHeaders(Map<String, String>? headers) async {
@@ -97,11 +108,9 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
     result['Content-Type'] = 'application/json';
     result['Content-Encoding'] = 'br';
 
-    if (authService.isValidCredential) {
-      if (authService.credentials.isAccessTokenExpired()) {
-        await authService.resetAccessToken();
-      }
-      result['Authorization'] = 'Bearer ${authService.credentials.accessToken}';
+    final accessToken = await getAccessToken();
+    if (accessToken.isNotEmpty) {
+      result['Authorization'] = 'Bearer $accessToken';
     }
 
     return result;
@@ -121,7 +130,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   Future<{{ project.dart.response_class }}<T>> delete<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     final startMillis = DateTime.now().millisecondsSinceEpoch;
     return _client
-        .delete(_buildFullUrl(path, queryParameters), headers: headers, body: data)
+        .delete(_buildFullUrl(path, queryParameters), headers: await _buildHeaders(headers), body: data)
         .then((value) => _logRequest('DELETE', path, startMillis, value))
         .then(_handleAPISuccess<T>)
         .catchError(_handleAPIError<T>);
@@ -131,7 +140,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   Future<{{ project.dart.response_class }}<T>> put<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     final startMillis = DateTime.now().millisecondsSinceEpoch;
     return _client
-        .put(_buildFullUrl(path, queryParameters), headers: headers, body: data)
+        .put(_buildFullUrl(path, queryParameters), headers: await _buildHeaders(headers), body: data)
         .then((value) => _logRequest('PUT', path, startMillis, value))
         .then(_handleAPISuccess<T>)
         .catchError(_handleAPIError<T>);
@@ -141,7 +150,7 @@ class {{ project.dart.class_name }}Impl implements {{ project.dart.class_name }}
   Future<{{ project.dart.response_class }}<T>> post<T>(String path, { Map<String, dynamic>? queryParameters, String? data, Map<String, String>? headers }) async {
     final startMillis = DateTime.now().millisecondsSinceEpoch;
     return _client
-        .post(_buildFullUrl(path, queryParameters), headers: headers, body: data)
+        .post(_buildFullUrl(path, queryParameters), headers: await _buildHeaders(headers), body: data)
         .then((value) => _logRequest('POST', path, startMillis, value))
         .then(_handleAPISuccess<T>)
         .catchError(_handleAPIError<T>);
