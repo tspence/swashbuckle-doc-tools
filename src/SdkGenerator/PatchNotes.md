@@ -1,3 +1,8 @@
+# 1.3.15
+September 20, 2025
+
+* Support for "complete-patch-notes" on a folder of swagger files
+
 # 1.3.14
 July 31, 2025
 
