@@ -2,6 +2,7 @@
 September 20, 2025
 
 * Support for "complete-patch-notes" on a folder of swagger files
+* Beginning of basic unit tests
 
 # 1.3.14
 July 31, 2025

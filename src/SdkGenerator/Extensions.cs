@@ -122,20 +122,31 @@ public static class Extensions
     public static string CamelCaseToSnakeCase(this string s)
     {
         var sb = new StringBuilder();
+        bool inUnderscores = false;
         foreach (var c in s)
         {
             if (char.IsUpper(c))
             {
-                if (sb.Length != 0)
+                if (sb.Length != 0 && !inUnderscores)
                 {
                     sb.Append('_');
+                    inUnderscores = true;
                 }
 
                 sb.Append(char.ToLower(c));
             }
-            else
+            else if (char.IsWhiteSpace(c))
+            {
+                if (sb.Length != 0 && !inUnderscores)
+                {
+                    sb.Append('_');
+                    inUnderscores = true;
+                }
+            } 
+            else 
             {
                 sb.Append(c);
+                inUnderscores = false;
             }
         }
 
