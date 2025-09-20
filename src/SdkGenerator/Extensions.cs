@@ -12,6 +12,8 @@ namespace SdkGenerator;
 
 public static class Extensions
 {
+    private const string UNKNOWN_NAME = "unknownName";
+    
     /// <summary>
     /// Make this Swagger parameter a safe variable name
     ///
@@ -26,6 +28,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToVariableName(this string swaggerParameterName, List<string> keywords = null)
     {
+        if (string.IsNullOrWhiteSpace(swaggerParameterName))
+        {
+            return UNKNOWN_NAME;
+        }
         var sb = new StringBuilder();
         foreach (var c in swaggerParameterName)
         {
@@ -53,7 +59,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "unknownName";
+            return UNKNOWN_NAME.ToCamelCase();
         }
         return $"{char.ToLower(s[0])}{s[1..].Replace(" ", "")}";
     }
@@ -67,7 +73,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "UnknownName";
+            return UNKNOWN_NAME.ToProperCase();
         }
         
         // Case 1: If this string has spaces in it, we need full word-to-proper capitalization
@@ -146,7 +152,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "";
+            return UNKNOWN_NAME.ProperCaseToSnakeCase();
         }
 
         var sb = new StringBuilder();
