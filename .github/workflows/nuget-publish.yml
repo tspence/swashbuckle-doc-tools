@@ -21,7 +21,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-          include-prerelease: false
+          
+      - name: Run unit tests
+        run: dotnet test
 
       - name: Build solution and generate NuGet package
         run: dotnet build -c Release
