@@ -54,11 +54,12 @@ public class GeneratorContext : IDisposable
         ErrorStream?.Dispose();
     }
     
-    public static GeneratorContext FromApiSchema(ApiSchema api)
+    public static GeneratorContext FromApiSchema(ApiSchema api, ProjectSchema project)
     {
         return new GeneratorContext()
         {
-            Api = api
+            Api = api,
+            Project = project,
         };
     }
 
