@@ -1,22 +1,21 @@
-﻿using System.Reflection.Metadata;
-using SdkGenerator.Project;
+﻿using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Tests;
 
 public class ContextBuilder
 {
-    private ApiSchema api;
-    private ProjectSchema project;
+    private ApiSchema _api;
+    private ProjectSchema _project;
 
     public ContextBuilder()
     {
-        api = new ApiSchema()
+        _api = new ApiSchema()
         {
             Endpoints = new(),
             Schemas = new(),
         };
-        project = new ProjectSchema()
+        _project = new ProjectSchema()
         {
             IgnoredParameters = [],
         };
@@ -24,7 +23,7 @@ public class ContextBuilder
     
     public ContextBuilder AddRetrieveEndpoint(string category, string name)
     {
-        api.Endpoints.Add(new EndpointItem()
+        _api.Endpoints.Add(new EndpointItem()
         {
             Category = category,
             Name = name,
@@ -39,7 +38,7 @@ public class ContextBuilder
 
     public ContextBuilder AddParameter(Type type, string name)
     {
-        api.Endpoints[^1].Parameters.Add(new ParameterField()
+        _api.Endpoints[^1].Parameters.Add(new ParameterField()
         {
             Name = name,
             DataType = type.ToString(),
@@ -49,7 +48,7 @@ public class ContextBuilder
     
     public GeneratorContext Build()
     {
-        return GeneratorContext.FromApiSchema(api, project);
+        return GeneratorContext.FromApiSchema(_api, _project);
     }
 
     public ContextBuilder AddSchema(Type type)
@@ -63,7 +62,7 @@ public class ContextBuilder
                 DataType = f.PropertyType.ToString()
             });
         }
-        api.Schemas.Add(new SchemaItem()
+        _api.Schemas.Add(new SchemaItem()
         {
             Name = type.Name,
             DescriptionMarkdown = "Description",
@@ -74,9 +73,9 @@ public class ContextBuilder
 
     public ContextBuilder ChangeSchemaFieldType(Type type, string fieldName, string newType)
     {
-        var schema = api.Schemas.LastOrDefault();
-        var field = schema.Fields.FirstOrDefault(f => f.Name == fieldName);
-        field.DataType = newType;
+        var schema = _api.Schemas.FirstOrDefault(s => s.Name == type.Name);
+        var field = schema!.Fields.FirstOrDefault(f => f.Name == fieldName);
+        field!.DataType = newType;
         return this;
     }
 }
