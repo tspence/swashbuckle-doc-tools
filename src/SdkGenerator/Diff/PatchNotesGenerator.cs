@@ -83,22 +83,34 @@ public class PatchNotesGenerator
         var result = new List<string>();
         
         // Detect if there are any new or removed fields
-        var existingFieldNames = prevItem.Fields.Select(f => f.Name).ToHashSet();
-        var newFieldNames = item.Fields.Select(f => f.Name).ToHashSet();
+        var newFields = item.Fields.ToDictionary(f => f.Name);
+        var existingFields = prevItem.Fields.ToDictionary(f => f.Name);
+        //var existingFieldNames = prevItem.Fields.Select(f => f.Name).ToHashSet();
+        //var newFieldNames = item.Fields.Select(f => f.Name).ToHashSet();
         
         // Find newly added field names
-        foreach (var newFieldName in newFieldNames)
+        foreach (var newFieldName in newFields.Keys)
         {
-            if (!existingFieldNames.Contains(newFieldName))
+            if (!existingFields.ContainsKey(newFieldName))
             {
                 result.Add($"{item.Name}: Added new field `{newFieldName}`");
+            }
+            else
+            {
+                // Search for data type changes in schemas
+                var oldField = existingFields[newFieldName];
+                var newField = newFields[newFieldName];
+                if (oldField.DataType != newField.DataType)
+                {
+                    result.Add($"{item.Name}: Changed the data type of the field `{newFieldName}` from `{oldField.DataType.Replace("System.","")}` to `{newField.DataType.Replace("System.","")}`");
+                }
             }
         }
         
         // Find removed fields
-        foreach (var existingFieldName in existingFieldNames)
+        foreach (var existingFieldName in existingFields.Keys)
         {
-            if (!newFieldNames.Contains(existingFieldName))
+            if (!newFields.ContainsKey(existingFieldName))
             {
                 result.Add($"{item.Name}: Removed field `{existingFieldName}`");
             }

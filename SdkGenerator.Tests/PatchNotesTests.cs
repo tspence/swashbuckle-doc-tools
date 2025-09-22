@@ -88,4 +88,30 @@ public class PatchNotesTests
         Assert.AreEqual("test.RetrieveTest", change.Key);
         Assert.AreEqual("test.RetrieveTest changed the data type of the parameter `ID` from `Guid` to `String`", change.Value.FirstOrDefault());
     }
+
+    public class SchemaTypeOne
+    {
+        public Guid id { get; set; }
+    }
+
+    [TestMethod]
+    public void SchemaChange()
+    {
+        using var v1 = new ContextBuilder()
+            .AddSchema(typeof(SchemaTypeOne)) 
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddSchema(typeof(SchemaTypeOne))
+            .ChangeSchemaFieldType(typeof(SchemaTypeOne), "id", "String")
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(0, diff.EndpointChanges.Count);
+        Assert.AreEqual(1, diff.SchemaChanges.Count);
+        var change = diff.SchemaChanges.FirstOrDefault();
+        Assert.AreEqual("SchemaTypeOne", change.Key);
+        Assert.AreEqual("SchemaTypeOne: Changed the data type of the field `id` from `Guid` to `String`", change.Value.FirstOrDefault());
+    }
 }

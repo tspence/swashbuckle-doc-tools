@@ -1,4 +1,5 @@
-﻿using SdkGenerator.Project;
+﻿using System.Reflection.Metadata;
+using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Tests;
@@ -49,5 +50,33 @@ public class ContextBuilder
     public GeneratorContext Build()
     {
         return GeneratorContext.FromApiSchema(api, project);
+    }
+
+    public ContextBuilder AddSchema(Type type)
+    {
+        var fields = new List<SchemaField>();
+        foreach (var f in type.GetProperties())
+        {
+            fields.Add(new SchemaField()
+            {
+                Name = f.Name,
+                DataType = f.PropertyType.ToString()
+            });
+        }
+        api.Schemas.Add(new SchemaItem()
+        {
+            Name = type.Name,
+            DescriptionMarkdown = "Description",
+            Fields = fields,
+        });
+        return this;
+    }
+
+    public ContextBuilder ChangeSchemaFieldType(Type type, string fieldName, string newType)
+    {
+        var schema = api.Schemas.LastOrDefault();
+        var field = schema.Fields.FirstOrDefault(f => f.Name == fieldName);
+        field.DataType = newType;
+        return this;
     }
 }
