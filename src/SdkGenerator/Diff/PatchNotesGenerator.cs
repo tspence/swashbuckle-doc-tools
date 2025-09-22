@@ -195,25 +195,35 @@ public class PatchNotesGenerator
         var differences = new List<string>();
         foreach (var diff in result.Differences)
         {
+            var p1 = diff.Object1 as ParameterField;
+            var p2 = diff.Object2 as ParameterField;
             if (diff.ChildPropertyName != "Count" && !diff.PropertyName.EndsWith("DescriptionMarkdown"))
             {
-                if (diff.Object2 is ParameterField p2 && diff.Object1 == null)
+                if (p2 != null && diff.Object1 == null)
                 {
                     if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p2.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
                     }
                 }
-                else if (diff.Object1 is ParameterField p1 && diff.Object2 == null)
+                else if (p1 != null && diff.Object2 == null)
                 {
                     if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p1.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
                     }
                 }
-                else
+                else 
                 {
-                    differences.Add($"{MakeApiName(item)} changed {diff.PropertyName} from {diff.Object1Value} to {diff.Object2Value}");
+                    // Read information from this diff format into something we can understand 
+                    var parameterName = diff.PropertyName.Substring(1, diff.PropertyName.IndexOf(']') - 1);
+                    var oldType = diff.Object2Value.Replace("System.", "");
+                    var newType = diff.Object1Value.Replace("System.", "");
+                    if (oldType != newType)
+                    {
+                        differences.Add(
+                            $"{MakeApiName(item)} changed the data type of the parameter `{parameterName}` from `{oldType}` to `{newType}`");
+                    }
                 }
             }
         }

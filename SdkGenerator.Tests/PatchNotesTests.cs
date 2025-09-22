@@ -54,4 +54,26 @@ public class PatchNotesTests
         Assert.AreEqual("test.RetrieveTest", change2.Key);
         Assert.AreEqual("test.RetrieveTest removed  parameter `Flag`", change2.Value.FirstOrDefault());
     }
+    
+    [TestMethod]
+    public void ChangeParameterType()
+    {
+        using var v1 = new ContextBuilder()
+            .AddRetrieveEndpoint("test", "RetrieveTest")
+            .AddParameter(typeof(Guid), "ID")
+            .Build();
+
+        using var v2 = new ContextBuilder()
+            .AddRetrieveEndpoint("test", "RetrieveTest")
+            .AddParameter(typeof(String), "ID")
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(1, diff.EndpointChanges.Count);
+        var change = diff.EndpointChanges.FirstOrDefault();
+        Assert.AreEqual("test.RetrieveTest", change.Key);
+        Assert.AreEqual("test.RetrieveTest changed the data type of the parameter `ID` from `Guid` to `String`", change.Value.FirstOrDefault());
+    }
 }
