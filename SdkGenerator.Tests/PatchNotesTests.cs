@@ -54,18 +54,30 @@ public class PatchNotesTests
         Assert.AreEqual("test.RetrieveTest", change2.Key);
         Assert.AreEqual("test.RetrieveTest removed  parameter `Flag`", change2.Value.FirstOrDefault());
     }
-    
+
+    public class ComplexTypeOne
+    {
+    }
+
+    public class ComplexTypeTwo
+    {
+    }
+
     [TestMethod]
     public void ChangeParameterType()
     {
         using var v1 = new ContextBuilder()
             .AddRetrieveEndpoint("test", "RetrieveTest")
             .AddParameter(typeof(Guid), "ID")
+            .AddParameter(typeof(ComplexTypeOne), "body") 
             .Build();
 
         using var v2 = new ContextBuilder()
             .AddRetrieveEndpoint("test", "RetrieveTest")
             .AddParameter(typeof(String), "ID")
+            // Note that body type parameters are harder to categorize
+            // and should be properly handled by changes in schemas
+            .AddParameter(typeof(ComplexTypeTwo), "body") 
             .Build();
         
         var diff = PatchNotesGenerator.Compare(v1, v2);

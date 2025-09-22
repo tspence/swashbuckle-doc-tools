@@ -219,7 +219,7 @@ public class PatchNotesGenerator
                     var parameterName = diff.PropertyName.Substring(1, diff.PropertyName.IndexOf(']') - 1);
                     var oldType = diff.Object2Value.Replace("System.", "");
                     var newType = diff.Object1Value.Replace("System.", "");
-                    if (oldType != newType)
+                    if (parameterName != "body" && oldType != newType)
                     {
                         differences.Add(
                             $"{MakeApiName(item)} changed the data type of the parameter `{parameterName}` from `{oldType}` to `{newType}`");
