@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using CommandLine;
 using Newtonsoft.Json;
@@ -72,6 +73,9 @@ public static class Program
     {
         [Option('f', "folder", Required = true, HelpText = "Path to the folder containing swagger files")]
         public string Folder { get; set; }
+        
+        [Option('p', "patch-notes", Required = true, HelpText = "The file name for the comprehensive patch notes file")]
+        public string PatchNotesFile { get; set; }
     }
 
     [Verb("get-patch-notes", HelpText = "Get patch notes in Markdown for the current build")]
@@ -186,14 +190,22 @@ public static class Program
             Console.WriteLine($"Only {versions.Count} swagger files in the folder.  Cannot generate patch notes.");
             return;
         }
+        Console.WriteLine($"Loaded {versions.Count} swagger files. Generating patch notes...");
         
         // Sort them based on their version numbers
         versions.Sort(new ContextSorter());
+        var sb = new StringBuilder();
         for (int i = 1; i < versions.Count; i++)
         {
             var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
-            Console.WriteLine(diffs.ToSummaryMarkdown());
+            
+            // Stack them vertically, most recent first
+            sb.Insert(0, diffs.ToSummaryMarkdown() + Environment.NewLine + Environment.NewLine);
         }
+        
+        // Save to a comprehensive patch file
+        await File.WriteAllTextAsync(arg.PatchNotesFile, sb.ToString());
+        Console.WriteLine($"Generated patch notes file {arg.PatchNotesFile}.");
     }
 
     private static async Task DiffTask(DiffOptions options)

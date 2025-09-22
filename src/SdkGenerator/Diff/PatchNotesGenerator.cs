@@ -83,22 +83,34 @@ public class PatchNotesGenerator
         var result = new List<string>();
         
         // Detect if there are any new or removed fields
-        var existingFieldNames = prevItem.Fields.Select(f => f.Name).ToHashSet();
-        var newFieldNames = item.Fields.Select(f => f.Name).ToHashSet();
+        var newFields = item.Fields.ToDictionary(f => f.Name);
+        var existingFields = prevItem.Fields.ToDictionary(f => f.Name);
+        //var existingFieldNames = prevItem.Fields.Select(f => f.Name).ToHashSet();
+        //var newFieldNames = item.Fields.Select(f => f.Name).ToHashSet();
         
         // Find newly added field names
-        foreach (var newFieldName in newFieldNames)
+        foreach (var newFieldName in newFields.Keys)
         {
-            if (!existingFieldNames.Contains(newFieldName))
+            if (!existingFields.ContainsKey(newFieldName))
             {
                 result.Add($"{item.Name}: Added new field `{newFieldName}`");
+            }
+            else
+            {
+                // Search for data type changes in schemas
+                var oldField = existingFields[newFieldName];
+                var newField = newFields[newFieldName];
+                if (oldField.DataType != newField.DataType)
+                {
+                    result.Add($"{item.Name}: Changed the data type of the field `{newFieldName}` from `{oldField.DataType.Replace("System.","")}` to `{newField.DataType.Replace("System.","")}`");
+                }
             }
         }
         
         // Find removed fields
-        foreach (var existingFieldName in existingFieldNames)
+        foreach (var existingFieldName in existingFields.Keys)
         {
-            if (!newFieldNames.Contains(existingFieldName))
+            if (!newFields.ContainsKey(existingFieldName))
             {
                 result.Add($"{item.Name}: Removed field `{existingFieldName}`");
             }
@@ -195,25 +207,35 @@ public class PatchNotesGenerator
         var differences = new List<string>();
         foreach (var diff in result.Differences)
         {
+            var p1 = diff.Object1 as ParameterField;
+            var p2 = diff.Object2 as ParameterField;
             if (diff.ChildPropertyName != "Count" && !diff.PropertyName.EndsWith("DescriptionMarkdown"))
             {
-                if (diff.Object2 is ParameterField p2 && diff.Object1 == null)
+                if (p2 != null && diff.Object1 == null)
                 {
                     if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p2.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} removed {p2.Location} parameter `{p2.Name}`");
                     }
                 }
-                else if (diff.Object1 is ParameterField p1 && diff.Object2 == null)
+                else if (p1 != null && diff.Object2 == null)
                 {
                     if (context.Project.IgnoredParameters == null || context.Project.IgnoredParameters.All(ip => !string.Equals(ip.Name, p1.Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         differences.Add($"{MakeApiName(item)} added {p1.Location} parameter `{p1.Name}`");
                     }
                 }
-                else
+                else 
                 {
-                    differences.Add($"{MakeApiName(item)} changed {diff.PropertyName} from {diff.Object1Value} to {diff.Object2Value}");
+                    // Read information from this diff format into something we can understand 
+                    var parameterName = diff.PropertyName.Substring(1, diff.PropertyName.IndexOf(']') - 1);
+                    var oldType = diff.Object2Value.Replace("System.", "");
+                    var newType = diff.Object1Value.Replace("System.", "");
+                    if (parameterName != "body" && oldType != newType)
+                    {
+                        differences.Add(
+                            $"{MakeApiName(item)} changed the data type of the parameter `{parameterName}` from `{oldType}` to `{newType}`");
+                    }
                 }
             }
         }

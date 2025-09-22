@@ -12,6 +12,8 @@ namespace SdkGenerator;
 
 public static class Extensions
 {
+    private const string UNKNOWN_NAME = "unknownName";
+    
     /// <summary>
     /// Make this Swagger parameter a safe variable name
     ///
@@ -26,6 +28,10 @@ public static class Extensions
     /// <returns></returns>
     public static string ToVariableName(this string swaggerParameterName, List<string> keywords = null)
     {
+        if (string.IsNullOrWhiteSpace(swaggerParameterName))
+        {
+            return UNKNOWN_NAME;
+        }
         var sb = new StringBuilder();
         foreach (var c in swaggerParameterName)
         {
@@ -53,7 +59,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "unknownName";
+            return UNKNOWN_NAME.ToCamelCase();
         }
         return $"{char.ToLower(s[0])}{s[1..].Replace(" ", "")}";
     }
@@ -67,7 +73,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "UnknownName";
+            return UNKNOWN_NAME.ToProperCase();
         }
         
         // Case 1: If this string has spaces in it, we need full word-to-proper capitalization
@@ -116,20 +122,31 @@ public static class Extensions
     public static string CamelCaseToSnakeCase(this string s)
     {
         var sb = new StringBuilder();
+        bool inUnderscores = false;
         foreach (var c in s)
         {
             if (char.IsUpper(c))
             {
-                if (sb.Length != 0)
+                if (sb.Length != 0 && !inUnderscores)
                 {
                     sb.Append('_');
+                    inUnderscores = true;
                 }
 
                 sb.Append(char.ToLower(c));
             }
-            else
+            else if (char.IsWhiteSpace(c))
+            {
+                if (sb.Length != 0 && !inUnderscores)
+                {
+                    sb.Append('_');
+                    inUnderscores = true;
+                }
+            } 
+            else 
             {
                 sb.Append(c);
+                inUnderscores = false;
             }
         }
 
@@ -146,7 +163,7 @@ public static class Extensions
     {
         if (string.IsNullOrWhiteSpace(s))
         {
-            return "";
+            return UNKNOWN_NAME.ProperCaseToSnakeCase();
         }
 
         var sb = new StringBuilder();

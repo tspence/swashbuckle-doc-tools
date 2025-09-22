@@ -53,6 +53,15 @@ public class GeneratorContext : IDisposable
     {
         ErrorStream?.Dispose();
     }
+    
+    public static GeneratorContext FromApiSchema(ApiSchema api, ProjectSchema project)
+    {
+        return new GeneratorContext()
+        {
+            Api = api,
+            Project = project,
+        };
+    }
 
     public static async Task<GeneratorContext> FromFile(string filename, string logPath)
     {
