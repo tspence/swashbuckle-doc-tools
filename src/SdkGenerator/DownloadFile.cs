@@ -119,6 +119,13 @@ public static class DownloadFile
                 servers.Add(server);
             }
 
+            // If the swagger file already has a servers list, replace it with our own
+            // This is done so that we could fetch a swagger file from a staging server and replace it with production
+            // server URLs, so you can prototype an SDK before your new API hits production.
+            if (jObject["servers"] != null)
+            {
+                jObject.Remove("servers");
+            }
             jObject.Add("servers", servers);
         }
 

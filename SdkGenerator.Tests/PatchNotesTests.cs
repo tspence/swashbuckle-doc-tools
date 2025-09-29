@@ -1,6 +1,4 @@
 ﻿using SdkGenerator.Diff;
-using SdkGenerator.Project;
-using SdkGenerator.Schema;
 
 namespace SdkGenerator.Tests;
 

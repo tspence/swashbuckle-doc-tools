@@ -1,9 +1,11 @@
 [![NuGet](https://img.shields.io/nuget/v/SdkGenerator.svg?style=plastic)](https://www.nuget.org/packages/SdkGenerator/)
 
-# Swashbuckle SDK Generator
+# SDK Generator
 
-This program allows you to generate a hand-optimized software development kit for different programming languages for 
-your REST API.  It can also generate documentation in Markdown or Readme formats.
+This is an opinionated SDK generation program. If you have a well-formed and consistent OpenAPI (also known as Swagger) 
+definition for your API, you can use this program allows to automatically generate SDK clients for supported languages.
+It can also generate documentation in Markdown or Readme formats, and it can generate patch notes to show the changes 
+in your API over time.
 
 Example usage of this program:
 * [ProjectManager](https://developer.projectmanager.com/getting-started/software-development-kits)
@@ -11,6 +13,19 @@ Example usage of this program:
 This opinionated software makes assumptions about your API and attempts to create a SDK that matches good practices in 
 each programming language.  The OpenAPI / Swagger spec permits lots of different ways of doing things; this tool is 
 intended to work only with commonly seen use cases.
+
+## Opinionated OpenAPI
+
+Examples of assumptions about OpenAPI made by this program:
+* Only supports OpenAPI 3.0
+* Your server supports GZIP encoding and HTTPS connection pooling
+* An endpoint returns only a single data type and a single error type
+* Each API has a single-word category, a four-word title, and a long remarks section that is a description
+* You have a list of public environments (e.g. production, sandbox) that are documented in the SDK
+* For test environments or dedicated servers, an SDK user must define a custom environment URL
+* [Enums are sometimes unsafe for SDK usage](https://medium.com/codex/should-your-api-use-enums-340a6b51d6c3); all enums are converted to integers or strings
+* Nobody intentionally adds HttpStatusCode to their swagger file; if it appears, ignore it
+* Each API has a unique `summary` value in the swagger file which will be used as method names for the SDK
 
 ## Using this program
 
@@ -102,19 +117,6 @@ jobs:
 |----------|-----------|------------------------------------------------------------|
 | Readme   | Yes       | Markdown-formatted documentation can upload to Guide pages |
 | Workato  | Partially | Somewhat supported                                         |
-
-## OpenAPI assumptions
-
-Examples of assumptions about OpenAPI made by this program:
-* Only supports OpenAPI 3.0
-* Your server supports GZIP encoding and HTTPS connection pooling
-* An endpoint returns only a single data type and a single error type
-* Each API has a single-word category, a four-word title, and a long remarks section that is a description
-* You have a list of public environments (e.g. production, sandbox) that are documented in the SDK
-* For test environments or dedicated servers, an SDK user must define a custom environment URL
-* [Enums are sometimes unsafe for SDK usage](https://medium.com/codex/should-your-api-use-enums-340a6b51d6c3); all enums are converted to integers or strings
-* Nobody intentionally adds HttpStatusCode to their swagger file; if it appears, ignore it
-* Each API has a unique `summary` value in the swagger file which will be used as method names for the SDK
 
 ## Attribution
 
