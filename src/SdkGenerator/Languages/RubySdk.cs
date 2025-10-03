@@ -280,4 +280,30 @@ public class RubySdk : ILanguageSdk
     {
         return "Ruby";
     }
+
+    public static string MakeRubyMultilineString(string markdown, int indent)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder();
+        var prefix = "".PadLeft(indent) + "\"";
+
+        // Add summary section
+        foreach (var line in markdown.Split("\n"))
+        {
+            // Leave the first line un-indented, but indent everything afterwards
+            if (sb.Length != 0)
+            {
+                sb.AppendLine("\"\\");
+                sb.Append(prefix);
+            }
+
+            sb.Append(line.Replace("\"", "\\\"").TrimEnd());
+        }
+
+        return sb.ToString();        
+    }
 }

@@ -43,83 +43,80 @@ public class WorkatoSdk : ILanguageSdk
 
             if (item.Fields != null)
             {
-                sb.Append(RubySdk.MakeRubyDoc(item.DescriptionMarkdown, 2, null));
-                sb.AppendLine($"  {item.Name.CamelCaseToSnakeCase()}: {{");
-                sb.AppendLine("    fields: lambda do|_connection, config_fields, object_definitions|");
-                sb.AppendLine("      [");
+                //sb.Append(RubySdk.MakeRubyDoc(item.DescriptionMarkdown, 4, null));
+                sb.AppendLine($"    {item.Name.CamelCaseToSnakeCase()}: {{");
+                sb.AppendLine("      fields: lambda do|_connection, config_fields, object_definitions|");
+                sb.AppendLine("        [");
                 foreach (var field in item.Fields.Where(field => !field.Deprecated))
                 {
-                    sb.AppendLine($"        {{name: \"{field.Name}\", label: \"{field.Name}\", control_type: \"{WorkatoControlType(field)}\", type: {MakeWorkatoType(field)} }},");
+                    sb.AppendLine($"          {{");
+                    sb.AppendLine($"            name: \"{field.Name}\",");
+                    sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
+                    if (!field.Nullable)
+                    {
+                        sb.AppendLine($"            optional: false,");
+                    }
+                    sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
+                    sb.AppendLine($"            type: {MakeWorkatoType(field)},");
+                    sb.AppendLine($"            label: \"{field.Name}\",");
+                    sb.AppendLine($"          }},");
                 }
 
-                sb.AppendLine("      ],");
-                sb.AppendLine("    end");
-                sb.AppendLine("  },");
+                sb.AppendLine("        ],");
+                sb.AppendLine("      end");
+                sb.AppendLine("    },");
                 sb.AppendLine();
             }
         }
+        
+        // Next in the definition file is a list of methods
         sb.AppendLine("  },");
-
-        int displayPriority = 1;
-
-        // Run through all APIs
+        sb.AppendLine("  methods: {");
+        // Run through all APIs and emit input definitions
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
         {
-            sb.AppendLine("  methods: {");
             sb.AppendLine();
-            sb.Append(RubySdk.MakeRubyDoc(endpoint.DescriptionMarkdown, 6, endpoint.Parameters));
-            sb.AppendLine($"      {endpoint.Name.WordsToSnakeCase()}: {{");
-            sb.AppendLine($"        title: \"{endpoint.Name}\",");
-            sb.AppendLine($"        subtitle: \"{endpoint.DescriptionMarkdown.Split(Environment.NewLine).FirstOrDefault()}\",");
-            sb.AppendLine($"        display_priority: \"{displayPriority++}\",");
-            sb.AppendLine($"        input_fields: lambda do |object_definitions|");
-            
-            // Add input parameters
-            foreach (var parameter in endpoint.Parameters)
-            {
-                sb.AppendLine($"          {{ name: \"{parameter.Name}\", label: \"{parameter.Name}\", control_type: \"{WorkatoControlType(parameter)}\", type: {MakeWorkatoType(parameter)} }},");
-            }
+            sb.AppendLine(
+                $"      {endpoint.Name.WordsToSnakeCase()}_execute: lambda do |_connection, input, extended_input_schema| ");
+            sb.AppendLine($"        url = \"{endpoint.Path}\"");
+            sb.AppendLine($"        request_payload = call('format_api_request', input, extended_input_schema)");
+            sb.AppendLine($"        url = call('format_url_endpoint', request_payload, url)");
+            sb.AppendLine($"        {endpoint.Method.ToLower()}(url).request_format_json");
+            sb.AppendLine($"          .params(request_payload['query'] || {{}})");
+            sb.AppendLine($"          .payload(request_payload['request_body'] || {{}})");
+            sb.AppendLine($"          .headers(request_payload['header'] || {{}})");
+            sb.AppendLine($"          .after_response do |_code, body, headers|");
+            sb.AppendLine($"            {{");
+            sb.AppendLine($"              payload: call('clear_name', body),");
+            sb.AppendLine($"              headers: call('clear_name', headers)");
+            sb.AppendLine($"            }}");
+            sb.AppendLine($"        end");
+            sb.AppendLine($"      end,");
+        }
 
-            // Ruby code to send the web request
-            sb.AppendLine($"        end,");
-            sb.AppendLine($"        execute: lambda do |connection, input|");
-            foreach (var parameter in endpoint.Parameters.Where(p => p.Location == "path"))
-            {
-                sb.AppendLine($"          {parameter.Name} = input[\"{parameter.Name}\"]");
-            }
-            
-            // If this is a GET, don't do parameters
-            var method = endpoint.Method.ToLower();
-            var url = endpoint.Path.Replace("{", "#{");
-            var queryString = MakeWorkatoQueryString(endpoint.Parameters);
-            if (!string.IsNullOrWhiteSpace(queryString))
-            {
-                sb.Append(queryString);
-                url = url + "?#{queryString}";
-            }
-            var bodyParam = endpoint.Parameters.FirstOrDefault(p => p.Location == "body");
-            if (bodyParam == null) {
-                sb.AppendLine($"          result = {method}(\"{url}\").after_response do |code, body, headers|");
-            }
-            else
-            {
-                sb.AppendLine($"          params = {{");
-                var schema = context.Api.FindSchema(bodyParam.DataType);
-                foreach (var field in schema.Fields)
-                {
-                    sb.AppendLine($"            {field.Name} => input[\"{field.Name}\"],");
-                }
-                sb.AppendLine($"          }}");
-                sb.AppendLine($"          result = {method}(\"{url}\", params).after_response do |code, body, headers|");
-            }
+        sb.AppendLine("  },");
+        sb.AppendLine("  actions: {");
 
-            sb.AppendLine($"            body");
-            sb.AppendLine($"          end");
-            sb.AppendLine($"        end,");
-            sb.AppendLine($"        output_fields: lambda do |object_definitions|");
-            sb.AppendLine($"          object_definitions['{endpoint.ReturnDataType.DataType.CamelCaseToSnakeCase()}']");
-            sb.AppendLine($"        end,");
-            sb.AppendLine($"      }},");
+        // Run through all APIs and emit input definitions
+        foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
+        {
+            sb.AppendLine();
+            //sb.Append(RubySdk.MakeRubyDoc(endpoint.DescriptionMarkdown, 6, endpoint.Parameters));
+            sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}: {{");
+            sb.AppendLine($"      title: \"{endpoint.Name}\",");
+            sb.AppendLine($"      hint: \"\"");
+            sb.AppendLine($"      subtitle: \"\"");
+            sb.AppendLine($"      help: \"{RubySdk.MakeRubyMultilineString(endpoint.DescriptionMarkdown, 8)}\",");
+            sb.AppendLine($"      input_fields: lambda do |object_definitions|");
+            sb.AppendLine($"        object_definitions['{endpoint.Name.WordsToSnakeCase()}_input']");
+            sb.AppendLine($"      end,");
+            sb.AppendLine($"      output_fields: lambda do |object_definitions|");
+            sb.AppendLine($"        object_definitions['{endpoint.Name.WordsToSnakeCase()}_output']");
+            sb.AppendLine($"      end,");
+            sb.AppendLine($"      execute: lambda do |object_definitions|");
+            sb.AppendLine($"        call(:{endpoint.Name.WordsToSnakeCase()}_execute, connection, input, extended_input_schema)");
+            sb.AppendLine($"      end,");
+            sb.AppendLine($"    }},");
         }
         sb.AppendLine("  }");
         sb.AppendLine("}");
