@@ -1,0 +1,36 @@
+﻿{
+  title: "{{ project.project_name }}",
+  connection: {
+    authorization: {
+      type: "api_key",
+      options: {
+        api_key: {
+          type: 'api_key',
+          fields: [
+            {
+              label: 'API Key',
+              name: "api_key",
+              control_type: "password"
+            }
+          ],
+
+          apply: lambda do |connection|
+            headers("Authorization": "Bearer #{connection['api_key']}")
+          end
+        }
+      },
+    },
+    base_uri: lambda do |connection|
+{{~ 
+for env in project.environments
+~}}
+        '{{ env.url }}'
+{{~
+    break
+end 
+~}}
+    end
+  },
+  test: lambda do
+    true
+  end,

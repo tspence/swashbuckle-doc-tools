@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -75,38 +76,56 @@ public static class ScribanFunctions
     {
         try
         {
-            // Retrieve template from embedded resource
-            var assembly = typeof(Program).GetTypeInfo().Assembly;
-            var resource = assembly.GetManifestResourceStream(templateName);
-            if (resource == null)
-            {
-                throw new Exception($"Could not find embedded resource {templateName}");
-            }
-            using var sr = new StreamReader(resource);
-            var templateText = await sr.ReadToEndAsync();
-            var template = Template.Parse(templateText);
-
+            var result = await ExecuteTemplateString(context, templateName, null);
+            
             // Write output to a new directory
             var dirName = Path.GetDirectoryName(outputFile);
             if (dirName != null)
             {
                 Directory.CreateDirectory(dirName);
             }
-
-            // Construct scriban and execute
-            var scriptObject1 = new ScriptObject();
-            scriptObject1.Import(typeof(Extensions));
-            var templateContext = new TemplateContext();
-            templateContext.PushGlobal(scriptObject1);
-            templateContext.SetValue(new ScriptVariableGlobal("api"), context.Api);
-            templateContext.SetValue(new ScriptVariableGlobal("project"), context.Project);
-            templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToSummaryMarkdown());
-            var result = await template.RenderAsync(templateContext);
             await File.WriteAllTextAsync(outputFile, result);
         }
         catch (Exception e)
         {
             context.LogError($"Failed to execute template {templateName}: {e.Message}");
         }
+    }
+
+    public static async Task<string> ExecuteTemplateString(GeneratorContext context, string templateName,
+        Dictionary<string, object> extraInfo)
+    {
+        // Retrieve template from embedded resource
+        var assembly = typeof(Program).GetTypeInfo().Assembly;
+        var resource = assembly.GetManifestResourceStream(templateName);
+        if (resource == null)
+        {
+            throw new Exception($"Could not find embedded resource {templateName}");
+        }
+
+        using var sr = new StreamReader(resource);
+        var templateText = await sr.ReadToEndAsync();
+        var template = Template.Parse(templateText);
+
+        // Construct scriban and execute
+        var scriptObject1 = new ScriptObject();
+        scriptObject1.Import(typeof(Extensions));
+        var templateContext = new TemplateContext();
+        templateContext.PushGlobal(scriptObject1);
+        templateContext.SetValue(new ScriptVariableGlobal("api"), context.Api);
+        templateContext.SetValue(new ScriptVariableGlobal("project"), context.Project);
+        templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToSummaryMarkdown());
+        
+        // Add in some extra things if requested
+        if (extraInfo != null)
+        {
+            foreach (var kvp in extraInfo)
+            {
+                templateContext.SetValue(new ScriptVariableGlobal(kvp.Key), kvp.Value);
+            }
+        }
+
+        var result = await template.RenderAsync(templateContext);
+        return result;
     }
 }

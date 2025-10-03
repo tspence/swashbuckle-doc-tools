@@ -4,11 +4,8 @@ namespace SdkGenerator.Project;
 
 public class ProjectSchema
 {
-    public string CompanyName { get; set; }
     public string AuthorName { get; set; }
     public string AuthorEmail { get; set; }
-    public string DocumentationUrl { get; set; }
-        
     public string ProjectName { get; set; }
     public string CopyrightHolder { get; set; }
     public int ProjectStartYear { get; set; }
@@ -37,8 +34,6 @@ public class ProjectSchema
     public bool? BlankOutSecuritySchemesSection { get; set; }
     public string Keywords { get; set; }
     public string Description { get; set; }
-    public string AuthenticationHelp { get; set; }
-    public string ReleaseNotes { get; set; }
 
     /// <summary>
     /// If you use a readme site, provide this information
@@ -61,7 +56,7 @@ public class ProjectSchema
     public LanguageSchema Python { get; set; }
     public LanguageSchema Ruby { get; set; }
     public LanguageSchema Typescript { get; set; }
-    public LanguageSchema Workato { get; set; }
+    public WorkatoSchema Workato { get; set; }
     public LanguageSchema Dart { get; set; }
 }
 
@@ -78,7 +73,6 @@ public class EnvironmentSchema
 {
     public string Name { get; set; }
     public string Url { get; set; }
-    public bool? Default { get; set; }
 }
 
 /// <summary>
@@ -123,12 +117,17 @@ public class ReadmeSiteSchema
 public class LanguageSchema
 {
     public string ModuleName { get; set; }
-    public string ExtraCredit { get; set; }
     public string Folder { get; set; }
     public string ClassName { get; set; }
     public string ResponseClass { get; set; }
-    public string ResponseErrorClass { get; set; }
     public string Namespace { get; set; }
     public string GithubUrl { get; set; }
     public List<string> HandwrittenClasses { get; set; }
+}
+
+public class WorkatoSchema
+{
+    public string Folder { get; set; }
+    public List<string> HandwrittenClasses { get; set; }
+    public string ResponseClass { get; set; }
 }
