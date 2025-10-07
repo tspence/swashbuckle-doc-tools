@@ -22,10 +22,10 @@ public static class Program
     [Verb("compare", HelpText = "Compare one swagger file to another")]
     private class CompareOptions
     {
-        [Option('o', "old", Required = true, HelpText = "Older swagger file")]
+        [Option('o', "old", Required = true, HelpText = "Path or URL to the current swagger file")]
         public string OldFile { get; set; }
         
-        [Option('n', "new", Required = true, HelpText = "Newer swagger file")]
+        [Option('n', "new", Required = true, HelpText = "Path or URL to the pre-release swagger file")]
         public string NewFile { get; set; }
     }
     
