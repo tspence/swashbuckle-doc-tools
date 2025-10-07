@@ -43,7 +43,6 @@ public class WorkatoSdk : ILanguageSdk
 
             if (item.Fields != null)
             {
-                //sb.Append(RubySdk.MakeRubyDoc(item.DescriptionMarkdown, 4, null));
                 sb.AppendLine($"    {item.Name.CamelCaseToSnakeCase()}: {{");
                 sb.AppendLine("      fields: lambda do|_connection, config_fields, object_definitions|");
                 sb.AppendLine("        [");
@@ -69,9 +68,46 @@ public class WorkatoSdk : ILanguageSdk
             }
         }
         
+        // Next produce input and output definitions for each API endpoint
+        foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}_input: {{");
+            sb.AppendLine($"      fields: lambda do|_connection, config_fields, object_definitions|");
+            sb.AppendLine($"        [");
+            foreach (var parameter in endpoint.Parameters.Where(p => !p.Deprecated))
+            {
+                sb.AppendLine($"          {{");
+                sb.AppendLine($"            name: \"{parameter.Name}_{parameter.Location.ToLower()}\",");
+                sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(parameter.DescriptionMarkdown, 16)}\",");
+                if (!parameter.Nullable)
+                {
+                    sb.AppendLine($"            optional: false,");
+                }
+                sb.AppendLine($"            control_type: \"{WorkatoControlType(parameter)}\",");
+                sb.AppendLine($"            type: {MakeWorkatoType(parameter)},");
+                sb.AppendLine($"            label: \"{parameter.Name}\",");
+                sb.AppendLine($"            location: \"{parameter.Location.ToLower()}\",");
+                sb.AppendLine($"          }},");
+            }
+            sb.AppendLine($"        ],");
+            sb.AppendLine($"      end");
+            sb.AppendLine($"    }},");
+            sb.AppendLine();
+            sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}_output: {{");
+            sb.AppendLine($"      fields: lambda do|_connection, config_fields, object_definitions|");
+            sb.AppendLine($"        [");
+            sb.AppendLine($"        ],");
+            sb.AppendLine($"      end");
+            sb.AppendLine($"    }},");
+            sb.AppendLine();
+        }
+
+        
         // Next in the definition file is a list of methods
         sb.AppendLine("  },");
         sb.AppendLine("  methods: {");
+        
         // Run through all APIs and emit input definitions
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
         {

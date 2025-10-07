@@ -5,9 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using JsonDiffPatchDotNet;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SdkGenerator.Diff;
@@ -29,35 +27,34 @@ public static class DownloadFile
     /// <returns></returns>
     private static async Task<string> DownloadSwagger(ProjectSchema project, string semver2)
     {
-        // Downloads json as a string to compare
-        var response = await HttpClient.GetAsync(project.SwaggerUrl);
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"Failed to retrieve Swagger file from {project.SwaggerUrl} - {response.StatusCode}");
-            return string.Empty;
-        }
-        var json = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            Console.WriteLine($"Failed to retrieve Swagger file from {project.SwaggerUrl} - content is empty");
-            return string.Empty;
-        }
-
+        var json = await DownloadUrlOrLogToConsole(project.SwaggerUrl);
+        
         // Cleanup the JSON text
         return FixupSwagger(project, json, semver2);
     }
 
     /// <summary>
-    /// Compare two swagger files and produce a difference
+    /// Retrieve a file and log information to console
     /// </summary>
-    /// <param name="oldSwagger"></param>
-    /// <param name="newSwagger"></param>
+    /// <param name="url"></param>
     /// <returns></returns>
-    public static string CompareSwagger(string oldSwagger, string newSwagger)
+    public static async Task<string> DownloadUrlOrLogToConsole(string url)
     {
-        var jdp = new JsonDiffPatch();
-        JToken diffResult = jdp.Diff(oldSwagger, newSwagger);
-        return diffResult.ToString();
+        // Downloads json as a string to compare
+        var response = await HttpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Failed to retrieve {url} - response code {response.StatusCode}");
+            return null;
+        }
+        var contents = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(contents))
+        {
+            Console.WriteLine($"Failed to retrieve {url} - content is empty");
+            return null;
+        }
+
+        return contents;
     }
 
     /// <summary>

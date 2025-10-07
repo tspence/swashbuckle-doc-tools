@@ -225,16 +225,47 @@ public static class Program
 
     private static async Task CompareTask(CompareOptions options)
     {
-        // Load the current state of the project
-        var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(null, options.OldFile, null);
-        var newContext = await GeneratorContext.FromSwaggerFileOnDisk(null, options.NewFile, null);
-        Console.WriteLine($"Comparing {oldContext.Version4} against old version {newContext.Version4}");
-        
-        // Load the previous version of the swagger file from disk, and compare it
-        var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
-        
-        // Print out human readable description
-        Console.WriteLine(diffs.ToSummaryMarkdown());
+        var oldFile = await GetOrFetchFile(options.OldFile);
+        var newFile = await GetOrFetchFile(options.NewFile);
+        try
+        {
+            // Load the current state of the project
+            var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(null, oldFile, null);
+            var newContext = await GeneratorContext.FromSwaggerFileOnDisk(null, newFile, null);
+            Console.WriteLine(
+                $"Comparing changes from old version {oldContext.OfficialVersion} to new version {newContext.OfficialVersion}");
+
+            // Load the previous version of the swagger file from disk, and compare it
+            var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
+
+            // Print out human readable description
+            Console.WriteLine(diffs.ToSummaryMarkdown());
+        }
+        finally
+        {
+            // If we had to download a temp file, clean it up
+            if (oldFile != options.OldFile)
+            {
+                File.Delete(oldFile);
+            }
+
+            if (newFile != options.NewFile)
+            {
+                File.Delete(newFile);
+            }
+        }
+    }
+
+    private static async Task<string> GetOrFetchFile(string rawPathOrUrl)
+    {
+        if (rawPathOrUrl.StartsWith("https://", StringComparison.CurrentCultureIgnoreCase))
+        {
+            var contents = await DownloadFile.DownloadUrlOrLogToConsole(rawPathOrUrl);
+            var tempfn = Path.GetTempFileName();
+            await File.WriteAllTextAsync(tempfn, contents);
+            return tempfn;
+        }
+        return rawPathOrUrl;
     }
 
     private static async Task CreateTask(CreateOptions options)
