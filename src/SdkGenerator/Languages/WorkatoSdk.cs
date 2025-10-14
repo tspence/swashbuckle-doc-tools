@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -36,54 +35,44 @@ public class WorkatoSdk : ILanguageSdk
         sb.AppendLine("  object_definitions: {");
         foreach (var item in context.Api.Schemas)
         {
-            // Testing: Do not skip handwritten classes since Workato needs explicit definitions for everything
-            // and there's no mechanism for handwriting classes outside of this single file
-            // // Is this one of the handwritten schemas?  If so, skip it
-            // var handwritten = (context.Project.Workato.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
-            // handwritten.Add(context.Project.Workato.ResponseClass);
-            // if (handwritten.Contains(item.Name))
-            // {
-            //     continue;
-            // }
-
-            if (item.Fields != null)
+            sb.AppendLine($"    {item.Name.CamelCaseToSnakeCase()}: {{");
+            sb.AppendLine("      fields: lambda do|_connection, config_fields, object_definitions|");
+            sb.AppendLine("        [");
+            foreach (var field in item.Fields.Where(field => !field.Deprecated))
             {
-                sb.AppendLine($"    {item.Name.CamelCaseToSnakeCase()}: {{");
-                sb.AppendLine("      fields: lambda do|_connection, config_fields, object_definitions|");
-                sb.AppendLine("        [");
-                foreach (var field in item.Fields.Where(field => !field.Deprecated))
+                sb.AppendLine($"          {{");
+                if (!field.Nullable)
                 {
-                    sb.AppendLine($"          {{");
-                    if (!field.Nullable)
-                    {
-                        sb.AppendLine($"            optional: false,");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"            nullable: true,");
-                    }
-                    sb.AppendLine($"            name: \"{field.Name}\",");
-                    sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
-                    sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
-                    sb.AppendLine($"            type: \"{MakeWorkatoTypeName(field)}\",");
-                    if (field.IsArray && field.DataType == "string")
-                    {
-                        sb.AppendLine($"            additionalProperties: {{");
-                        sb.AppendLine($"              of: \"string\",");
-                        sb.AppendLine($"              type: \"array\",");
-                        sb.AppendLine($"            }},");
-                    }
-                    sb.AppendLine($"            label: \"{field.Name}\",");
-                    sb.AppendLine($"          }},");
+                    sb.AppendLine($"            optional: false,");
+                }
+                else
+                {
+                    sb.AppendLine($"            nullable: true,");
                 }
 
-                sb.AppendLine("        ],");
-                sb.AppendLine("      end");
-                sb.AppendLine("    },");
-                sb.AppendLine();
+                sb.AppendLine($"            name: \"{field.Name}\",");
+                sb.AppendLine(
+                    $"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
+                sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
+                sb.AppendLine($"            type: \"{MakeWorkatoTypeName(field)}\",");
+                if (field.IsArray && field.DataType == "string")
+                {
+                    sb.AppendLine($"            additionalProperties: {{");
+                    sb.AppendLine($"              of: \"string\",");
+                    sb.AppendLine($"              type: \"array\",");
+                    sb.AppendLine($"            }},");
+                }
+
+                sb.AppendLine($"            label: \"{field.Name}\",");
+                sb.AppendLine($"          }},");
             }
+
+            sb.AppendLine("        ],");
+            sb.AppendLine("      end");
+            sb.AppendLine("    },");
+            sb.AppendLine();
         }
-        
+
         // Next produce input and output definitions for each API endpoint
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
         {
@@ -109,7 +98,16 @@ public class WorkatoSdk : ILanguageSdk
             var outputSchema = context.Api.FindSchema(endpoint.ReturnDataType.DataType);
             if (outputSchema != null)
             {
-                EmitComplexOutputParameter(context, sb, outputSchema);
+                EmitComplexOutputParameter(sb, outputSchema);
+            }
+            else
+            {
+                var items = context.ExtractGenerics(endpoint.ReturnDataType.DataType);
+                var genericLevelOneSchema = context.Api.FindSchema(items[0]);
+                if (genericLevelOneSchema != null)
+                {
+                    EmitComplexOutputParameter(sb, genericLevelOneSchema);
+                }
             }
 
             sb.AppendLine($"        ],");
@@ -181,11 +179,11 @@ public class WorkatoSdk : ILanguageSdk
         sb.AppendLine("}");
 
         // Write this category to a file
-        var unifiedFilePath = context.MakePath(context.Project.Workato.Folder, "connector.rb");
+        var unifiedFilePath = context.MakePath(context.Project.Workato?.Folder, "connector.rb");
         await File.WriteAllTextAsync(unifiedFilePath, sb.ToString());
     }
 
-    private void EmitComplexOutputParameter(GeneratorContext context, StringBuilder sb, SchemaItem schema)
+    private void EmitComplexOutputParameter(StringBuilder sb, SchemaItem schema)
     {
         sb.AppendLine("            properties:");
         bool isFirst = true;
