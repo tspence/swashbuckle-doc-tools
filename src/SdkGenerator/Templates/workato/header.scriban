@@ -1,5 +1,9 @@
 ﻿{
   title: "{{ project.project_name }}",
+  
+  #
+  # Connection: This is where we define authentication methods
+  #
   connection: {
     authorization: {
       type: "api_key",
@@ -31,6 +35,11 @@ end
 ~}}
     end
   },
+
+  #
+  # Test section: Defined by Workato
+  #
   test: lambda do
     true
   end,
+  

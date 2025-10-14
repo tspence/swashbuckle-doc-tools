@@ -30,16 +30,21 @@ public class WorkatoSdk : ILanguageSdk
         var header = await ScribanFunctions.ExecuteTemplateString(context, "SdkGenerator.Templates.workato.header.scriban", null);
         sb.AppendLine(header);
         
+        sb.AppendLine("  #");
+        sb.AppendLine("  # Object Definitions: Defined inputs and outputs for APIs");
+        sb.AppendLine("  #");
         sb.AppendLine("  object_definitions: {");
         foreach (var item in context.Api.Schemas)
         {
-            // Is this one of the handwritten schemas?  If so, skip it
-            var handwritten = (context.Project.Workato.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
-            handwritten.Add(context.Project.Workato.ResponseClass);
-            if (handwritten.Contains(item.Name))
-            {
-                continue;
-            }
+            // Testing: Do not skip handwritten classes since Workato needs explicit definitions for everything
+            // and there's no mechanism for handwriting classes outside of this single file
+            // // Is this one of the handwritten schemas?  If so, skip it
+            // var handwritten = (context.Project.Workato.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
+            // handwritten.Add(context.Project.Workato.ResponseClass);
+            // if (handwritten.Contains(item.Name))
+            // {
+            //     continue;
+            // }
 
             if (item.Fields != null)
             {
@@ -49,14 +54,25 @@ public class WorkatoSdk : ILanguageSdk
                 foreach (var field in item.Fields.Where(field => !field.Deprecated))
                 {
                     sb.AppendLine($"          {{");
-                    sb.AppendLine($"            name: \"{field.Name}\",");
-                    sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
                     if (!field.Nullable)
                     {
                         sb.AppendLine($"            optional: false,");
                     }
+                    else
+                    {
+                        sb.AppendLine($"            nullable: true,");
+                    }
+                    sb.AppendLine($"            name: \"{field.Name}\",");
+                    sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
                     sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
-                    sb.AppendLine($"            type: {MakeWorkatoType(field)},");
+                    sb.AppendLine($"            type: \"{MakeWorkatoTypeName(field)}\",");
+                    if (field.IsArray && field.DataType == "string")
+                    {
+                        sb.AppendLine($"            additionalProperties: {{");
+                        sb.AppendLine($"              of: \"string\",");
+                        sb.AppendLine($"              type: \"array\",");
+                        sb.AppendLine($"            }},");
+                    }
                     sb.AppendLine($"            label: \"{field.Name}\",");
                     sb.AppendLine($"          }},");
                 }
@@ -106,6 +122,10 @@ public class WorkatoSdk : ILanguageSdk
         
         // Next in the definition file is a list of methods
         sb.AppendLine("  },");
+        sb.AppendLine();
+        sb.AppendLine("  #");
+        sb.AppendLine("  # Methods: This is the ruby code that calls an API");
+        sb.AppendLine("  #");
         sb.AppendLine("  methods: {");
         
         // Run through all APIs and emit input definitions
@@ -131,6 +151,10 @@ public class WorkatoSdk : ILanguageSdk
         }
 
         sb.AppendLine("  },");
+        sb.AppendLine();
+        sb.AppendLine("  #");
+        sb.AppendLine("  # Actions: These are the definitions of APIs as they appear in Workato's UX");
+        sb.AppendLine("  #");
         sb.AppendLine("  actions: {");
 
         // Run through all APIs and emit input definitions
@@ -160,6 +184,26 @@ public class WorkatoSdk : ILanguageSdk
         // Write this category to a file
         var unifiedFilePath = context.MakePath(context.Project.Workato.Folder, "connector.rb");
         await File.WriteAllTextAsync(unifiedFilePath, sb.ToString());
+    }
+
+    private string MakeWorkatoTypeName(SchemaField field)
+    {
+        if (field.IsArray)
+        {
+            return "object";
+        }
+        switch (field.DataType)
+        {
+            case "string":
+                return "string";
+            case "int32":
+            case "integer":
+            case "double":
+            case "float":
+                return "number";
+            default:
+                return "object";
+        }    
     }
 
     private string WorkatoControlType(SchemaField field)
@@ -219,25 +263,6 @@ public class WorkatoSdk : ILanguageSdk
                 }
                 return $"\"{RubySdk.DataTypeHint(field.DataType)}\"";
         }
-    }
-
-    private string MakeWorkatoQueryString(List<ParameterField> endpointParameters)
-    {
-        var queryParams = endpointParameters.Where(p => p.Location == "query").ToList();
-        if (queryParams.Count == 0)
-        {
-            return string.Empty;
-        }
-        
-        // Assemble query parameter string using ruby
-        var sb = new StringBuilder();
-        sb.AppendLine("          queryString = {");
-        foreach (var qp in queryParams)
-        {
-            sb.AppendLine($"            {qp.Name}: input[\"{qp.Name}\"],");
-        }
-        sb.AppendLine("          }.to_query");
-        return sb.ToString();
     }
     
     public string LanguageName()
