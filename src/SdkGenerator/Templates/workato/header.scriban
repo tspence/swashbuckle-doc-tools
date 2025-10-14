@@ -20,6 +20,7 @@
 
           apply: lambda do |connection|
             headers("Authorization": "Bearer #{connection['api_key']}")
+            headers("x-integration-name": "Workato")
           end
         }
       },

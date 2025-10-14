@@ -91,20 +91,12 @@ public class WorkatoSdk : ILanguageSdk
             sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}_input: {{");
             sb.AppendLine($"      fields: lambda do|_connection, config_fields, object_definitions|");
             sb.AppendLine($"        [");
+            
+            // Note that we need to unroll every field individually.
+            // Our goal on the first pass is to capture data types
             foreach (var parameter in endpoint.Parameters.Where(p => !p.Deprecated))
             {
-                sb.AppendLine($"          {{");
-                sb.AppendLine($"            name: \"{parameter.Name}_{parameter.Location.ToLower()}\",");
-                sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(parameter.DescriptionMarkdown, 16)}\",");
-                if (!parameter.Nullable)
-                {
-                    sb.AppendLine($"            optional: false,");
-                }
-                sb.AppendLine($"            control_type: \"{WorkatoControlType(parameter)}\",");
-                sb.AppendLine($"            type: {MakeWorkatoType(parameter)},");
-                sb.AppendLine($"            label: \"{parameter.Name}\",");
-                sb.AppendLine($"            location: \"{parameter.Location.ToLower()}\",");
-                sb.AppendLine($"          }},");
+                EmitComplexParameter(context, sb, parameter);
             }
             sb.AppendLine($"        ],");
             sb.AppendLine($"      end");
@@ -186,6 +178,51 @@ public class WorkatoSdk : ILanguageSdk
         await File.WriteAllTextAsync(unifiedFilePath, sb.ToString());
     }
 
+    private void EmitComplexParameter(GeneratorContext context, StringBuilder sb, ParameterField parameter)
+    {
+        // For basic parameters, we can emit the value directly
+        // For objects, we need to unroll them
+        switch (parameter.DataType)
+        {
+            case "string":
+            case "int32":
+            case "integer":
+            case "double":
+            case "float":
+            case "date":
+            case "datetime":
+            case "boolean":
+                EmitOneParameter(sb, parameter, parameter.Location, parameter.Required);
+                return;
+            default:
+                var schema = context.Api.FindSchema(parameter.DataType);
+                if (schema != null)
+                {
+                    foreach (var field in schema.Fields)
+                    {
+                          EmitOneParameter(sb, field, parameter.Location, parameter.Required);
+                    }
+                }
+                return;
+        }    
+    }
+
+    private void EmitOneParameter(StringBuilder sb, SchemaField field, string location, bool required)
+    {
+        sb.AppendLine($"          {{");
+        sb.AppendLine($"            name: \"{field.Name}_{location.ToLower()}\",");
+        sb.AppendLine($"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 16)}\",");
+        if (required)
+        {
+            sb.AppendLine($"            optional: false,");
+        }
+        sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
+        sb.AppendLine($"            type: {MakeWorkatoType(field)},");
+        sb.AppendLine($"            label: \"{field.Name}\",");
+        sb.AppendLine($"            location: \"{location.ToLower()}\",");
+        sb.AppendLine($"          }},");
+    }
+
     private string MakeWorkatoTypeName(SchemaField field)
     {
         if (field.IsArray)
@@ -201,6 +238,12 @@ public class WorkatoSdk : ILanguageSdk
             case "double":
             case "float":
                 return "number";
+            case "date":
+                return "date";
+            case "datetime":
+                return "date_time";
+            case "boolean":
+                return "boolean";
             default:
                 return "object";
         }    
