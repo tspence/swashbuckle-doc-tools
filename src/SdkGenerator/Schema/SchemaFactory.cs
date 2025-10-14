@@ -8,7 +8,7 @@ namespace SdkGenerator.Schema;
 
 public static class SchemaFactory
 {
-    public static object MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
+    public static object? MakeSchema(GeneratorContext context, JsonProperty jsonSchema)
     {
         // Is this an OData schema?  If so, ignore it
         if (jsonSchema.Name.StartsWith("IEdm") || jsonSchema.Name.StartsWith("Edm"))
@@ -23,9 +23,9 @@ public static class SchemaFactory
             {
                 Name = jsonSchema.Name,
                 // Handle fields
-                Fields = new List<SchemaField>()
+                Fields = new List<SchemaField>(),
+                DescriptionMarkdown = SafeGetPropString(jsonSchema.Value, "description")
             };
-            item.DescriptionMarkdown = SafeGetPropString(context, jsonSchema.Value, "description");
 
             foreach (var prop in schemaPropertiesElement.EnumerateObject())
             {
@@ -35,10 +35,13 @@ public static class SchemaFactory
                 };
 
                 // Let's parse and cleanse the data type in more detail
-                var typeRef = GetTypeRef(context, prop);
-                field.DataType = typeRef.DataType;
-                field.DataTypeRef = typeRef.DataTypeRef;
-                field.IsArray = typeRef.IsArray;
+                var typeRef = GetTypeRef(prop);
+                if (typeRef != null)
+                {
+                    field.DataType = typeRef.DataType;
+                    field.DataTypeRef = typeRef.DataTypeRef;
+                    field.IsArray = typeRef.IsArray;
+                }
 
                 // Attributes about the field
                 field.Nullable = GetBooleanElement(prop.Value, "nullable");
@@ -46,7 +49,7 @@ public static class SchemaFactory
                 field.ReadOnly = GetBooleanElement(prop.Value, "readOnly");
                 field.MinLength = GetIntElement(prop.Value, "minLength");
                 field.MaxLength = GetIntElement(prop.Value, "maxLength");
-                field.DescriptionMarkdown = SafeGetPropString(context, prop.Value, "description");
+                field.DescriptionMarkdown = SafeGetPropString(prop.Value, "description");
                 item.Fields.Add(field);
             }
 
@@ -69,8 +72,8 @@ public static class SchemaFactory
             {
                 return null;
             }
-            item.DescriptionMarkdown = SafeGetPropString(context, jsonSchema.Value, "description");
-            item.EnumType = SafeGetPropString(context, jsonSchema.Value, "type");
+            item.DescriptionMarkdown = SafeGetPropString(jsonSchema.Value, "description");
+            item.EnumType = SafeGetPropString(jsonSchema.Value, "type");
             foreach (var value in enumPropertiesElement.EnumerateArray())
             {
                 var name = value.GetString();
@@ -116,7 +119,7 @@ public static class SchemaFactory
         return false;
     }
 
-    private static string SafeGetPropString(GeneratorContext context, JsonElement element, string name)
+    private static string SafeGetPropString(JsonElement element, string name)
     {
         if (element.TryGetProperty(name, out var prop))
         {
@@ -126,9 +129,9 @@ public static class SchemaFactory
         return "";
     }
 
-    private static string GetDescriptionMarkdown(GeneratorContext context, JsonElement element, string name)
+    private static string GetDescriptionMarkdown(JsonElement element, string name)
     {
-        var s = SafeGetPropString(context, element, name);
+        var s = SafeGetPropString(element, name);
         if (!string.IsNullOrEmpty(s))
         {
             s = s.Replace("<br>", Environment.NewLine);
@@ -137,7 +140,7 @@ public static class SchemaFactory
         return s;
     }
 
-    private static SchemaRef GetTypeRef(GeneratorContext context, JsonProperty prop)
+    private static SchemaRef? GetTypeRef(JsonProperty prop)
     {
         // Is this a core type?
         if (prop.Value.TryGetProperty("type", out var typeElement))
@@ -149,8 +152,12 @@ public static class SchemaFactory
                 {
                     if (innerType.NameEquals("items"))
                     {
-                        var innerSchemaRef = GetTypeRef(context, innerType);
-                        innerSchemaRef.IsArray = true;
+                        var innerSchemaRef = GetTypeRef(innerType);
+                        if (innerSchemaRef != null)
+                        {
+                            innerSchemaRef.IsArray = true;
+                        }
+
                         return innerSchemaRef;
                     }
                 }
@@ -166,7 +173,7 @@ public static class SchemaFactory
 
             return new SchemaRef
             {
-                DataType = rawType
+                DataType = rawType ?? string.Empty,
             };
         }
 
@@ -218,16 +225,15 @@ public static class SchemaFactory
         var path = prop.Name;
         foreach (var endpointProp in prop.Value.EnumerateObject())
         {
-            EndpointItem item = null;
             try
             {
-                item = new EndpointItem
+                var item = new EndpointItem
                 {
                     Parameters = new List<ParameterField>(),
-                    Path = path,
+                    Path = path ?? string.Empty,
                     Method = endpointProp.Name,
-                    Name = SafeGetPropString(context, endpointProp.Value, "summary"),
-                    DescriptionMarkdown = GetDescriptionMarkdown(context, endpointProp.Value, "description")
+                    Name = SafeGetPropString(endpointProp.Value, "summary"),
+                    DescriptionMarkdown = GetDescriptionMarkdown(endpointProp.Value, "description")
                 };
                 
                 // Skip any endpoints that don't have a name!
@@ -238,7 +244,7 @@ public static class SchemaFactory
                 }
 
                 // Is this an ignored endpoint?
-                if (context.IsIgnoredEndpoint(item.Name, path))
+                if (context.IsIgnoredEndpoint(item.Name, path ?? string.Empty))
                 {
                     context.LogError($"Ignoring endpoint '{item.Name}'.");
                     continue;
@@ -260,11 +266,13 @@ public static class SchemaFactory
                 {
                     foreach (var paramProp in parameterListProp.EnumerateArray())
                     {
-                        var p = new ParameterField();
-                        p.Name = SafeGetPropString(context, paramProp, "name");
-                        p.Location = SafeGetPropString(context, paramProp, "in");
-                        p.DescriptionMarkdown = GetDescriptionMarkdown(context, paramProp, "description");
-                        
+                        var p = new ParameterField
+                        {
+                            Name = SafeGetPropString(paramProp, "name"),
+                            Location = SafeGetPropString(paramProp, "in"),
+                            DescriptionMarkdown = GetDescriptionMarkdown(paramProp, "description")
+                        };
+
                         // Check if this is ignored - some parameters shouldn't be in the SDK
                         if (context.Project.IgnoredParameters != null &&
                             context.Project.IgnoredParameters.Any(ip => 
@@ -283,10 +291,13 @@ public static class SchemaFactory
                         {
                             if (paramSchemaProp.NameEquals("schema"))
                             {
-                                var schemaRef = GetTypeRef(context, paramSchemaProp);
-                                p.DataType = schemaRef.DataType;
-                                p.DataTypeRef = schemaRef.DataTypeRef;
-                                p.IsArray = schemaRef.IsArray;
+                                var schemaRef = GetTypeRef(paramSchemaProp);
+                                if (schemaRef != null)
+                                {
+                                    p.DataType = schemaRef.DataType;
+                                    p.DataTypeRef = schemaRef.DataTypeRef;
+                                    p.IsArray = schemaRef.IsArray;
+                                }
                             }
                         }
                         item.Parameters.Add(p);
@@ -306,7 +317,7 @@ public static class SchemaFactory
                             {
                                 Name = "body",
                                 Location = "body",
-                                DescriptionMarkdown = GetDescriptionMarkdown(context, requestBodyProp, "description"),
+                                DescriptionMarkdown = GetDescriptionMarkdown(requestBodyProp, "description"),
                                 Required = true,
                             };
                             item.Parameters.Add(p);
@@ -314,10 +325,13 @@ public static class SchemaFactory
                             {
                                 if (innerSchemaProp.NameEquals("schema"))
                                 {
-                                    var typeRef = GetTypeRef(context, innerSchemaProp);
-                                    p.DataType = typeRef.DataType;
-                                    p.DataTypeRef = typeRef.DataTypeRef;
-                                    p.IsArray = typeRef.IsArray;
+                                    var typeRef = GetTypeRef(innerSchemaProp);
+                                    if (typeRef != null)
+                                    {
+                                        p.DataType = typeRef.DataType;
+                                        p.DataTypeRef = typeRef.DataTypeRef;
+                                        p.IsArray = typeRef.IsArray;
+                                    }
                                 }
                             }
                         }
@@ -358,7 +372,11 @@ public static class SchemaFactory
                                 contentProp.TryGetProperty("application/json", out var appJsonProp);
                                 foreach (var responseSchemaProp in appJsonProp.EnumerateObject())
                                 {
-                                    item.ReturnDataType = GetTypeRef(context, responseSchemaProp);
+                                    var typeRef = GetTypeRef(responseSchemaProp);
+                                    if (typeRef != null)
+                                    {
+                                        item.ReturnDataType = typeRef;
+                                    }
                                     break;
                                 }
                             }
@@ -366,7 +384,7 @@ public static class SchemaFactory
                         // If this response fails, it's probably intended to be an octet stream
                         catch (Exception ex)
                         {
-                            context.LogError($"Failed to process endpoint return data type - is it intended to be an octet-stream? {item?.Path ?? "Unknown Path"}: {ex.Message}");
+                            context.LogError($"Failed to process endpoint return data type - is it intended to be an octet-stream? {item.Path ?? "Unknown Path"}: {ex.Message}");
                         }
                     }
                 }
@@ -374,7 +392,7 @@ public static class SchemaFactory
             }
             catch (Exception ex)
             {
-                context.LogError($"Failed to process endpoint {item?.Path ?? "Unknown Path"}: {ex.Message}");
+                context.LogError($"Failed to process endpoint {path ?? "Unknown Path"}: {ex.Message}");
             }
         }
 

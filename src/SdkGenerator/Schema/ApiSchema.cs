@@ -6,17 +6,17 @@ namespace SdkGenerator.Schema;
 
 public class SchemaRef
 {
-    public string DataType { get; set; }
-    public string DataTypeRef { get; set; }
+    public string DataType { get; set; } = string.Empty;
+    public string DataTypeRef { get; set; } = string.Empty;
     public bool IsArray { get; set; }
 }
 
 public class SchemaField
 {
-    public string Name { get; set; }
-    public string DataType { get; set; }
-    public string DataTypeRef { get; set; }
-    public string DescriptionMarkdown { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DataType { get; set; } = string.Empty;
+    public string DataTypeRef { get; set; } = string.Empty;
+    public string DescriptionMarkdown { get; set; } = string.Empty;
     public bool IsArray { get; set; }
     public bool Nullable { get; set; }
     public bool ReadOnly { get; set; }
@@ -27,53 +27,53 @@ public class SchemaField
 
 public class SchemaItem
 {
-    public string Name { get; set; }
-    public string DescriptionMarkdown { get; set; }
-    public List<SchemaField> Fields { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DescriptionMarkdown { get; set; } = string.Empty;
+    public List<SchemaField> Fields { get; set; } = new();
 }
 
 public class EnumItem
 {
-    public string Name { get; set; }
-    public string DescriptionMarkdown { get; set; }
-    public string EnumType { get; set; }
-    public Dictionary<string, object> Values { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DescriptionMarkdown { get; set; } = string.Empty;
+    public string EnumType { get; set; } = string.Empty;
+    public Dictionary<string, object> Values { get; set; } = new();
 }
 
 public class ParameterField : SchemaField
 {
-    public string Location { get; set; }
+    public string Location { get; set; } = string.Empty;
     public bool Required { get; set; }
 }
 
 public class EndpointItem
 {
-    public string Name { get; set; }
-    public string DescriptionMarkdown { get; set; }
-    public string Category { get; set; }
-    public string Path { get; set; }
-    public string Method { get; set; }
-    public List<ParameterField> Parameters { get; set; }
-    public SchemaRef ReturnDataType { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DescriptionMarkdown { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+    public string Method { get; set; } = string.Empty;
+    public List<ParameterField> Parameters { get; set; } = new();
+    public SchemaRef ReturnDataType { get; set; } = null!;
     public bool Deprecated { get; set; }
 }
 
 public class ApiSchema
 {
-    public string Semver2 { get; set; }
-    public string Semver3 { get; set; }
-    public string Semver4 { get; set; }
-    public List<EndpointItem> Endpoints { get; set; }
-    public List<string> Categories { get; set; }
-    public List<SchemaItem> Schemas { get; set; }
-    public List<EnumItem> Enums { get; set; }
+    public string Semver2 { get; set; } = string.Empty;
+    public string Semver3 { get; set; } = string.Empty;
+    public string Semver4 { get; set; } = string.Empty;
+    public List<EndpointItem> Endpoints { get; set; } = new();
+    public List<string> Categories { get; set; } = new();
+    public List<SchemaItem> Schemas { get; set; } = new();
+    public List<EnumItem> Enums { get; set; } = new();
 
-    public SchemaItem FindSchema(string typeName)
+    public SchemaItem? FindSchema(string typeName)
     {
         return Schemas.FirstOrDefault(s => string.Equals(s.Name, typeName, StringComparison.OrdinalIgnoreCase));
     }
 
-    public EnumItem FindEnum(string typeName)
+    public EnumItem? FindEnum(string typeName)
     {
         return Enums.FirstOrDefault(e => string.Equals(e.Name, typeName, StringComparison.OrdinalIgnoreCase));
     }

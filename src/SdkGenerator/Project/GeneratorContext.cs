@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,19 +14,19 @@ public class GeneratorContext : IDisposable
     /// <summary>
     /// The folder where the project file lives - all paths should be relative to this
     /// </summary>
-    public string ProjectFolder { get; set; }
+    public string ProjectFolder { get; set; } = string.Empty;
 
-    public ProjectSchema Project { get; set; }
-    public ApiSchema Api { get; set; }
-    private StreamWriter ErrorStream { get; set; }
-    public string Version2 { get; set; }
-    public string Version3 { get; set; }
-    public string Version4 { get; set; }
-    public string OfficialVersion { get; set; }
-    public string SwaggerJson { get; set; }
-    public string SwaggerJsonPath { get; set; }
-    public string LogPath { get; set; }
-    public SwaggerDiff PatchNotes { get; set; }
+    public ProjectSchema Project { get; set; } = new();
+    public ApiSchema Api { get; set; } = new();
+    private StreamWriter? ErrorStream { get; set; }
+    public string Version2 { get; set; } = string.Empty;
+    public string Version3 { get; set; } = string.Empty;
+    public string Version4 { get; set; } = string.Empty;
+    public string OfficialVersion { get; set; } = string.Empty;
+    public string SwaggerJson { get; set; } = string.Empty;
+    public string SwaggerJsonPath { get; set; } = string.Empty;
+    public string? LogPath { get; set; }
+    public SwaggerDiff PatchNotes { get; set; } = null!;
 
     private GeneratorContext()
     {
@@ -63,7 +64,7 @@ public class GeneratorContext : IDisposable
         };
     }
 
-    public static async Task<GeneratorContext> FromFile(string filename, string logPath)
+    public static async Task<GeneratorContext?> FromFile(string filename, string? logPath)
     {
         // Retrieve project
         if (!File.Exists(filename))
@@ -85,9 +86,9 @@ public class GeneratorContext : IDisposable
         var context = new GeneratorContext()
         {
             Project = project,
-            ProjectFolder = Path.GetDirectoryName(filename),
-            Api = null,
-            LogPath = logPath,
+            ProjectFolder = Path.GetDirectoryName(filename) ?? ".",
+            Api = new ApiSchema(),
+            LogPath = logPath ?? string.Empty,
         };
         if (project.SwaggerSchemaFolder != null)
         {
@@ -97,7 +98,7 @@ public class GeneratorContext : IDisposable
         return context;
     }
 
-    public static async Task<GeneratorContext> FromSwaggerFileOnDisk(GeneratorContext context, string swaggerFilename, string logPath)
+    public static async Task<GeneratorContext?> FromSwaggerFileOnDisk(GeneratorContext? context, string swaggerFilename, string? logPath)
     {
         // Retrieve project
         if (!File.Exists(swaggerFilename))
@@ -113,7 +114,7 @@ public class GeneratorContext : IDisposable
             context = new GeneratorContext()
             {
                 Project = new ProjectSchema(),
-                Api = null,
+                Api = new ApiSchema(),
                 LogPath = logPath,
                 SwaggerJson = swaggerJson,
                 OfficialVersion = DownloadFile.GetVersion(swaggerJson)
@@ -147,7 +148,7 @@ public class GeneratorContext : IDisposable
         }
         foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
-            if (genericName != null && genericName.Length > 0 && typeName.EndsWith(genericName))
+            if (genericName.Length > 0 && typeName.EndsWith(genericName))
             {
                 typeName = RemoveGenericSchema(typeName[..^genericName.Length]);
             }
@@ -156,22 +157,48 @@ public class GeneratorContext : IDisposable
         return typeName;
     }
 
-    public string ApplyGenerics(string typeName, string prefix, string suffix)
+    public string[] ExtractGenerics(string typeName)
     {
-        foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
+        if (string.IsNullOrWhiteSpace(typeName))
         {
-            if (typeName.EndsWith(genericName))
-            {
-                typeName = $"{genericName}<{ApplyGenerics(typeName[..^genericName.Length], prefix, suffix)}>";
-            }
+            return []; 
         }
 
-        return typeName;
-    }
+        var list = new List<string>();
+        while (typeName.Length > 0)
+        {
+            bool anyFound = false;
+            foreach (var genericName in Project.GenericSuffixes ?? Enumerable.Empty<string>())
+            {
+                if (genericName.Length > 0 && typeName.EndsWith(genericName))
+                {
+                    list.Add(genericName);
+                    typeName = typeName[..^genericName.Length];
+                    anyFound = true;
+                    break;
+                }
+            }
 
-    public string MakePath(params string[] elements)
+            if (!anyFound)
+            {
+                list.Add(typeName);
+                break;
+            }            
+        }
+
+        return list.ToArray();
+    }
+    
+    public string MakePath(params string?[] elements)
     {
-        var filteredElements = elements.Where(s => s != null).ToList();
+        var filteredElements = new List<string>();
+        foreach (var s in elements)
+        {
+            if (!string.IsNullOrWhiteSpace(s))
+            {
+                filteredElements.Add(s);
+            }
+        }
         filteredElements.Insert(0, ProjectFolder);
         return Path.Combine(filteredElements.ToArray());
     }

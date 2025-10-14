@@ -23,7 +23,7 @@ public class JavaSdk : ILanguageSdk
                + " *\n"
                + $" * @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $" * @copyright  {project.CopyrightHolder}\n"
-               + $" * @link       {project.Java.GithubUrl}\n"
+               + $" * @link       {project.Java?.GithubUrl}\n"
                + " */\n\n";
     }
 
@@ -108,6 +108,10 @@ public class JavaSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
+        if (context.Project.Java == null || context.Project.Java.Namespace == null)
+        {
+            return;
+        }
         var modelsDir = context.MakePath(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "models");
         Directory.CreateDirectory(modelsDir);
@@ -118,7 +122,7 @@ public class JavaSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null && !context.Project.Java.HandwrittenClasses.Contains(item.Name))
+            if (context.Project.Java.HandwrittenClasses == null || !context.Project.Java.HandwrittenClasses.Contains(item.Name))
             {
                 var sb = new StringBuilder();
                 sb.AppendLine(FileHeader(context.Project));
@@ -185,6 +189,10 @@ public class JavaSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
+        if (context.Project.Java == null || context.Project.Java.Namespace == null)
+        {
+            return;
+        }
         var clientsDir = context.MakePath(context.Project.Java.Folder, "src", "main", "java",
             context.Project.Java.Namespace.Replace('.', Path.DirectorySeparatorChar), "clients");
         Directory.CreateDirectory(clientsDir);
@@ -248,7 +256,7 @@ public class JavaSdk : ILanguageSdk
 
                     // What is our return type?
                     string rawReturnType = endpoint.ReturnDataType.DataType;
-                    if (rawReturnType.EndsWith(context.Project.Java.ResponseClass, StringComparison.OrdinalIgnoreCase))
+                    if (context.Project.Java.ResponseClass != null && rawReturnType.EndsWith(context.Project.Java.ResponseClass, StringComparison.OrdinalIgnoreCase))
                     {
                         rawReturnType = rawReturnType.Substring(0,
                             rawReturnType.Length - context.Project.Java.ResponseClass.Length);
@@ -318,7 +326,10 @@ public class JavaSdk : ILanguageSdk
         // If we're using binaries, make sure to import the generic class
         if (name.Equals("byte[]") || name.Equals("binary") || name.Equals("byte"))
         {
-            AddImport(context, context.Project.Java.ResponseClass, list);
+            if (context.Project.Java?.ResponseClass != null)
+            {
+                AddImport(context, context.Project.Java.ResponseClass, list);
+            }
         }
         
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
@@ -372,13 +383,13 @@ public class JavaSdk : ILanguageSdk
         return (from t in types select GetImportForType(context, t)).Distinct().ToList();
     }
 
-    private string GetImportForType(GeneratorContext context, string type)
+    private string? GetImportForType(GeneratorContext context, string type)
     {
         foreach (var genericName in context.Project.GenericSuffixes ?? Enumerable.Empty<string>())
         {
             if (type == genericName)
             {
-                return $"import {context.Project.Java.Namespace}.{type};";
+                return $"import {context.Project.Java?.Namespace}.{type};";
             }
         }
         
@@ -403,13 +414,13 @@ public class JavaSdk : ILanguageSdk
             case "byte":
                 return null;
             default:
-                return $"import {context.Project.Java.Namespace}.models.{type};";
+                return $"import {context.Project.Java?.Namespace}.models.{type};";
         }
     }
 
     public async Task Export(GeneratorContext context)
     {
-        if (context.Project.Java == null)
+        if (context.Project.Java == null || context.Project.Java.Namespace == null)
         {
             return;
         }

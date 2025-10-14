@@ -11,12 +11,12 @@ public class SwaggerDiff
     /// <summary>
     /// The version number of the older swagger file
     /// </summary>
-    public string OldVersion { get; set; }
+    public string OldVersion { get; set; } = string.Empty;
     
     /// <summary>
     /// The version number of the newer swagger file
     /// </summary>
-    public string NewVersion { get; set; }
+    public string NewVersion { get; set; } = string.Empty;
 
     /// <summary>
     /// New endpoints added

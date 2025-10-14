@@ -8,7 +8,6 @@ using Scriban;
 using Scriban.Runtime;
 using Scriban.Syntax;
 using SdkGenerator.Project;
-using SdkGenerator.Schema;
 
 namespace SdkGenerator;
 
@@ -28,11 +27,15 @@ public static class ScribanFunctions
         }
     }
 
-    public static async Task PatchXml(GeneratorContext context, string filename, int indent, string tag, string content)
+    public static async Task PatchXml(GeneratorContext context, string filename, int indent, string tag, string? content)
     {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return;
+        }
         if (content.Contains('\n'))
         {
-            var indentStr = String.Format("{0," + indent +"}", "");
+            var indentStr = string.Format("{0," + indent + "}", "");
             await PatchFile(context, filename, $"<{tag}>([\\s\\S]*)</{tag}>",
                 $"<{tag}>\n{content}\n{indentStr}</{tag}>");
         }
@@ -93,7 +96,7 @@ public static class ScribanFunctions
     }
 
     public static async Task<string> ExecuteTemplateString(GeneratorContext context, string templateName,
-        Dictionary<string, object> extraInfo)
+        Dictionary<string, object>? extraInfo)
     {
         // Retrieve template from embedded resource
         var assembly = typeof(Program).GetTypeInfo().Assembly;

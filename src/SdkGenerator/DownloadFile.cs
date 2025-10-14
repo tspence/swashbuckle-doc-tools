@@ -27,7 +27,17 @@ public static class DownloadFile
     /// <returns></returns>
     private static async Task<string> DownloadSwagger(ProjectSchema project, string semver2)
     {
+        if (string.IsNullOrWhiteSpace(project.SwaggerUrl))
+        {
+            Console.WriteLine("Please specify a swagger url");
+            return string.Empty;
+        }
         var json = await DownloadUrlOrLogToConsole(project.SwaggerUrl);
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            Console.WriteLine($"Failed to download swagger file at URL: {project.SwaggerUrl}");
+            return string.Empty;
+        }
         
         // Cleanup the JSON text
         return FixupSwagger(project, json, semver2);
@@ -38,7 +48,7 @@ public static class DownloadFile
     /// </summary>
     /// <param name="url"></param>
     /// <returns></returns>
-    public static async Task<string> DownloadUrlOrLogToConsole(string url)
+    public static async Task<string?> DownloadUrlOrLogToConsole(string url)
     {
         // Downloads json as a string to compare
         var response = await HttpClient.GetAsync(url);
@@ -102,8 +112,11 @@ public static class DownloadFile
         var jObject = JObject.Parse(swagger);
 
         // Give us a better version number
-        jObject["info"]["title"] = project.ProjectName;
-        jObject["info"]["version"] = semver2;
+        if (jObject.TryGetValue("info", out var info))
+        {
+            info["title"] = project.ProjectName;
+            info["version"] = semver2;
+        }
 
         // Erase the list of server URLs and replace with ones from the project file
         if (project.Environments?.Length > 0)
@@ -135,7 +148,12 @@ public static class DownloadFile
         // Add links to the document data definitions
         if (project.Readme != null)
         {
-            foreach (var endpoint in jObject["paths"])
+            var paths = jObject["paths"];
+            if (paths == null)
+            {
+                return string.Empty;
+            }
+            foreach (var endpoint in paths)
             {
                 foreach (var path in endpoint.Children())
                 {
@@ -225,10 +243,7 @@ public static class DownloadFile
         foreach (var endpoint in paths.EnumerateObject())
         {
             var item = SchemaFactory.MakeEndpoint(context, endpoint);
-            if (item != null)
-            {
-                endpointList.AddRange(item);
-            }
+            endpointList.AddRange(item);
         }
 
         // Convert into an API schema
@@ -244,7 +259,7 @@ public static class DownloadFile
         };
     }
 
-    public static async Task<ApiSchema> GenerateApi(GeneratorContext context)
+    public static async Task<ApiSchema?> GenerateApi(GeneratorContext context)
     {
         context.Version4 = await FindVersionNumber(context);
         var segments = context.Version4.Split(".");
@@ -252,6 +267,10 @@ public static class DownloadFile
         context.Version3 = $"{segments[0]}.{segments[1]}.{segments[2]}";
         context.OfficialVersion = context.Project.SemverMode == 3 ? context.Version3 : context.Version2;
         context.SwaggerJson = await DownloadSwagger(context.Project, context.OfficialVersion);
+        if (string.IsNullOrWhiteSpace(context.SwaggerJson))
+        {
+            return null;
+        }
 
         // Save to the swagger folder
         if (Directory.Exists(context.Project.SwaggerSchemaFolder))
@@ -267,8 +286,8 @@ public static class DownloadFile
     public static async Task<SwaggerDiff> GeneratePatchNotes(GeneratorContext context)
     {
         // List all files in the swagger folder
-        string mostRecentFile = null;
-        SemVersion mostRecentVersion = null;
+        string? mostRecentFile = null;
+        SemVersion? mostRecentVersion = null;
         foreach (var file in Directory.GetFiles(context.MakePath(context.Project.SwaggerSchemaFolder)))
         {
             // Determine semantic version of the file
@@ -290,13 +309,17 @@ public static class DownloadFile
         }
         
         // If no files found, can't determine differences
-        if (mostRecentFile == null)
+        if (mostRecentFile == null || mostRecentVersion == null)
         {
             return new SwaggerDiff();
         }
         
         // Compare these two files
         var oldContext = await GeneratorContext.FromSwaggerFileOnDisk(null, mostRecentFile, context.LogPath);
+        if (oldContext == null)
+        {
+            return new SwaggerDiff();
+        }
         oldContext.OfficialVersion = mostRecentVersion.ToString();
         oldContext.Project = context.Project;
         return PatchNotesGenerator.Compare(oldContext, context);

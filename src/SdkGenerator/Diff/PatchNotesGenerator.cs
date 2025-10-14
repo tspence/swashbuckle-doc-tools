@@ -141,7 +141,7 @@ public class PatchNotesGenerator
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
         {
-            EndpointItem prevItem = null;
+            EndpointItem? prevItem = null;
             var name = MakeApiName(item);
             
             // First check if the API was simply renamed
