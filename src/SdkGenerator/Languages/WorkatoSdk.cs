@@ -93,10 +93,9 @@ public class WorkatoSdk : ILanguageSdk
             sb.AppendLine($"        [");
             
             // Note that we need to unroll every field individually.
-            // Our goal on the first pass is to capture data types
             foreach (var parameter in endpoint.Parameters.Where(p => !p.Deprecated))
             {
-                EmitComplexParameter(context, sb, parameter);
+                EmitComplexInputParameter(context, sb, parameter);
             }
             sb.AppendLine($"        ],");
             sb.AppendLine($"      end");
@@ -105,6 +104,14 @@ public class WorkatoSdk : ILanguageSdk
             sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}_output: {{");
             sb.AppendLine($"      fields: lambda do|_connection, config_fields, object_definitions|");
             sb.AppendLine($"        [");
+            // Note that we need to unroll every field individually.
+            // Since these fields are generic we need to expand the types
+            var outputSchema = context.Api.FindSchema(endpoint.ReturnDataType.DataType);
+            if (outputSchema != null)
+            {
+                EmitComplexOutputParameter(context, sb, outputSchema);
+            }
+
             sb.AppendLine($"        ],");
             sb.AppendLine($"      end");
             sb.AppendLine($"    }},");
@@ -178,11 +185,53 @@ public class WorkatoSdk : ILanguageSdk
         await File.WriteAllTextAsync(unifiedFilePath, sb.ToString());
     }
 
-    private void EmitComplexParameter(GeneratorContext context, StringBuilder sb, ParameterField parameter)
+    private void EmitComplexOutputParameter(GeneratorContext context, StringBuilder sb, SchemaItem schema)
     {
-        // For basic parameters, we can emit the value directly
-        // For objects, we need to unroll them
-        switch (parameter.DataType)
+        sb.AppendLine("            properties:");
+        bool isFirst = true;
+
+        // First pass: Find all complex data types
+        foreach (var field in schema.Fields.Where(f => !f.Deprecated && !IsBasicDataType(f.DataType)))
+        {
+            string line = $"object_Definitions['{field.DataType}'].map {{ |x| x.merge(name: '{field.Name}') }}";
+            if (!isFirst)
+            {
+                line = $".concat({line})";
+            }
+            sb.AppendLine($"              {line}");
+            isFirst = false;
+        }
+        
+        // Second pass: Simple data types
+        var simpleDataTypes = schema.Fields.Where(f => !f.Deprecated && IsBasicDataType(f.DataType)).ToList();
+        if (simpleDataTypes.Any())
+        {
+            if (!isFirst)
+            {
+                sb.AppendLine("              .concat(");
+            }
+            sb.AppendLine("                [");
+            foreach (var field in simpleDataTypes)
+            {
+                sb.AppendLine($"                  {{");
+                sb.AppendLine($"                    \"readOnly\" => true,");
+                sb.AppendLine($"                    \"name\" => \"{field.Name}\",");
+                sb.AppendLine($"                    \"hint\" => \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 20)}\",");
+                sb.AppendLine($"                    \"control_type\" => \"{WorkatoControlType(field)}\",");
+                sb.AppendLine($"                    \"type\" => \"{MakeWorkatoTypeName(field)}\",");
+                sb.AppendLine($"                  }},");
+            }
+            sb.AppendLine("                ]");
+            if (!isFirst)
+            {
+                sb.AppendLine("              ),");
+            }
+        }
+    }
+
+    private bool IsBasicDataType(string dataType)
+    {
+        switch (dataType)
         {
             case "string":
             case "int32":
@@ -192,19 +241,31 @@ public class WorkatoSdk : ILanguageSdk
             case "date":
             case "datetime":
             case "boolean":
-                EmitOneParameter(sb, parameter, parameter.Location, parameter.Required);
-                return;
+                return true;
             default:
-                var schema = context.Api.FindSchema(parameter.DataType);
-                if (schema != null)
+                return false;
+        }
+    }
+
+    private void EmitComplexInputParameter(GeneratorContext context, StringBuilder sb, ParameterField parameter)
+    {
+        // For basic parameters, we can emit the value directly
+        // For objects, we need to unroll them
+        if (IsBasicDataType(parameter.DataType))
+        {
+            EmitOneParameter(sb, parameter, parameter.Location, parameter.Required);
+        }
+        else
+        {
+            var schema = context.Api.FindSchema(parameter.DataType);
+            if (schema != null)
+            {
+                foreach (var field in schema.Fields)
                 {
-                    foreach (var field in schema.Fields)
-                    {
-                          EmitOneParameter(sb, field, parameter.Location, parameter.Required);
-                    }
+                    EmitOneParameter(sb, field, parameter.Location, parameter.Required);
                 }
-                return;
-        }    
+            }
+        }
     }
 
     private void EmitOneParameter(StringBuilder sb, SchemaField field, string location, bool required)
