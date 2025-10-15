@@ -128,6 +128,6 @@ public class LanguageSchema
 public class WorkatoSchema
 {
     public string? Folder { get; set; }
-    public List<string>? HandwrittenClasses { get; set; }
     public string? ResponseClass { get; set; }
+    public string? ResponseDataField { get; set; }
 }

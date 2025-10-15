@@ -98,7 +98,7 @@ public class WorkatoSdk : ILanguageSdk
             var outputSchema = context.Api.FindSchema(endpoint.ReturnDataType.DataType);
             if (outputSchema != null)
             {
-                EmitComplexOutputParameter(sb, outputSchema);
+                EmitComplexOutputParameter(context, sb, outputSchema, []);
             }
             else
             {
@@ -106,7 +106,7 @@ public class WorkatoSdk : ILanguageSdk
                 var genericLevelOneSchema = context.Api.FindSchema(items[0]);
                 if (genericLevelOneSchema != null)
                 {
-                    EmitComplexOutputParameter(sb, genericLevelOneSchema);
+                    EmitComplexOutputParameter(context, sb, genericLevelOneSchema, items);
                 }
             }
 
@@ -183,7 +183,7 @@ public class WorkatoSdk : ILanguageSdk
         await File.WriteAllTextAsync(unifiedFilePath, sb.ToString());
     }
 
-    private void EmitComplexOutputParameter(StringBuilder sb, SchemaItem schema)
+    private void EmitComplexOutputParameter(GeneratorContext context, StringBuilder sb, SchemaItem schema, string[] nextGeneric)
     {
         sb.AppendLine("            properties:");
         bool isFirst = true;
@@ -191,7 +191,21 @@ public class WorkatoSdk : ILanguageSdk
         // First pass: Find all complex data types
         foreach (var field in schema.Fields.Where(f => !f.Deprecated && !IsBasicDataType(f.DataType)))
         {
-            string line = $"object_Definitions['{field.DataType}'].map {{ |x| x.merge(name: '{field.Name}') }}";
+            string line = $"object_Definitions['{field.DataType.CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{field.Name}') }}";
+            if (!isFirst)
+            {
+                line = $".concat({line})";
+            }
+            sb.AppendLine($"              {line}");
+            isFirst = false;
+        }
+        
+        // Insert the data field, if necessary
+        if (string.Equals(schema.Name, context.Project.Workato?.ResponseClass) 
+            && context.Project.Workato?.ResponseDataField != null 
+            && nextGeneric.Length > 1)
+        {
+            string line = $"object_Definitions['{nextGeneric[1].CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{context.Project.Workato?.ResponseDataField}') }}";
             if (!isFirst)
             {
                 line = $".concat({line})";
