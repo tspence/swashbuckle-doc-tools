@@ -29,7 +29,7 @@
 {{~ 
 for env in project.environments
 ~}}
-        '{{ env.url }}'
+      '{{ env.url }}'
 {{~
     break
 end 

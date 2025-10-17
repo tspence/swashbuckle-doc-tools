@@ -1,0 +1,95 @@
+﻿    format_api_request: lambda do |input, input_schema|
+      request_payload = {}
+
+      actual_input = call(:transform_keys_to_original_name, input_schema, input)
+      input_with_location = call(:add_location_to_input, input_schema, actual_input)
+
+      actual_input.each do |original_name, data|
+        stored_values = request_payload[data[:location]] || {}
+        request_payload[data[:location]] = stored_values.merge(original_name => data[:value])
+      end
+
+      # Format cookies into semicolon separated string and add to headers
+      if request_payload["cookie"]
+        request_payload["cookie"] = call(:format_cookies, request_payload["cookie"])
+        request_payload["header"] = (request_payload["header"] || {}).deep_merge({ "Cookie" => request_payload["cookie"]} )
+      end
+
+      request_payload
+    end,
+    format_cookies: lambda do |cookies|
+      cookie_string = []
+      cookies.map do |key, value|
+        cookie_string = cookie_string.concat(["#{key}=#{value}"])
+      end
+      cookie_string.smart_join("; ")
+    end,
+    format_url_endpoint: lambda do |request_payload, url|
+      final_url = url
+      if request_payload["path"].present?
+        request_payload["path"].map do |key,value|
+          final_url = final_url.gsub("{#{key}}",value)
+        end
+      end
+      final_url
+    end,
+    clear_name: lambda do |data|
+      hash_data = { root: data }
+      call('recursive_clear_name!', hash_data)[:root]
+    end,
+    recursive_clear_name!: lambda do |hash_data|
+      hash_data.clone.each do |_key, value|
+        if value.is_a?(Hash)
+          call('recursive_clear_name!', value)
+        elsif value.is_a?(Array) && value.first.is_a?(Hash)
+          value.map { |v| call('recursive_clear_name!', v) }
+        elsif hash_data[:name]&.to_s =~ /W/
+          hash_data[:name] = hash_data[:name]&.to_s&.gsub(/W/, '_')
+        end
+      end
+    end,
+    transform_keys_to_original_name: lambda do |input_schema, input|
+      transformed_hash = {}
+      input.each do |key, value|
+        source_input = element = call(:recursively_find_hash_by_name, input_schema, key)
+        new_key = source_input[:original_name]
+
+        if value.is_a?(Hash)
+          transformed_hash[new_key] = call(:transform_keys_to_original_name, input_schema, value)
+        elsif value.is_a?(Array)
+          transformed_hash[new_key] = value.map { |item| item.is_a?(Hash) ? call(:transform_keys_to_original_name, input_schema, item) : item }
+        else
+          transformed_hash[new_key] = value
+        end
+      end
+
+      transformed_hash
+    end,
+    add_location_to_input: lambda do |input_schema, actual_input|
+      actual_input.each do |key, value|
+        source_input = call(:recursively_find_hash_by_original_name, input_schema, key)
+        location = source_input[:location]
+
+        actual_input[key] = { location: location, value: value }
+      end
+
+      actual_input
+    end,
+    recursively_find_hash_by_name: lambda do |input_schema, name|
+      if input_schema.is_a?(Hash) && input_schema['name'] == name
+        input_schema
+      elsif input_schema.is_a?(Hash)
+        input_schema.values.map { |x| call(:recursively_find_hash_by_name, x, name) }.compact.first
+      elsif input_schema.is_a?(Array)
+        input_schema.map { |x| call(:recursively_find_hash_by_name, x, name) }.compact.first
+      end
+    end,
+    recursively_find_hash_by_original_name: lambda do |input_schema, name|
+      if input_schema.is_a?(Hash) && input_schema['original_name'] == name
+        input_schema
+      elsif input_schema.is_a?(Hash)
+        input_schema.values.map { |x| call(:recursively_find_hash_by_original_name, x, name) }.compact.first
+      elsif input_schema.is_a?(Array)
+        input_schema.map { |x| call(:recursively_find_hash_by_original_name, x, name) }.compact.first
+      end
+    end,

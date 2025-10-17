@@ -125,6 +125,10 @@ public class WorkatoSdk : ILanguageSdk
         sb.AppendLine("  #");
         sb.AppendLine("  methods: {");
         
+        // Here's where Workato wants us to inject our custom code
+        var customMethods = await ScribanFunctions.ExecuteTemplateString(context, "SdkGenerator.Templates.workato.custom-methods.scriban", null);
+        sb.AppendLine(customMethods);
+        
         // Run through all APIs and emit input definitions
         foreach (var endpoint in context.Api.Endpoints.Where(endpoint => !endpoint.Deprecated))
         {
