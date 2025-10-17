@@ -452,4 +452,24 @@ public static class Extensions
     {
         return char.IsAsciiLetterOrDigit(c) || c == '_' || c == ' ';
     }
+
+    public static string GetFirstSentence(this string s)
+    {
+        var p = s.IndexOf('.');
+        if (p > 0)
+        {
+            return s[..(p + 1)];
+        }
+        return string.Empty;
+    }
+
+    public static string GetSecondSentenceOnwards(this string s)
+    {
+        var p = s.IndexOf('.');
+        if (p > 0)
+        {
+            return s[p..];
+        }
+        return s;
+    }
 }

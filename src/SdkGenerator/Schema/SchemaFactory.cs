@@ -66,12 +66,6 @@ public static class SchemaFactory
                 Name = jsonSchema.Name,
                 Values = new Dictionary<string, object>(),
             };
-            
-            // If somehow this is HttpStatusCode, skip it
-            if (item.Name == "HttpStatusCode")
-            {
-                return null;
-            }
             item.DescriptionMarkdown = SafeGetPropString(jsonSchema.Value, "description");
             item.EnumType = SafeGetPropString(jsonSchema.Value, "type");
             foreach (var value in enumPropertiesElement.EnumerateArray())

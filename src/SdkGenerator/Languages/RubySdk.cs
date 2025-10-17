@@ -301,7 +301,7 @@ public class RubySdk : ILanguageSdk
             // Leave the first line un-indented, but indent everything afterwards
             if (sb.Length != 0)
             {
-                sb.AppendLine("\"\\");
+                sb.AppendLine(" \"\\");
                 sb.Append(prefix);
             }
 

@@ -53,7 +53,7 @@ public class WorkatoSdk : ILanguageSdk
                 sb.AppendLine($"            name: \"{field.Name}\",");
                 sb.AppendLine(
                     $"            hint: \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 14)}\",");
-                sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
+                sb.AppendLine($"            control_type: \"{WorkatoControlType(context, field)}\",");
                 sb.AppendLine($"            type: \"{MakeWorkatoTypeName(field)}\",");
                 if (field.IsArray && field.DataType == "string")
                 {
@@ -67,7 +67,7 @@ public class WorkatoSdk : ILanguageSdk
                 sb.AppendLine($"          }},");
             }
 
-            sb.AppendLine("        ],");
+            sb.AppendLine("        ]");
             sb.AppendLine("      end");
             sb.AppendLine("    },");
             sb.AppendLine();
@@ -86,7 +86,7 @@ public class WorkatoSdk : ILanguageSdk
             {
                 EmitComplexInputParameter(context, sb, parameter);
             }
-            sb.AppendLine($"        ],");
+            sb.AppendLine($"        ]");
             sb.AppendLine($"      end");
             sb.AppendLine($"    }},");
             sb.AppendLine();
@@ -110,7 +110,7 @@ public class WorkatoSdk : ILanguageSdk
                 }
             }
 
-            sb.AppendLine($"        ],");
+            sb.AppendLine($"        ]");
             sb.AppendLine($"      end");
             sb.AppendLine($"    }},");
             sb.AppendLine();
@@ -161,16 +161,18 @@ public class WorkatoSdk : ILanguageSdk
             //sb.Append(RubySdk.MakeRubyDoc(endpoint.DescriptionMarkdown, 6, endpoint.Parameters));
             sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}: {{");
             sb.AppendLine($"      title: \"{endpoint.Name}\",");
-            sb.AppendLine($"      hint: \"\"");
-            sb.AppendLine($"      subtitle: \"\"");
-            sb.AppendLine($"      help: \"{RubySdk.MakeRubyMultilineString(endpoint.DescriptionMarkdown, 8)}\",");
+            sb.AppendLine($"      hint: \"{RubySdk.MakeRubyMultilineString(endpoint.DescriptionMarkdown.GetFirstSentence(), 8)}\","); 
+            
+            // So far these two fields don't seem to be necessary; they seem to be duplicated from "help"
+            //sb.AppendLine($"      subtitle: \"\",");
+            sb.AppendLine($"      help: \"{RubySdk.MakeRubyMultilineString(endpoint.DescriptionMarkdown.GetSecondSentenceOnwards(), 8)}\",");
             sb.AppendLine($"      input_fields: lambda do |object_definitions|");
             sb.AppendLine($"        object_definitions['{endpoint.Name.WordsToSnakeCase()}_input']");
             sb.AppendLine($"      end,");
             sb.AppendLine($"      output_fields: lambda do |object_definitions|");
             sb.AppendLine($"        object_definitions['{endpoint.Name.WordsToSnakeCase()}_output']");
             sb.AppendLine($"      end,");
-            sb.AppendLine($"      execute: lambda do |object_definitions|");
+            sb.AppendLine($"      execute: lambda do |connection, input, extended_input_schema|");
             sb.AppendLine($"        call(:{endpoint.Name.WordsToSnakeCase()}_execute, connection, input, extended_input_schema)");
             sb.AppendLine($"      end,");
             sb.AppendLine($"    }},");
@@ -189,9 +191,9 @@ public class WorkatoSdk : ILanguageSdk
         bool isFirst = true;
 
         // First pass: Find all complex data types
-        foreach (var field in schema.Fields.Where(f => !f.Deprecated && !IsBasicDataType(f.DataType)))
+        foreach (var field in schema.Fields.Where(f => !f.Deprecated && !IsBasicDataType(context, f)))
         {
-            string line = $"object_Definitions['{field.DataType.CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{field.Name}') }}";
+            string line = $"object_definitions['{field.DataType.CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{field.Name}') }}";
             if (!isFirst)
             {
                 line = $".concat({line})";
@@ -205,7 +207,7 @@ public class WorkatoSdk : ILanguageSdk
             && context.Project.Workato?.ResponseDataField != null 
             && nextGeneric.Length > 1)
         {
-            string line = $"object_Definitions['{nextGeneric[1].CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{context.Project.Workato?.ResponseDataField}') }}";
+            string line = $"object_definitions['{nextGeneric[1].CamelCaseToSnakeCase()}'].map {{ |x| x.merge(name: '{context.Project.Workato?.ResponseDataField}') }}";
             if (!isFirst)
             {
                 line = $".concat({line})";
@@ -215,7 +217,7 @@ public class WorkatoSdk : ILanguageSdk
         }
         
         // Second pass: Simple data types
-        var simpleDataTypes = schema.Fields.Where(f => !f.Deprecated && IsBasicDataType(f.DataType)).ToList();
+        var simpleDataTypes = schema.Fields.Where(f => !f.Deprecated && IsBasicDataType(context, f)).ToList();
         if (simpleDataTypes.Any())
         {
             if (!isFirst)
@@ -229,7 +231,7 @@ public class WorkatoSdk : ILanguageSdk
                 sb.AppendLine($"                    \"readOnly\" => true,");
                 sb.AppendLine($"                    \"name\" => \"{field.Name}\",");
                 sb.AppendLine($"                    \"hint\" => \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 20)}\",");
-                sb.AppendLine($"                    \"control_type\" => \"{WorkatoControlType(field)}\",");
+                sb.AppendLine($"                    \"control_type\" => \"{WorkatoControlType(context, field)}\",");
                 sb.AppendLine($"                    \"type\" => \"{MakeWorkatoTypeName(field)}\",");
                 sb.AppendLine($"                  }},");
             }
@@ -241,9 +243,14 @@ public class WorkatoSdk : ILanguageSdk
         }
     }
 
-    private bool IsBasicDataType(string dataType)
+    private bool IsBasicDataType(GeneratorContext context, SchemaField field)
     {
-        switch (dataType)
+        // Enums are always strings in Ruby
+        if (context.Api.IsEnumType(field.DataType))
+        {
+            return true;
+        }
+        switch (field.DataType)
         {
             case "string":
             case "int32":
@@ -263,9 +270,9 @@ public class WorkatoSdk : ILanguageSdk
     {
         // For basic parameters, we can emit the value directly
         // For objects, we need to unroll them
-        if (IsBasicDataType(parameter.DataType))
+        if (IsBasicDataType(context, parameter))
         {
-            EmitOneParameter(sb, parameter, parameter.Location, parameter.Required);
+            EmitOneParameter(context, sb, parameter, parameter.Location, parameter.Required);
         }
         else
         {
@@ -274,13 +281,13 @@ public class WorkatoSdk : ILanguageSdk
             {
                 foreach (var field in schema.Fields)
                 {
-                    EmitOneParameter(sb, field, parameter.Location, parameter.Required);
+                    EmitOneParameter(context, sb, field, parameter.Location, parameter.Required);
                 }
             }
         }
     }
 
-    private void EmitOneParameter(StringBuilder sb, SchemaField field, string location, bool required)
+    private void EmitOneParameter(GeneratorContext context, StringBuilder sb, SchemaField field, string location, bool required)
     {
         sb.AppendLine($"          {{");
         sb.AppendLine($"            name: \"{field.Name}_{location.ToLower()}\",");
@@ -289,7 +296,7 @@ public class WorkatoSdk : ILanguageSdk
         {
             sb.AppendLine($"            optional: false,");
         }
-        sb.AppendLine($"            control_type: \"{WorkatoControlType(field)}\",");
+        sb.AppendLine($"            control_type: \"{WorkatoControlType(context, field)}\",");
         sb.AppendLine($"            type: {MakeWorkatoType(field)},");
         sb.AppendLine($"            label: \"{field.Name}\",");
         sb.AppendLine($"            location: \"{location.ToLower()}\",");
@@ -322,8 +329,14 @@ public class WorkatoSdk : ILanguageSdk
         }    
     }
 
-    private string WorkatoControlType(SchemaField field)
+    private string WorkatoControlType(GeneratorContext context, SchemaField field)
     {
+        // Enums are always strings in Ruby
+        if (context.Api.IsEnumType(field.DataType)) 
+        {
+            return context.Api.ReplaceEnumWithType(field.DataType);
+        }
+
         // Reference: https://docs.workato.com/developing-connectors/sdk/sdk-reference/schema.html#control-types
         // Control type is the UX displayed when someone fills in a field
         switch (field.DataType)

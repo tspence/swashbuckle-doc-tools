@@ -78,6 +78,11 @@ public class ApiSchema
         return Enums.FirstOrDefault(e => string.Equals(e.Name, typeName, StringComparison.OrdinalIgnoreCase));
     }
 
+    public bool IsEnumType(string typename)
+    {
+        return FindEnum(typename) != null;
+    }
+
     /// <summary>
     /// Replaces enums with their underlying types; allows you to treat enums as constants
     /// </summary>
