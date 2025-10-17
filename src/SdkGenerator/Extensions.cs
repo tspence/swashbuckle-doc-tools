@@ -468,7 +468,7 @@ public static class Extensions
         var p = s.IndexOf('.');
         if (p > 0)
         {
-            return s[p..];
+            return s[(p + 1)..].TrimStart();
         }
         return s;
     }
