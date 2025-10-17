@@ -92,7 +92,6 @@ public class WorkatoSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"    {endpoint.Name.WordsToSnakeCase()}_output: {{");
             sb.AppendLine($"      fields: lambda do|_connection, config_fields, object_definitions|");
-            sb.AppendLine($"        [");
             // Note that we need to unroll every field individually.
             // Since these fields are generic we need to expand the types
             var outputSchema = context.Api.FindSchema(endpoint.ReturnDataType.DataType);
@@ -110,7 +109,6 @@ public class WorkatoSdk : ILanguageSdk
                 }
             }
 
-            sb.AppendLine($"        ]");
             sb.AppendLine($"      end");
             sb.AppendLine($"    }},");
             sb.AppendLine();
@@ -191,7 +189,6 @@ public class WorkatoSdk : ILanguageSdk
 
     private void EmitComplexOutputParameter(GeneratorContext context, StringBuilder sb, SchemaItem schema, string[] nextGeneric)
     {
-        sb.AppendLine("            properties:");
         bool isFirst = true;
 
         // First pass: Find all complex data types
@@ -202,7 +199,7 @@ public class WorkatoSdk : ILanguageSdk
             {
                 line = $".concat({line})";
             }
-            sb.AppendLine($"              {line}");
+            sb.AppendLine($"        {line}");
             isFirst = false;
         }
         
@@ -216,7 +213,7 @@ public class WorkatoSdk : ILanguageSdk
             {
                 line = $".concat({line})";
             }
-            sb.AppendLine($"              {line}");
+            sb.AppendLine($"        {line}");
             isFirst = false;
         }
         
@@ -226,23 +223,23 @@ public class WorkatoSdk : ILanguageSdk
         {
             if (!isFirst)
             {
-                sb.AppendLine("              .concat(");
+                sb.AppendLine("        .concat(");
             }
-            sb.AppendLine("                [");
+            sb.AppendLine("          [");
             foreach (var field in simpleDataTypes)
             {
-                sb.AppendLine($"                  {{");
-                sb.AppendLine($"                    \"readOnly\" => true,");
-                sb.AppendLine($"                    \"name\" => \"{field.Name}\",");
-                sb.AppendLine($"                    \"hint\" => \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 20)}\",");
-                sb.AppendLine($"                    \"control_type\" => \"{WorkatoControlType(context, field)}\",");
-                sb.AppendLine($"                    \"type\" => \"{MakeWorkatoTypeName(field)}\",");
-                sb.AppendLine($"                  }},");
+                sb.AppendLine($"            {{");
+                sb.AppendLine($"              \"readOnly\" => true,");
+                sb.AppendLine($"              \"name\" => \"{field.Name}\",");
+                sb.AppendLine($"              \"hint\" => \"{RubySdk.MakeRubyMultilineString(field.DescriptionMarkdown, 20)}\",");
+                sb.AppendLine($"              \"control_type\" => \"{WorkatoControlType(context, field)}\",");
+                sb.AppendLine($"              \"type\" => \"{MakeWorkatoTypeName(field)}\",");
+                sb.AppendLine($"            }},");
             }
-            sb.AppendLine("                ]");
+            sb.AppendLine("          ]");
             if (!isFirst)
             {
-                sb.AppendLine("              ),");
+                sb.AppendLine("        )");
             }
         }
     }
