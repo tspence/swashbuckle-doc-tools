@@ -1,3 +1,11 @@
+# 1.3.16
+October 19, 2025
+
+* Workato SDK improvements
+* Converted project to nullability for type checking
+* New module for complete patch notes generation
+* Ability to compare against two distinct URLs to diff a test/staging site against production
+
 # 1.3.15
 September 20, 2025
 

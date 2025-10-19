@@ -11,6 +11,7 @@ using SdkGenerator.Diff;
 using SdkGenerator.Languages;
 using SdkGenerator.Markdown;
 using SdkGenerator.Project;
+using SdkGenerator.Slack;
 
 namespace SdkGenerator;
 
@@ -24,6 +25,9 @@ public static class Program
         
         [Option('n', "new", Required = true, HelpText = "Path or URL to the pre-release swagger file")]
         public string? NewFile { get; set; }
+
+        [Option('s', "slack", Required = false, HelpText = "Endpoint to share the diff via Slack")]
+        public string? SlackEndpoint { get; set; }
     }
     
     private class BaseOptions
@@ -317,7 +321,21 @@ public static class Program
             var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
 
             // Print out human readable description
-            Console.WriteLine(diffs.ToSummaryMarkdown(options.OldFile, options.NewFile));
+            var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile);
+            
+            // Do they also want us to send it to Slack? 
+            if (!string.IsNullOrWhiteSpace(options.SlackEndpoint))
+            {
+                var result = await SlackTools.SendMarkdownToSlack(options.SlackEndpoint, diffMarkdown);
+                if (result)
+                {
+                    Console.WriteLine("Sent message to slack.");
+                }
+            }
+            else
+            {
+                Console.WriteLine();
+            }
         }
         finally
         {
