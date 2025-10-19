@@ -317,7 +317,7 @@ public class PythonSdk : ILanguageSdk
         var imports = new List<string>();
         foreach (var field in fields)
         {
-            if (!field.Deprecated && field.DataType != selfName)
+            if (!field.Deprecated && field.DataTypeRef != string.Empty && field.DataType != selfName)
             {
                 AddImport(context, imports, field.DataType);
             }
@@ -339,7 +339,10 @@ public class PythonSdk : ILanguageSdk
             {
                 foreach (var p in endpoint.Parameters)
                 {
-                    AddImport(context, imports, p.DataType);
+                    if (p.DataTypeRef != string.Empty)
+                    {
+                        AddImport(context, imports, p.DataType);
+                    }
                 }
 
                 // The return type of a file download has special rules
