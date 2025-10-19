@@ -1,3 +1,12 @@
+# 1.3.16
+October 19, 2025
+
+* Workato SDK improvements
+* Converted project to nullability for type checking
+* New build module in Project schema to generate complete patch notes ("PatchNotes")
+* New build module in Project schema to copy current swagger file to designated location ("CopySwagger")
+* Ability to compare against two distinct URLs to diff a test/staging site against production
+
 # 1.3.15
 September 20, 2025
 

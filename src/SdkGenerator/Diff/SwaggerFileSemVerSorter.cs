@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices.JavaScript;
 using Semver;
 
 namespace SdkGenerator.Diff;
 
 public class SwaggerFileSemVerSorter : IComparer<string>
 {
-    int IComparer<string>.Compare(string x, string y)
+    int IComparer<string>.Compare(string? x, string? y)
     {
         var semverX = GetSemVerFor(x);
         var semverY = GetSemVerFor(y);
@@ -15,8 +16,13 @@ public class SwaggerFileSemVerSorter : IComparer<string>
         return semverY.CompareSortOrderTo(semverX);
     }
 
-    private SemVersion GetSemVerFor(string filename)
+    private SemVersion GetSemVerFor(string? filename)
     {
+        if (string.IsNullOrWhiteSpace(filename))
+        {
+            return new SemVersion(0, 0, 0);
+        }
+        
         var fileName = Path.GetFileNameWithoutExtension(filename);
         var dashPos = fileName.IndexOf('-');
         if (dashPos > 0)

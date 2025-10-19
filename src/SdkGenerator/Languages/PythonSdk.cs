@@ -23,11 +23,11 @@ public class PythonSdk : ILanguageSdk
                + "#\n"
                + $"# @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $"# @copyright  {project.CopyrightHolder}\n"
-               + $"# @link       {project.Python.GithubUrl}\n"
+               + $"# @link       {project.Python?.GithubUrl}\n"
                + "#\n\n";
     }
 
-    private string FixupType(GeneratorContext context, string typeName, bool isArray, bool isReturnHint = false)
+    private string FixupType(GeneratorContext context, string typeName, bool isArray)
     {
         var s = context.Api.ReplaceEnumWithType(typeName);
 
@@ -74,7 +74,7 @@ public class PythonSdk : ILanguageSdk
             }
             if (s.EndsWith(genericName))
             {
-                var innerType = FixupType(context, s[..^genericName.Length], false, false);
+                var innerType = FixupType(context, s[..^genericName.Length], false);
                 return $"{genericName}[{innerType}]";
             }
         }
@@ -82,7 +82,7 @@ public class PythonSdk : ILanguageSdk
         // Is this a generic list?
         if (s.EndsWith("List", StringComparison.OrdinalIgnoreCase))
         {
-            return $"List[{FixupType(context, s[..^4], false, false)}]";
+            return $"List[{FixupType(context, s[..^4], false)}]";
         }
 
         if (isArray)
@@ -95,13 +95,17 @@ public class PythonSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
+        if (context.Project.Python == null)
+        {
+            return;
+        }
         var modelsDir = context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "models");
         await CleanModuleDirectory(context, modelsDir);
         await File.WriteAllTextAsync(Path.Combine(modelsDir, "__init__.py"), string.Empty);
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null && item.Name != context.Project.Python.ResponseClass)
+            if (item.Name != context.Project.Python.ResponseClass)
             {
                 var sb = new StringBuilder();
                 sb.AppendLine(FileHeader(context.Project));
@@ -152,7 +156,7 @@ public class PythonSdk : ILanguageSdk
 
         foreach (var pyFile in Directory.EnumerateFiles(pyModuleDir, "*.py"))
         {
-            if (!pyFile.EndsWith(context.Project.Python.ResponseClass + ".py", StringComparison.OrdinalIgnoreCase))
+            if (!pyFile.EndsWith(context.Project.Python?.ResponseClass + ".py", StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(pyFile);
             }
@@ -161,6 +165,10 @@ public class PythonSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
+        if (context.Project.Python == null)
+        {
+            return;
+        }
         var clientsDir = context.MakePath(context.Project.Python.Folder, "src", context.Project.Python.Namespace, "clients");
         await CleanModuleDirectory(context, clientsDir);
         await File.WriteAllTextAsync(Path.Combine(clientsDir, "__init__.py"), string.Empty);
@@ -205,7 +213,7 @@ public class PythonSdk : ILanguageSdk
                     // Is this a file download API?
                     var isFileDownload = endpoint.ReturnDataType.DataType is "byte[]" or "binary" or "File" or "byte";
                     var originalReturnDataType = FixupType(context, endpoint.ReturnDataType.DataType,
-                        endpoint.ReturnDataType.IsArray, isReturnHint: true);
+                        endpoint.ReturnDataType.IsArray);
                     string returnDataType;
                     if (isFileDownload)
                     {
@@ -220,7 +228,6 @@ public class PythonSdk : ILanguageSdk
                     var bodyParam = endpoint.Parameters.FirstOrDefault(p => p.Location == "body");
                     var hasBody = bodyParam != null;
                     var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{p.Name.ToVariableName()}: {FixupType(context, p.DataType, p.IsArray)}{(p.Nullable ? " | None" : "")}");
-                    var bodyJson = string.Join(", ", from p in endpoint.Parameters where p.Location == "query" select $"\"{p.Name}\": {p.Name.ToVariableName()}");
                     var fileUploadParam = (from p in endpoint.Parameters where p.Location == "form" select p).FirstOrDefault();
 
                     // Write the method
@@ -268,7 +275,7 @@ public class PythonSdk : ILanguageSdk
                     else
                     {
                         // Remove the outer response class shell if present
-                        if (originalReturnDataType.StartsWith(context.Project.Python.ResponseClass + "["))
+                        if (context.Project.Python.ResponseClass != null && originalReturnDataType.StartsWith(context.Project.Python.ResponseClass + "["))
                         {
                             innerType = innerType.Substring(context.Project.Python.ResponseClass.Length + 1,
                                 innerType.Length - context.Project.Python.ResponseClass.Length - 2);
@@ -310,7 +317,7 @@ public class PythonSdk : ILanguageSdk
         var imports = new List<string>();
         foreach (var field in fields)
         {
-            if (!field.Deprecated && field.DataTypeRef != null && field.DataType != selfName)
+            if (!field.Deprecated && field.DataTypeRef != string.Empty && field.DataType != selfName)
             {
                 AddImport(context, imports, field.DataType);
             }
@@ -325,14 +332,14 @@ public class PythonSdk : ILanguageSdk
     {
         var imports = new List<string>();
         imports.Add(
-            $"from {context.Project.Python.Namespace}.models.{context.Project.Python.ResponseClass.WordsToSnakeCase()} import {context.Project.Python.ResponseClass}");
+            $"from {context.Project.Python?.Namespace}.models.{context.Project.Python?.ResponseClass.WordsToSnakeCase()} import {context.Project.Python?.ResponseClass}");
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
             {
                 foreach (var p in endpoint.Parameters)
                 {
-                    if (p.DataTypeRef != null)
+                    if (p.DataTypeRef != string.Empty)
                     {
                         AddImport(context, imports, p.DataType);
                     }
@@ -357,7 +364,7 @@ public class PythonSdk : ILanguageSdk
 
     private void AddImport(GeneratorContext context, List<string> imports, string dataType)
     {
-        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType is "TestTimeoutException" or "File" or "byte[]" or "binary" or "string" or "HttpStatusCode" || dataType == context.Project.Python.ResponseClass)
+        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType is "TestTimeoutException" or "File" or "byte[]" or "binary" or "string" or "HttpStatusCode" || dataType == context.Project.Python?.ResponseClass)
         {
             return;
         }
@@ -380,7 +387,7 @@ public class PythonSdk : ILanguageSdk
         }
 
         // Check for duplicates
-        string importText = $"from {context.Project.Python.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}";
+        string importText = $"from {context.Project.Python?.Namespace}.models.{dataType.WordsToSnakeCase()} import {dataType}";
         if (!imports.Contains(importText))
         {
             imports.Add(importText);
@@ -396,7 +403,7 @@ public class PythonSdk : ILanguageSdk
         }
     }
 
-    private string MakePythonDoc(GeneratorContext context, string description, int indent, List<ParameterField> parameters)
+    private string MakePythonDoc(GeneratorContext context, string description, int indent, List<ParameterField>? parameters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {

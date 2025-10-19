@@ -20,15 +20,21 @@ public static class MarkdownGenerator
         {
             // Find the category
             var categories = await ReadmeTools.GetCategories(context);
-            var cat = categories.FirstOrDefault(item => String.Equals(item.Title, context.Project.Readme.ModelCategory, StringComparison.OrdinalIgnoreCase));
-            if (cat == null)
-            {
-                cat = await ReadmeTools.CreateCategory(context, context.Project.Readme.ModelCategory);
-            }
         
             // Upload each API as a guide within that category
-            foreach (var schema in context.Api.Schemas.Where(schema => schema.Fields != null))
+            foreach (var schema in context.Api.Schemas)
             {
+                var cat = categories.FirstOrDefault(item => String.Equals(item.Title, context.Project.Readme?.ModelCategory, StringComparison.OrdinalIgnoreCase));
+                if (cat == null)
+                {
+                    cat = await ReadmeTools.CreateCategory(context, context.Project.Readme?.ModelCategory ?? string.Empty);
+                    // Failed to create category?
+                    if (cat == null)
+                    {
+                        continue;
+                    }
+                }
+
                 try
                 {
                     var markdownText = format switch
@@ -67,7 +73,7 @@ public static class MarkdownGenerator
                     _ => ""
                 };
 
-                var filename = context.MakePath(context.Project.SwaggerSchemaFolder, schema.Name.ToLower() + ".md");
+                var filename = context.MakePath(context.Project.SwaggerSchemaFolder ?? ".", schema.Name.ToLower() + ".md");
                 await File.WriteAllTextAsync(filename, markdownText);
             }
             catch (Exception e)

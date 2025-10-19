@@ -11,17 +11,17 @@ namespace SdkGenerator.Readme;
 public static class ReadmeTools
 {
     
-    private static async Task<RestResponse> CallReadme(GeneratorContext context, string resource, Method method, string body, List<Tuple<string, string>> extraHeaders)
+    private static async Task<RestResponse> CallReadme(GeneratorContext context, string resource, Method method, string? body, List<Tuple<string, string>>? extraHeaders)
     {
         var client = new RestClient("https://dash.readme.com");
         var request = new RestRequest(resource, method);
         request.AddHeader("Accept", "application/json");
-        request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
+        request.AddHeader("Authorization", $"Basic {context.Project.Readme?.ApiKey}");
         foreach (var item in extraHeaders ?? Enumerable.Empty<Tuple<string, string>>())
         {
             request.AddHeader(item.Item1, item.Item2);
         }
-        if (context.Project.Readme.ReadmeVersionCode != null)
+        if (context.Project.Readme?.ReadmeVersionCode != null)
         {
             request.AddHeader("x-readme-version", context.Project.Readme.ReadmeVersionCode);
         }
@@ -40,14 +40,14 @@ public static class ReadmeTools
         [JsonProperty("hidden")]
         public bool Hidden { get; set; }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
+        [JsonProperty("title")] 
+        public string Title { get; set; } = string.Empty;
 
         [JsonProperty("body")]
-        public string Body { get; set; }
+        public string Body { get; set; } = string.Empty;
 
         [JsonProperty("category")]
-        public string Category { get; set; }
+        public string Category { get; set; } = string.Empty;
 
         [JsonProperty("order")]
         public int Order { get; set; }
@@ -56,13 +56,13 @@ public static class ReadmeTools
     public class ReadmeCategoryModel
     {
         [JsonProperty("title")]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
         
         [JsonProperty("_id")]
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         
         [JsonProperty("type")]
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
     }
 
     public static async Task<List<ReadmeCategoryModel>> GetCategories(GeneratorContext context)
@@ -79,7 +79,10 @@ public static class ReadmeTools
             {
                 // Preserve the "hidden" status - only a human being can approve the doc and make it visible
                 var categories = JsonConvert.DeserializeObject<List<ReadmeCategoryModel>>(response.Content);
-                if (categories.Count == 0) break;
+                if (categories == null || categories.Count == 0)
+                {
+                    break;
+                }
                 results.AddRange(categories);
             }
             else break;
@@ -117,7 +120,7 @@ public static class ReadmeTools
         }
     }
 
-    public static async Task<ReadmeCategoryModel> CreateCategory(GeneratorContext context, string readmeModelCategory)
+    public static async Task<ReadmeCategoryModel?> CreateCategory(GeneratorContext context, string readmeModelCategory)
     {
         var newCategory = new ReadmeCategoryModel()
         {
@@ -139,15 +142,15 @@ public static class ReadmeTools
     public static async Task<bool> UploadSwagger(GeneratorContext context)
     {
         var client = new RestClient();
-        var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme.ReadmeApiDefinitionId}")
+        var request = new RestRequest($"https://dash.readme.com/api/v1/api-specification/{context.Project.Readme?.ReadmeApiDefinitionId}")
         {
             AlwaysMultipartFormData = true,
             FormBoundary = "----------" + Guid.NewGuid(),
             Method = Method.Put,
         };
         request.AddHeader("Accept", "application/json");
-        request.AddHeader("Authorization", $"Basic {context.Project.Readme.ApiKey}");
-        if (context.Project.Readme.ReadmeVersionCode != null)
+        request.AddHeader("Authorization", $"Basic {context.Project.Readme?.ApiKey}");
+        if (context.Project.Readme?.ReadmeVersionCode != null)
         {
             request.AddHeader("x-readme-version", context.Project.Readme.ReadmeVersionCode);
         }

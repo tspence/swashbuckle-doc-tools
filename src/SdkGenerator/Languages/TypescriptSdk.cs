@@ -23,7 +23,7 @@ public class TypescriptSdk : ILanguageSdk
                + " *\n"
                + $" * @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $" * @copyright  {project.CopyrightHolder}\n"
-               + $" * @link       {project.Typescript.GithubUrl}\n"
+               + $" * @link       {project.Typescript?.GithubUrl}\n"
                + " */\n";
     }
 
@@ -99,6 +99,10 @@ public class TypescriptSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
+        if (context.Project.Typescript == null)
+        {
+            return;
+        }
         var modelsDir = context.MakePath(context.Project.Typescript.Folder, "src", "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.ts"))
@@ -122,24 +126,21 @@ public class TypescriptSdk : ILanguageSdk
                 sb.AppendLine(import);
             }
 
-            if (item.Fields != null)
+            sb.AppendLine();
+            sb.Append(item.DescriptionMarkdown.ToJavaDoc(0));
+            sb.AppendLine($"export type {item.Name} = {{");
+            foreach (var field in item.Fields)
             {
-                sb.AppendLine();
-                sb.Append(item.DescriptionMarkdown.ToJavaDoc(0));
-                sb.AppendLine($"export type {item.Name} = {{");
-                foreach (var field in item.Fields)
+                if (!field.Deprecated)
                 {
-                    if (!field.Deprecated)
-                    {
-                        sb.AppendLine();
-                        sb.Append(field.DescriptionMarkdown.ToJavaDoc(2));
-                        sb.AppendLine(
-                            $"  {field.Name}: {FixupType(context, field.DataType, field.IsArray, field.Nullable)};");
-                    }
+                    sb.AppendLine();
+                    sb.Append(field.DescriptionMarkdown.ToJavaDoc(2));
+                    sb.AppendLine(
+                        $"  {field.Name}: {FixupType(context, field.DataType, field.IsArray, field.Nullable)};");
                 }
-
-                sb.AppendLine("};");
             }
+
+            sb.AppendLine("};");
 
             var modelPath = Path.Combine(modelsDir, item.Name + ".ts");
             await File.WriteAllTextAsync(modelPath, sb.ToString());
@@ -148,6 +149,10 @@ public class TypescriptSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
+        if (context.Project.Typescript == null)
+        {
+            return;
+        }
         var clientsDir = context.MakePath(context.Project.Typescript.Folder, "src", "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.ts"))
@@ -252,7 +257,7 @@ public class TypescriptSdk : ILanguageSdk
         }
     }
 
-    private void AddImport(GeneratorContext context, string name, List<string> list)
+    private void AddImport(GeneratorContext context, string? name, List<string> list)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -304,15 +309,14 @@ public class TypescriptSdk : ILanguageSdk
             return;
         }
 
-        string importStatement;
         if (name == "binary" || name == "byte[]" || name == "byte")
         {
             // Make sure we have the response class; blob is a builtin
-            AddImport(context, context.Project.Typescript.ResponseClass, list);
+            AddImport(context, context.Project.Typescript?.ResponseClass, list);
         }
         else
         {
-            importStatement = "import { " + name + " } from \"../index.js\";";
+            var importStatement = "import { " + name + " } from \"../index.js\";";
             if (!list.Contains(importStatement))
             {
                 list.Add(importStatement);
@@ -344,9 +348,9 @@ public class TypescriptSdk : ILanguageSdk
         foreach (var field in item.Fields.EmptyIfNull())
         {
             // Avoid adding a reference to ourselves for nested classes
-            if (field?.DataType != item.Name)
+            if (field.DataType != item.Name)
             {
-                AddImport(context, field?.DataType, imports);
+                AddImport(context, field.DataType, imports);
             }
         }
 

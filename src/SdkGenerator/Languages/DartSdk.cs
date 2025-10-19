@@ -36,13 +36,13 @@ public class DartSdk : ILanguageSdk
 
     private async Task ExportIndex(GeneratorContext context)
     {
-        var indexFile = context.MakePath(context.Project.Dart.Folder, "index.dart");
+        var indexFile = context.MakePath(context.Project.Dart?.Folder, "index.dart");
         
         var sb = new StringBuilder();
         sb.AppendLine(FileHeader(context.Project));
         
         sb.AppendLine("/// Clients");
-        var clientsDir = context.MakePath(context.Project.Dart.Folder, "clients");
+        var clientsDir = context.MakePath(context.Project.Dart?.Folder, "clients");
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.dart").OrderBy(i => i).ToList())
         {
             var fileName = clientsFile.Substring(clientsDir.Length + 1);
@@ -52,7 +52,7 @@ public class DartSdk : ILanguageSdk
         sb.AppendLine();
         sb.AppendLine("/// Models");
 
-        var modelsDir = context.MakePath(context.Project.Dart.Folder, "models");
+        var modelsDir = context.MakePath(context.Project.Dart?.Folder, "models");
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.dart").OrderBy(i => i).ToList())
         {
             var fileName = modelFile.Substring(modelsDir.Length + 1);
@@ -62,7 +62,7 @@ public class DartSdk : ILanguageSdk
         sb.AppendLine();
         sb.AppendLine("/// Sdk");
 
-        var rootDir = context.MakePath(context.Project.Dart.Folder);
+        var rootDir = context.MakePath(context.Project.Dart?.Folder);
         var rootFiles = Directory.EnumerateFiles(rootDir, "*.dart")
             .Where(i => !i.EndsWith("index.dart"))
             .OrderBy(i => i)
@@ -79,7 +79,7 @@ public class DartSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
-        var clientsDir = context.MakePath(context.Project.Dart.Folder, "clients");
+        var clientsDir = context.MakePath(context.Project.Dart?.Folder, "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.dart"))
         {
@@ -107,7 +107,7 @@ public class DartSdk : ILanguageSdk
             sb.AppendLine($"  /// Constructor for the {cat} API collection");
             sb.AppendLine($"  {cat}Client(this._client);");
             sb.AppendLine();
-            sb.AppendLine($"  final {context.Project.Dart.ClassName} _client;");
+            sb.AppendLine($"  final {context.Project.Dart?.ClassName} _client;");
             sb.AppendLine();
 
             // Run through all APIs
@@ -151,14 +151,14 @@ public class DartSdk : ILanguageSdk
                     // Write the method
                     var cleansedPath = endpoint.Path.Replace('{', '$').Replace("}", "");
                     sb.AppendLine(
-                        $"  Future<{context.Project.Dart.ResponseClass}<{returnType}>> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
+                        $"  Future<{context.Project.Dart?.ResponseClass}<{returnType}>> {endpoint.Name.ToCamelCase()}({paramListStr}) async {{");
                     if (hasQueryParams)
                     {
                         sb.AppendLine($"    final queryParameters = {{");
                         sb.Append(string.Join("",
                             from p in endpoint.Parameters
                             where p.Location == "query"
-                            select $"      '{FixupStringLiteral(p.Name)}': {FixupVariableName(p.Name)}{FieldToJsonString(p, FixupType(context, p.DataType, p.IsArray, p.Nullable))},\n".Replace("'\\$", "r'$")));
+                            select $"      '{FixupStringLiteral(p.Name)}': {FixupVariableName(p.Name)}{FieldToJsonString(FixupType(context, p.DataType, p.IsArray, p.Nullable))},\n".Replace("'\\$", "r'$")));
                         sb.AppendLine($"    }};");
                     }
 
@@ -206,7 +206,7 @@ public class DartSdk : ILanguageSdk
                     }
                     sb.AppendLine($"    }}");
                     sb.AppendLine(
-                        $"    return {context.Project.Dart.ResponseClass}<{returnType}>.fromSuccess(data, value.statusCode);");
+                        $"    return {context.Project.Dart?.ResponseClass}<{returnType}>.fromSuccess(data, value.statusCode);");
                     // sb.AppendLine($"    var result = {context.Project.Dart.ResponseClass}<{returnType}>();");
                     // sb.AppendLine($"    result.success = value.success;");
                     // sb.AppendLine($"    result.hasError = value.hasError;");
@@ -279,8 +279,8 @@ public class DartSdk : ILanguageSdk
     private List<string> BuildImports(GeneratorContext context, string cat)
     {
         var imports = new List<string>();
-        imports.Add($"import '../{context.Project.Dart.ResponseClass.CamelCaseToSnakeCase()}.dart';");
-        imports.Add($"import '../{context.Project.Dart.ClassName.CamelCaseToSnakeCase()}.dart';");
+        imports.Add($"import '../{context.Project.Dart?.ResponseClass.CamelCaseToSnakeCase()}.dart';");
+        imports.Add($"import '../{context.Project.Dart?.ClassName.CamelCaseToSnakeCase()}.dart';");
         foreach (var endpoint in context.Api.Endpoints)
         {
             if (endpoint.Category == cat && !endpoint.Deprecated)
@@ -293,10 +293,7 @@ public class DartSdk : ILanguageSdk
                 }
                 foreach (var p in endpoint.Parameters)
                 {
-                    if (p.DataTypeRef != null)
-                    {
-                        AddImport(context, imports, p.DataType, p.IsArray);
-                    }
+                    AddImport(context, imports, p.DataType, p.IsArray);
                 }
 
                 // The return type of a file download has special rules
@@ -358,7 +355,7 @@ public class DartSdk : ILanguageSdk
             imports.Add("import 'dart:convert';");
         }
         
-        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType == context.Project.Dart.ResponseClass)
+        if (context.Api.FindEnum(dataType) != null || string.IsNullOrWhiteSpace(dataType) || dataType == context.Project.Dart?.ResponseClass)
         {
             return;
         }
@@ -435,7 +432,7 @@ public class DartSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
-        var modelsDir = context.MakePath(context.Project.Dart.Folder, "models");
+        var modelsDir = context.MakePath(context.Project.Dart?.Folder, "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.dart"))
         {
@@ -444,183 +441,185 @@ public class DartSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
-            var handwritten = (context.Project.Dart.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
-            handwritten.Add(context.Project.Dart.ResponseClass);
+            var handwritten = (context.Project.Dart?.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
+            if (context.Project.Dart?.ResponseClass != null)
+            {
+                handwritten.Add(context.Project.Dart.ResponseClass);
+            }
+
             if (handwritten.Contains(item.Name))
             {
                 continue;
             }
-            if (item.Fields != null)
+
+            var sb = new StringBuilder();
+            sb.AppendLine(FileHeader(context.Project));
+            sb.AppendLine();
+
+            // Produce imports
+            foreach (var import in BuildImportsForSchema(context, item))
             {
-                var sb = new StringBuilder();
-                sb.AppendLine(FileHeader(context.Project));
-                sb.AppendLine();
+                sb.AppendLine(import);
+            }
 
-                // Produce imports
-                foreach (var import in BuildImportsForSchema(context, item))
-                {
-                    sb.AppendLine(import);
-                }
-
-                // Add class and header
-                sb.AppendLine();
-                sb.Append(item.DescriptionMarkdown.ToDartDoc(0));
-                sb.AppendLine($"class {item.Name}");
-                sb.AppendLine("{");
+            // Add class and header
+            sb.AppendLine();
+            sb.Append(item.DescriptionMarkdown.ToDartDoc(0));
+            sb.AppendLine($"class {item.Name}");
+            sb.AppendLine("{");
                 
-                // Basic constructor
-                sb.AppendLine();
-                sb.AppendLine($"  {item.Name}({{");
-                foreach (var field in item.Fields)
+            // Basic constructor
+            sb.AppendLine();
+            sb.AppendLine($"  {item.Name}({{");
+            foreach (var f1 in item.Fields)
+            {
+                if (!f1.Deprecated)
                 {
-                    if (!field.Deprecated)
-                    {
-                        sb.AppendLine($"    {(field.Nullable ? "" : "required ")}this.{field.Name.ToCamelCase()},");
-                    }
+                    sb.AppendLine($"    {(f1.Nullable ? "" : "required ")}this.{f1.Name.ToCamelCase()},");
                 }
-                sb.AppendLine($"  }});");
+            }
+            sb.AppendLine($"  }});");
                 
-                // Implement JSON deserialization logic
-                // https://stackoverflow.com/questions/55292633/how-to-convert-json-string-to-json-object-in-dart-flutter
-                sb.AppendLine();
-                sb.AppendLine($"  {item.Name}.fromJson(Map<String, dynamic> json) :");
-                foreach (var field in item.Fields)
+            // Implement JSON deserialization logic
+            // https://stackoverflow.com/questions/55292633/how-to-convert-json-string-to-json-object-in-dart-flutter
+            sb.AppendLine();
+            sb.AppendLine($"  {item.Name}.fromJson(Map<String, dynamic> json) :");
+            foreach (var f2 in item.Fields)
+            {
+                if (!f2.Deprecated)
                 {
-                    if (!field.Deprecated)
+                    if (f2.IsArray)
                     {
-                        if (field.IsArray)
+                        // we only want the type used inside the list object
+                        var dartType = FixupType(context, f2.DataType, false, false);
+                        if (IsJsonConvertType(f2.DataType))
                         {
-                            // we only want the type used inside the list object
-                            var dartType = FixupType(context, field.DataType, false, false);
-                            if (IsJsonConvertType(field.DataType))
-                            {
-                                // jsonDecode(json['userIds']).cast<String>();
-                                sb.AppendLine($"    {field.Name} = (jsonDecode(json['{field.Name}'] as String) as List<dynamic>).cast<{dartType}>(),");
-                            }
-                            else if(field.Nullable)
-                            {
-                                sb.AppendLine($"    {field.Name} = List<{dartType}>.from((json['{field.Name}'] as List<dynamic>? ?? []).map((dynamic item) => {dartType}.fromJson(item as Map<String, dynamic>))),");
-                            }
-                            else
-                            {
-                                sb.AppendLine($"    {field.Name} = List<{dartType}>.from((json['{field.Name}'] as List<dynamic>).map((dynamic item) => {dartType}.fromJson(item as Map<String, dynamic>))),");
-                            }
+                            // jsonDecode(json['userIds']).cast<String>();
+                            sb.AppendLine($"    {f2.Name} = (jsonDecode(json['{f2.Name}'] as String) as List<dynamic>).cast<{dartType}>(),");
                         }
-                        else if (IsObjectType(context, field.DataType))
+                        else if(f2.Nullable)
                         {
-                            var dartType = FixupType(context, field.DataType, false, false);
-                            if (field.Nullable)
-                            {
-                                sb.AppendLine($"    {field.Name} = json['{field.Name}'] != null ? {dartType}.fromJson(json['{field.Name}'] as Map<String, dynamic>) : null,");
-                            }
-                            else
-                            {
-                                sb.AppendLine($"    {field.Name} = {dartType}.fromJson(json['{field.Name}'] as Map<String, dynamic>),");
-                            }
+                            sb.AppendLine($"    {f2.Name} = List<{dartType}>.from((json['{f2.Name}'] as List<dynamic>? ?? []).map((dynamic item) => {dartType}.fromJson(item as Map<String, dynamic>))),");
                         }
                         else
                         {
-                            var dartType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
-                            switch (dartType.ToLowerInvariant())
-                            {
-                                case "datetime":
-                                    sb.AppendLine($"    {field.Name} = DateTime.parse(json['{field.Name}']),");
-                                    break;
-                                case "datetime?":
-                                    sb.AppendLine($"    {field.Name} = json['{field.Name}'] != null ? DateTime.parse(json['{field.Name}']) : null,");
-                                    break;
-                                default:
-                                    if (field.Nullable || dartType.ToLower() == "object")
-                                    {
-                                        sb.AppendLine($"    {field.Name} = json['{field.Name}'] as {dartType},");
-                                    }
-                                    else
-                                    {
-                                        sb.AppendLine($"    {field.Name} = json['{field.Name}'] as {dartType}? ?? {GetDefaultDartValue(dartType)},");
-                                    }
-
-                                    break;
-                            }
+                            sb.AppendLine($"    {f2.Name} = List<{dartType}>.from((json['{f2.Name}'] as List<dynamic>).map((dynamic item) => {dartType}.fromJson(item as Map<String, dynamic>))),");
                         }
                     }
-                }
-
-                // Convert the last comma into a semicolon
-                sb.Length -= Environment.NewLine.Length + 1;
-                sb.AppendLine(";");
-                sb.AppendLine();
-                
-                // JSON serialization
-                sb.AppendLine($"  static Map<String, dynamic> toJson({item.Name} item) {{");
-                sb.AppendLine($"    final data = <String, dynamic>{{}};");
-                foreach (var field in item.Fields)
-                {
-                    if (field.Deprecated)
+                    else if (IsObjectType(context, f2.DataType))
                     {
-                        continue;
-                    }
-
-                    var dartType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
-                    if (field.IsArray)
-                    {
-                        sb.Append($"    data['{field.Name}'] = ");
-                        sb.Append($"item.{field.Name}{(field.Nullable ? "?" : "")}.map(");
-                        if (IsObjectType(context, field.DataType))
+                        var dartType = FixupType(context, f2.DataType, false, false);
+                        if (f2.Nullable)
                         {
-                            sb.Append($"{field.DataType}.toJson");
-                        }
-                        else if (IsJsonConvertType(field.DataType))
-                        {
-                            sb.Append($"(item) => jsonEncode(item)");
+                            sb.AppendLine($"    {f2.Name} = json['{f2.Name}'] != null ? {dartType}.fromJson(json['{f2.Name}'] as Map<String, dynamic>) : null,");
                         }
                         else
                         {
-                            sb.Append($"(item) => item{FieldToJsonString(field, dartType)}");
-                        }
-
-                        sb.Append(")");
-                        
-                        sb.AppendLine(";");
-                    }
-                    else if (IsObjectType(context, field.DataType))
-                    {
-                        if (field.Nullable)
-                        {
-                            sb.AppendLine($"    data['{field.Name}'] = item.{field.Name} != null ? {field.DataType}.toJson(item.{field.Name}!) : null;");
-                        }
-                        else
-                        {
-                            sb.AppendLine($"    data['{field.Name}'] = {field.DataType}.toJson(item.{field.Name});");
+                            sb.AppendLine($"    {f2.Name} = {dartType}.fromJson(json['{f2.Name}'] as Map<String, dynamic>),");
                         }
                     }
                     else
                     {
-                        sb.AppendLine($"    data['{field.Name}'] = item.{field.Name}{FieldToJsonString(field, dartType)};");
-                    }
-                    
-                }
-                sb.AppendLine($"    return data;");
-                sb.AppendLine($"  }}");
+                        var dartType = FixupType(context, f2.DataType, f2.IsArray, f2.Nullable);
+                        switch (dartType.ToLowerInvariant())
+                        {
+                            case "datetime":
+                                sb.AppendLine($"    {f2.Name} = DateTime.parse(json['{f2.Name}']),");
+                                break;
+                            case "datetime?":
+                                sb.AppendLine($"    {f2.Name} = json['{f2.Name}'] != null ? DateTime.parse(json['{f2.Name}']) : null,");
+                                break;
+                            default:
+                                if (f2.Nullable || dartType.ToLower() == "object")
+                                {
+                                    sb.AppendLine($"    {f2.Name} = json['{f2.Name}'] as {dartType},");
+                                }
+                                else
+                                {
+                                    sb.AppendLine($"    {f2.Name} = json['{f2.Name}'] as {dartType}? ?? {GetDefaultDartValue(dartType)},");
+                                }
 
-                // First do the fields
-                foreach (var field in item.Fields)
-                {
-                    if (!field.Deprecated)
-                    {
-                        sb.AppendLine();
-                        sb.Append(field.DescriptionMarkdown.ToDartDoc(4));
-                        sb.AppendLine($"    {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name};");
+                                break;
+                        }
                     }
                 }
-
-                sb.AppendLine("}");
-                var classPath = Path.Combine(modelsDir, item.Name.CamelCaseToSnakeCase() + ".dart");
-                await File.WriteAllTextAsync(classPath, sb.ToString());
             }
+
+            // Convert the last comma into a semicolon
+            sb.Length -= Environment.NewLine.Length + 1;
+            sb.AppendLine(";");
+            sb.AppendLine();
+                
+            // JSON serialization
+            sb.AppendLine($"  static Map<String, dynamic> toJson({item.Name} item) {{");
+            sb.AppendLine($"    final data = <String, dynamic>{{}};");
+            foreach (var f3 in item.Fields)
+            {
+                if (f3.Deprecated)
+                {
+                    continue;
+                }
+
+                var dartType = FixupType(context, f3.DataType, f3.IsArray, f3.Nullable);
+                if (f3.IsArray)
+                {
+                    sb.Append($"    data['{f3.Name}'] = ");
+                    sb.Append($"item.{f3.Name}{(f3.Nullable ? "?" : "")}.map(");
+                    if (IsObjectType(context, f3.DataType))
+                    {
+                        sb.Append($"{f3.DataType}.toJson");
+                    }
+                    else if (IsJsonConvertType(f3.DataType))
+                    {
+                        sb.Append($"(item) => jsonEncode(item)");
+                    }
+                    else
+                    {
+                        sb.Append($"(item) => item{FieldToJsonString(dartType)}");
+                    }
+
+                    sb.Append(")");
+                        
+                    sb.AppendLine(";");
+                }
+                else if (IsObjectType(context, f3.DataType))
+                {
+                    if (f3.Nullable)
+                    {
+                        sb.AppendLine($"    data['{f3.Name}'] = item.{f3.Name} != null ? {f3.DataType}.toJson(item.{f3.Name}!) : null;");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"    data['{f3.Name}'] = {f3.DataType}.toJson(item.{f3.Name});");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"    data['{f3.Name}'] = item.{f3.Name}{FieldToJsonString(dartType)};");
+                }
+                    
+            }
+            sb.AppendLine($"    return data;");
+            sb.AppendLine($"  }}");
+
+            // First do the fields
+            foreach (var f4 in item.Fields)
+            {
+                if (!f4.Deprecated)
+                {
+                    sb.AppendLine();
+                    sb.Append(f4.DescriptionMarkdown.ToDartDoc(4));
+                    sb.AppendLine($"    {FixupType(context, f4.DataType, f4.IsArray, f4.Nullable)} {f4.Name};");
+                }
+            }
+
+            sb.AppendLine("}");
+            var classPath = Path.Combine(modelsDir, item.Name.CamelCaseToSnakeCase() + ".dart");
+            await File.WriteAllTextAsync(classPath, sb.ToString());
         }    
     }
 
-    private string FieldToJsonString(SchemaField field, string dartType)
+    private string FieldToJsonString(string dartType)
     {
         switch (dartType.ToLower())
         {
@@ -746,7 +745,7 @@ public class DartSdk : ILanguageSdk
                + "///\n"
                + $"/// @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $"/// @copyright  {project.CopyrightHolder}\n"
-               + $"/// @link       {project.Dart.GithubUrl}\n"
+               + $"/// @link       {project.Dart?.GithubUrl}\n"
                + "///\n"
                + "library;\n";    
     }

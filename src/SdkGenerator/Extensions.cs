@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator;
@@ -26,7 +23,7 @@ public static class Extensions
     /// <param name="swaggerParameterName">A swagger parameter name</param>
     /// <param name="keywords">A list of reserved keywords to avoid</param>
     /// <returns></returns>
-    public static string ToVariableName(this string swaggerParameterName, List<string> keywords = null)
+    public static string ToVariableName(this string swaggerParameterName, List<string>? keywords = null)
     {
         if (string.IsNullOrWhiteSpace(swaggerParameterName))
         {
@@ -114,13 +111,21 @@ public static class Extensions
     /// </summary>
     /// <param name="s"></param>
     /// <returns></returns>
-    public static string WordsToSnakeCase(this string s)
+    public static string WordsToSnakeCase(this string? s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.Empty;
+        }
         return s.ToLower().Replace(" ", "_");
     }
 
-    public static string CamelCaseToSnakeCase(this string s)
+    public static string CamelCaseToSnakeCase(this string? s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.Empty;
+        }
         var sb = new StringBuilder();
         bool inUnderscores = false;
         foreach (var c in s)
@@ -159,7 +164,7 @@ public static class Extensions
     /// </summary>
     /// <param name="s"></param>
     /// <returns></returns>
-    public static string ProperCaseToSnakeCase(this string s)
+    public static string ProperCaseToSnakeCase(this string? s)
     {
         if (string.IsNullOrWhiteSpace(s))
         {
@@ -206,7 +211,7 @@ public static class Extensions
     }
 
     
-    public static string ToDartDoc(this string description, int indent, List<ParameterField> parameters = null)
+    public static string ToDartDoc(this string description, int indent, List<ParameterField>? parameters = null)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -231,7 +236,7 @@ public static class Extensions
     }
 
 
-    public static string ToJavaDoc(this string markdown, int indent, string returnType = null, List<ParameterField> parameterList = null)
+    public static string ToJavaDoc(this string markdown, int indent, string? returnType = null, List<ParameterField>? parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown) && parameterList == null && string.IsNullOrWhiteSpace(returnType))
         {
@@ -313,8 +318,13 @@ public static class Extensions
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static string ReflowMarkdown(this string text)
+    public static string ReflowMarkdown(this string? text)
     {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+        
         var sb = new StringBuilder();
         foreach (var line in text.Split("\n".ToCharArray()))
         {
@@ -414,12 +424,10 @@ public static class Extensions
         }
     }
 
-#nullable enable
     public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T>? source)
     {
         return source ?? Enumerable.Empty<T>();
     }
-#nullable disable
     
     public static bool IsValidName(this string itemName)
     {
@@ -443,5 +451,25 @@ public static class Extensions
     private static bool IsSafeChar(this char c)
     {
         return char.IsAsciiLetterOrDigit(c) || c == '_' || c == ' ';
+    }
+
+    public static string GetFirstSentence(this string s)
+    {
+        var p = s.IndexOf('.');
+        if (p > 0)
+        {
+            return s[..(p + 1)];
+        }
+        return string.Empty;
+    }
+
+    public static string GetSecondSentenceOnwards(this string s)
+    {
+        var p = s.IndexOf('.');
+        if (p > 0)
+        {
+            return s[(p + 1)..].TrimStart();
+        }
+        return s;
     }
 }

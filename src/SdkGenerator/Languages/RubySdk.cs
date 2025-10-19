@@ -23,12 +23,16 @@ public class RubySdk : ILanguageSdk
                + "#\n"
                + $"# @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $"# @copyright  {project.CopyrightHolder}\n"
-               + $"# @link       {project.Ruby.GithubUrl}\n"
+               + $"# @link       {project.Ruby?.GithubUrl}\n"
                + "#\n\n";
     }
 
     private async Task ExportSchemas(GeneratorContext context)
     {
+        if (context.Project.Ruby == null)
+        {
+            return;
+        }
         var modelsDir = context.MakePath(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace, "models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.rb"))
@@ -38,66 +42,67 @@ public class RubySdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
-            if (item.Fields != null)
+            var sb = new StringBuilder();
+            sb.AppendLine(FileHeader(context.Project));
+            sb.AppendLine("require 'json'");
+            sb.AppendLine();
+            sb.AppendLine($"module {context.Project.Ruby.ModuleName}");
+            sb.AppendLine();
+
+            // Ruby likes to have comments padded to the length of the longest field
+            sb.Append(MakeRubyDoc(item.DescriptionMarkdown, 4, null));
+            sb.AppendLine($"    class {item.Name.ToProperCase()}");
+            sb.AppendLine();
+            sb.AppendLine("        ##");
+            sb.AppendLine($"        # Initialize the {item.Name.ToProperCase()} using the provided prototype");
+            sb.AppendLine("        def initialize(params = {})");
+            foreach (var f in item.Fields)
             {
-                var sb = new StringBuilder();
-                sb.AppendLine(FileHeader(context.Project));
-                sb.AppendLine("require 'json'");
-                sb.AppendLine();
-                sb.AppendLine($"module {context.Project.Ruby.ModuleName}");
-                sb.AppendLine();
-
-                // Ruby likes to have comments padded to the length of the longest field
-                sb.Append(MakeRubyDoc(item.DescriptionMarkdown, 4, null));
-                sb.AppendLine($"    class {item.Name.ToProperCase()}");
-                sb.AppendLine();
-                sb.AppendLine("        ##");
-                sb.AppendLine($"        # Initialize the {item.Name.ToProperCase()} using the provided prototype");
-                sb.AppendLine("        def initialize(params = {})");
-                foreach (var f in item.Fields)
-                {
-                    sb.AppendLine(
-                        $"            @{f.Name.ProperCaseToSnakeCase()} = params.dig(:{f.Name.ProperCaseToSnakeCase()})");
-                }
-
-                sb.AppendLine("        end");
-                sb.AppendLine();
-                foreach (var f in item.Fields)
-                {
-                    sb.AppendLine("        ##");
-                    sb.AppendLine(
-                        $"        # @return [{f.DataType.ToProperCase()}] {f.DescriptionMarkdown.ToSingleLineMarkdown()}");
-                    sb.AppendLine($"        attr_accessor :{f.Name.ProperCaseToSnakeCase()}");
-                    sb.AppendLine();
-                }
-
-                sb.AppendLine("        ##");
-                sb.AppendLine("        # @return [object] This object as a JSON key-value structure");
-                sb.AppendLine("        def as_json(options={})");
-                sb.AppendLine("            {");
-                foreach (var f in item.Fields)
-                {
-                    sb.AppendLine($"                '{f.Name}' => @{f.Name.ProperCaseToSnakeCase()},");
-                }
-
-                sb.AppendLine("            }");
-                sb.AppendLine("        end");
-                sb.AppendLine();
-                sb.AppendLine("        ##");
-                sb.AppendLine("        # @return [String] This object converted to a JSON string");
-                sb.AppendLine("        def to_json(*options)");
-                sb.AppendLine("            \"[#{as_json(*options).to_json(*options)}]\"");
-                sb.AppendLine("        end");
-                sb.AppendLine("    end");
-                sb.AppendLine("end");
-                var modelPath = Path.Combine(modelsDir, item.Name.ProperCaseToSnakeCase() + ".rb");
-                await File.WriteAllTextAsync(modelPath, sb.ToString());
+                sb.AppendLine(
+                    $"            @{f.Name.ProperCaseToSnakeCase()} = params.dig(:{f.Name.ProperCaseToSnakeCase()})");
             }
+
+            sb.AppendLine("        end");
+            sb.AppendLine();
+            foreach (var f in item.Fields)
+            {
+                sb.AppendLine("        ##");
+                sb.AppendLine(
+                    $"        # @return [{f.DataType.ToProperCase()}] {f.DescriptionMarkdown.ToSingleLineMarkdown()}");
+                sb.AppendLine($"        attr_accessor :{f.Name.ProperCaseToSnakeCase()}");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("        ##");
+            sb.AppendLine("        # @return [object] This object as a JSON key-value structure");
+            sb.AppendLine("        def as_json(options={})");
+            sb.AppendLine("            {");
+            foreach (var f in item.Fields)
+            {
+                sb.AppendLine($"                '{f.Name}' => @{f.Name.ProperCaseToSnakeCase()},");
+            }
+
+            sb.AppendLine("            }");
+            sb.AppendLine("        end");
+            sb.AppendLine();
+            sb.AppendLine("        ##");
+            sb.AppendLine("        # @return [String] This object converted to a JSON string");
+            sb.AppendLine("        def to_json(*options)");
+            sb.AppendLine("            \"[#{as_json(*options).to_json(*options)}]\"");
+            sb.AppendLine("        end");
+            sb.AppendLine("    end");
+            sb.AppendLine("end");
+            var modelPath = Path.Combine(modelsDir, item.Name.ProperCaseToSnakeCase() + ".rb");
+            await File.WriteAllTextAsync(modelPath, sb.ToString());
         }
     }
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
+        if (context.Project.Ruby == null)
+        {
+            return;
+        }
         var clientsDir = context.MakePath(context.Project.Ruby.Folder, "lib", context.Project.Ruby.Namespace, "clients");
         Directory.CreateDirectory(clientsDir);
         foreach (var clientsFile in Directory.EnumerateFiles(clientsDir, "*.rb"))
@@ -132,8 +137,7 @@ public class RubySdk : ILanguageSdk
 
                 // Figure out the parameter list
                 var body = (from p in endpoint.Parameters where p.Location == "body" select p).FirstOrDefault();
-                var hasBody = body != null;
-                var bodyParamStr = hasBody ? body.DataType == "object" ? "body.to_camelback_keys.to_json" : "body" : "nil";
+                var bodyParamStr = body != null ? body.DataType == "object" ? "body.to_camelback_keys.to_json" : "body" : "nil";
                 var hasQueryParams = (from p in endpoint.Parameters where p.Location == "query" select p).Any();
                 var paramListStr = string.Join(", ", from p in endpoint.Parameters select $"{FixupVariableName(p.Name)}:");
 
@@ -207,7 +211,7 @@ public class RubySdk : ILanguageSdk
         }
     }
 
-    public static string MakeRubyDoc(string description, int indent, List<ParameterField> parameters)
+    private static string MakeRubyDoc(string description, int indent, List<ParameterField>? parameters)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -279,5 +283,31 @@ public class RubySdk : ILanguageSdk
     public string LanguageName()
     {
         return "Ruby";
+    }
+
+    public static string MakeRubyMultilineString(string markdown, int indent)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder();
+        var prefix = "".PadLeft(indent) + "\"";
+
+        // Add summary section
+        foreach (var line in markdown.Split("\n"))
+        {
+            // Leave the first line un-indented, but indent everything afterwards
+            if (sb.Length != 0)
+            {
+                sb.AppendLine(" \"\\");
+                sb.Append(prefix);
+            }
+
+            sb.Append(line.Replace("\"", "\\\"").TrimEnd());
+        }
+
+        return sb.ToString();        
     }
 }

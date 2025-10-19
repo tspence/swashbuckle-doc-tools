@@ -4,15 +4,12 @@ namespace SdkGenerator.Project;
 
 public class ProjectSchema
 {
-    public string CompanyName { get; set; }
-    public string AuthorName { get; set; }
-    public string AuthorEmail { get; set; }
-    public string DocumentationUrl { get; set; }
-        
-    public string ProjectName { get; set; }
-    public string CopyrightHolder { get; set; }
+    public string? AuthorName { get; set; }
+    public string? AuthorEmail { get; set; }
+    public string? ProjectName { get; set; }
+    public string? CopyrightHolder { get; set; }
     public int ProjectStartYear { get; set; }
-    public string SwaggerUrl { get; set; }
+    public string? SwaggerUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// The major version mode for this application - e.g. "11.1" or "11.1.2023".
@@ -26,49 +23,44 @@ public class ProjectSchema
     /// an object that doesn't need its own documentation; instead it is represented
     /// by the official version of that generic.
     /// </summary>
-    public string[] GenericSuffixes { get; set; }
-    public SwaggerParameterSchema[] IgnoredParameters { get; set; }
-    public string[] IgnoredEndpoints { get; set; }
-    public string[] IgnoredCategories { get; set; }
+    public string[]? GenericSuffixes { get; set; }
+    public SwaggerParameterSchema[]? IgnoredParameters { get; set; }
+    public string[]? IgnoredEndpoints { get; set; }
+    public string[]? IgnoredCategories { get; set; }
     
-    public EnvironmentSchema[] Environments { get; set; }
-    public string SwaggerSchemaFolder { get; set; }
+    public EnvironmentSchema[]? Environments { get; set; }
+    public string? SwaggerSchemaFolder { get; set; }
     public bool GenerateMarkdownFiles { get; set; }
     public bool? BlankOutSecuritySchemesSection { get; set; }
-    public string Keywords { get; set; }
-    public string Description { get; set; }
-    public string AuthenticationHelp { get; set; }
-    public string ReleaseNotes { get; set; }
-
-    /// <summary>
-    /// If you use a readme site, provide this information
-    /// </summary>
-    public ReadmeSiteSchema Readme { get; set; }
+    public string? Keywords { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// To determine the correct version number for your project, use this URL and regex
     /// </summary>
-    public string VersionNumberUrl { get; set; }
+    public string? VersionNumberUrl { get; set; }
 
-    public string VersionNumberRegex { get; set; }
+    public string? VersionNumberRegex { get; set; }
 
     /// <summary>
-    /// Extra information about the various languages
+    /// Extra information about the various languages and features
     /// </summary>
-    public LanguageSchema Csharp { get; set; }
-
-    public LanguageSchema Java { get; set; }
-    public LanguageSchema Python { get; set; }
-    public LanguageSchema Ruby { get; set; }
-    public LanguageSchema Typescript { get; set; }
-    public LanguageSchema Workato { get; set; }
-    public LanguageSchema Dart { get; set; }
+    public LanguageSchema? Csharp { get; set; }
+    public LanguageSchema? Java { get; set; }
+    public LanguageSchema? Python { get; set; }
+    public LanguageSchema? Ruby { get; set; }
+    public LanguageSchema? Typescript { get; set; }
+    public WorkatoSchema? Workato { get; set; }
+    public LanguageSchema? Dart { get; set; }
+    public ReadmeSiteSchema? Readme { get; set; }
+    public PatchNotesSchema? PatchNotes { get; set; }
+    public CopySwaggerSchema? CopySwagger { get; set; }
 }
 
 public class SwaggerParameterSchema
 {
-    public string Name { get; set; }
-    public string Location { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Location { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -76,9 +68,8 @@ public class SwaggerParameterSchema
 /// </summary>
 public class EnvironmentSchema
 {
-    public string Name { get; set; }
-    public string Url { get; set; }
-    public bool? Default { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -89,12 +80,12 @@ public class ReadmeSiteSchema
     /// <summary>
     /// The base URL of data models
     /// </summary>
-    public string DataModelUrl { get; set; }
+    public string? DataModelUrl { get; set; }
 
     /// <summary>
     /// An API key to use to communicate with Readme
     /// </summary>
-    public string ApiKey { get; set; }
+    public string? ApiKey { get; set; }
 
     /// <summary>
     /// The Readme ID of the category where these models will be saved
@@ -102,33 +93,48 @@ public class ReadmeSiteSchema
     /// and either create the category or add items to it.
     /// Should also allow us to specify a readme "version number"
     /// </summary>
-    public string ModelCategory { get; set; }
+    public string? ModelCategory { get; set; }
     
     /// <summary>
     /// The x-readme-version to use when making API calls
     /// </summary>
-    public string ReadmeVersionCode { get; set; }
+    public string? ReadmeVersionCode { get; set; }
     
     /// <summary>
     /// Set this value to avoid uploading API references multiple times
     /// </summary>
-    public string ReadmeApiDefinitionId { get; set; }
+    public string? ReadmeApiDefinitionId { get; set; }
     
     /// <summary>
     /// Defined formats: 'list' and 'table'
     /// </summary>
-    public string Format { get; set; }
+    public string? Format { get; set; }
 }
 
 public class LanguageSchema
 {
-    public string ModuleName { get; set; }
-    public string ExtraCredit { get; set; }
-    public string Folder { get; set; }
-    public string ClassName { get; set; }
-    public string ResponseClass { get; set; }
-    public string ResponseErrorClass { get; set; }
-    public string Namespace { get; set; }
-    public string GithubUrl { get; set; }
-    public List<string> HandwrittenClasses { get; set; }
+    public string? ModuleName { get; set; }
+    public string? Folder { get; set; }
+    public string? ClassName { get; set; }
+    public string? ResponseClass { get; set; }
+    public string? Namespace { get; set; }
+    public string? GithubUrl { get; set; }
+    public List<string>? HandwrittenClasses { get; set; }
+}
+
+public class WorkatoSchema
+{
+    public string? Folder { get; set; }
+    public string? ResponseClass { get; set; }
+    public string? ResponseDataField { get; set; }
+}
+
+public class PatchNotesSchema
+{
+    public string? OutputFile { get; set; }
+}
+
+public class CopySwaggerSchema
+{
+    public string Target { get; set; } = string.Empty;
 }

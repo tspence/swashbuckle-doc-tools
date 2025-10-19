@@ -24,7 +24,7 @@ public class CSharpSdk : ILanguageSdk
                + " *\n"
                + $" * @author     {project.AuthorName} <{project.AuthorEmail}>\n"
                + $" * @copyright  {project.CopyrightHolder}\n"
-               + $" * @link       {project.Csharp.GithubUrl}\n"
+               + $" * @link       {project.Csharp?.GithubUrl}\n"
                + " */\n"
                + "\n\n";
     }
@@ -130,6 +130,10 @@ public class CSharpSdk : ILanguageSdk
 
     private async Task ExportEnums(GeneratorContext context)
     {
+        if (context.Project.Csharp == null)
+        {
+            return;
+        }
         if (context.Api.Enums.Count > 0)
         {
             var sb = new StringBuilder();
@@ -164,6 +168,11 @@ public class CSharpSdk : ILanguageSdk
 
     private async Task ExportSchemas(GeneratorContext context)
     {
+        if (context.Project.Csharp == null || context.Project.Csharp.ResponseClass == null)
+        {
+            return;
+        }
+
         var modelsDir = context.MakePath(context.Project.Csharp.Folder, "src", "Models");
         Directory.CreateDirectory(modelsDir);
         foreach (var modelFile in Directory.EnumerateFiles(modelsDir, "*.cs"))
@@ -180,6 +189,7 @@ public class CSharpSdk : ILanguageSdk
             {
                 continue;
             }
+
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
             sb.AppendLine("#pragma warning disable CS8618");
@@ -188,43 +198,41 @@ public class CSharpSdk : ILanguageSdk
             sb.AppendLine();
             sb.AppendLine($"namespace {context.Project.Csharp.Namespace}.Models");
             sb.AppendLine("{");
-            if (item.Fields != null)
+            sb.AppendLine();
+            sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4, false));
+            sb.AppendLine($"    public class {item.Name} : ApiModel");
+            sb.AppendLine("    {");
+            foreach (var field in item.Fields)
             {
-                sb.AppendLine();
-                sb.Append(MarkdownToDocblock(context, item.DescriptionMarkdown, 4, false));
-                sb.AppendLine($"    public class {item.Name} : ApiModel");
-                sb.AppendLine("    {");
-                foreach (var field in item.Fields)
+                if (!field.Deprecated)
                 {
-                    if (!field.Deprecated)
+                    var fieldType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
+                    // Add commentary for date-only fields
+                    var markdown = field.DescriptionMarkdown;
+                    if (field.DataType == "date" && fieldType == "string")
                     {
-                        var fieldType = FixupType(context, field.DataType, field.IsArray, field.Nullable);
-                        // Add commentary for date-only fields
-                        var markdown = field.DescriptionMarkdown;
-                        if (field.DataType == "date" && fieldType == "string")
-                        {
-                            markdown +=
-                                "\n\n" +
-                                "This is a date-only field stored as a string in ISO 8601 (YYYY-MM-DD) format.";
-                        }
-                        
-                        // If this is an enum, add something to markdown to make that clear
-                        var matchingEnum = context.Api.FindEnum(field.DataType);
-                        if (matchingEnum != null)
-                        {
-                            markdown += "\n\n" +
-                                        $"For a list of values, see `{matchingEnum.Name}Values`.";
-                        }
-
-                        sb.AppendLine();
-                        sb.Append(MarkdownToDocblock(context, markdown, 8, false));
-                        sb.AppendLine($"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
+                        markdown +=
+                            "\n\n" +
+                            "This is a date-only field stored as a string in ISO 8601 (YYYY-MM-DD) format.";
                     }
+
+                    // If this is an enum, add something to markdown to make that clear
+                    var matchingEnum = context.Api.FindEnum(field.DataType);
+                    if (matchingEnum != null)
+                    {
+                        markdown += "\n\n" +
+                                    $"For a list of values, see `{matchingEnum.Name}Values`.";
+                    }
+
+                    sb.AppendLine();
+                    sb.Append(MarkdownToDocblock(context, markdown, 8, false));
+                    sb.AppendLine(
+                        $"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
                 }
 
-                sb.AppendLine("    }");
             }
 
+            sb.AppendLine("    }");
             sb.AppendLine("}");
             var modelPath = Path.Combine(modelsDir, item.Name + ".cs");
             await File.WriteAllTextAsync(modelPath, sb.ToString());
@@ -232,7 +240,7 @@ public class CSharpSdk : ILanguageSdk
     }
 
     private string MarkdownToDocblock(GeneratorContext context, string markdown, int indent, bool isFileUpload, 
-        List<ParameterField> parameterList = null)
+        List<ParameterField>? parameterList = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -287,6 +295,10 @@ public class CSharpSdk : ILanguageSdk
 
     private async Task ExportEndpoints(GeneratorContext context)
     {
+        if (context.Project.Csharp == null)
+        {
+            return;
+        }
         var clientsDir = context.MakePath(context.Project.Csharp.Folder, "src", "Clients");
         var interfacesDir = context.MakePath(context.Project.Csharp.Folder, "src", "Interfaces");
         Directory.CreateDirectory(clientsDir);
@@ -310,6 +322,11 @@ public class CSharpSdk : ILanguageSdk
 
     private async Task ExportCategoryClient(GeneratorContext context, string cat, string clientsDir)
     {
+        if (context.Project.Csharp == null)
+        {
+            return;
+        }
+        
         var sb = new StringBuilder();
 
         // Construct header
@@ -437,10 +454,10 @@ public class CSharpSdk : ILanguageSdk
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Threading.Tasks;");
-        sb.AppendLine($"using {context.Project.Csharp.Namespace}.Models;");
+        sb.AppendLine($"using {context.Project.Csharp?.Namespace}.Models;");
         sb.AppendLine();
         sb.AppendLine();
-        sb.AppendLine($"namespace {context.Project.Csharp.Namespace}.Interfaces");
+        sb.AppendLine($"namespace {context.Project.Csharp?.Namespace}.Interfaces");
         sb.AppendLine("{");
         sb.AppendLine("    /// <summary>");
         sb.AppendLine($"    /// API methods related to {cat}");
@@ -475,7 +492,7 @@ public class CSharpSdk : ILanguageSdk
                 false);
 
             // Write the method
-            sb.AppendLine($"        Task<{context.Project.Csharp.ResponseClass}<{returnType}>> {endpoint.Name.ToProperCase()}({string.Join(", ", paramList)});");
+            sb.AppendLine($"        Task<{context.Project.Csharp?.ResponseClass}<{returnType}>> {endpoint.Name.ToProperCase()}({string.Join(", ", paramList)});");
         }
 
         // Close out the interface and namespace
@@ -519,7 +536,7 @@ public class CSharpSdk : ILanguageSdk
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Authors", context.Project.AuthorName);
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Description", context.Project.Description + " for DotNet");
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Summary", context.Project.ProjectName + " for DotNet");
-            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageReleaseNotes", context.PatchNotes.ToSummaryMarkdown());
+            await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageReleaseNotes", context.PatchNotes.ToSummaryMarkdown(null, null));
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "Copyright", $"Copyright {context.Project.ProjectStartYear} - {DateTime.Now.Year}");
             await ScribanFunctions.PatchXml(context, csprojFile.FullName, 8, "PackageTags", context.Project.Keywords);
         }
