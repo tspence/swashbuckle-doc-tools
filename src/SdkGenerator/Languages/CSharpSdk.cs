@@ -230,9 +230,9 @@ public class CSharpSdk : ILanguageSdk
                         $"        public {MakeNullable(fieldType)} {field.Name.ToProperCase()} {{ get; set; }}");
                 }
 
-                sb.AppendLine("    }");
             }
 
+            sb.AppendLine("    }");
             sb.AppendLine("}");
             var modelPath = Path.Combine(modelsDir, item.Name + ".cs");
             await File.WriteAllTextAsync(modelPath, sb.ToString());
