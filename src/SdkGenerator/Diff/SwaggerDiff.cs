@@ -77,10 +77,14 @@ public class SwaggerDiff
     {
         var sb = new StringBuilder();
         
+        // Build old and new names
+        var oldName = BuildVersionName(oldVersionName, OldVersion);
+        var newName = BuildVersionName(newVersionName, NewVersion);
+        
         // Header for these patch notes
-        sb.AppendLine($"# Patch notes for {newVersionName ?? NewVersion}");
+        sb.AppendLine($"# Patch notes for {newName}");
         sb.AppendLine();
-        sb.AppendLine($"These patch notes summarize the changes from version {oldVersionName ?? OldVersion}.");
+        sb.AppendLine($"These patch notes summarize the changes from version {oldName}.");
         sb.AppendLine();
         
         // Explain which APIs were added
@@ -154,5 +158,23 @@ public class SwaggerDiff
         }
 
         return sb.ToString();
+    }
+
+    private string BuildVersionName(string? versionName, string versionNumber)
+    {
+        if (string.IsNullOrWhiteSpace(versionName))
+        {
+            return versionNumber;
+        }
+        
+        // Special case for URLs
+        if (versionName.StartsWith("https://", StringComparison.CurrentCultureIgnoreCase))
+        {
+            var url = new Uri(versionName);
+            return $"[{url.Host} ({versionNumber})]({versionName})";
+        }
+        
+        // Basic case for file names
+        return $"{versionName} ({versionNumber})";
     }
 }
