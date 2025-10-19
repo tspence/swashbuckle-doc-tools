@@ -36,11 +36,6 @@ public class ProjectSchema
     public string? Description { get; set; }
 
     /// <summary>
-    /// If you use a readme site, provide this information
-    /// </summary>
-    public ReadmeSiteSchema? Readme { get; set; }
-
-    /// <summary>
     /// To determine the correct version number for your project, use this URL and regex
     /// </summary>
     public string? VersionNumberUrl { get; set; }
@@ -48,16 +43,17 @@ public class ProjectSchema
     public string? VersionNumberRegex { get; set; }
 
     /// <summary>
-    /// Extra information about the various languages
+    /// Extra information about the various languages and features
     /// </summary>
     public LanguageSchema? Csharp { get; set; }
-
     public LanguageSchema? Java { get; set; }
     public LanguageSchema? Python { get; set; }
     public LanguageSchema? Ruby { get; set; }
     public LanguageSchema? Typescript { get; set; }
     public WorkatoSchema? Workato { get; set; }
     public LanguageSchema? Dart { get; set; }
+    public ReadmeSiteSchema? Readme { get; set; }
+    public PatchNotesSchema? PatchNotes { get; set; }
 }
 
 public class SwaggerParameterSchema
@@ -130,4 +126,9 @@ public class WorkatoSchema
     public string? Folder { get; set; }
     public string? ResponseClass { get; set; }
     public string? ResponseDataField { get; set; }
+}
+
+public class PatchNotesSchema
+{
+    public string? OutputFile { get; set; }
 }

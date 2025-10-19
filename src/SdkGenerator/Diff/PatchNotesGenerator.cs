@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using KellermanSoftware.CompareNetObjects;
-using KellermanSoftware.CompareNetObjects.TypeComparers;
-using Newtonsoft.Json;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Diff;
 
-public class PatchNotesGenerator
+public static class PatchNotesGenerator
 {
     /// <summary>
     /// Compare two swagger files and determine real-world differences
@@ -22,8 +19,8 @@ public class PatchNotesGenerator
     {
         var diff = new SwaggerDiff
         {
-            OldVersion = previous.OfficialVersion ?? previous.Version3,
-            NewVersion = current.OfficialVersion ?? current.Version3,
+            OldVersion = previous.OfficialVersion,
+            NewVersion = current.OfficialVersion,
         };
 
         CompareEndpoints(previous, current, diff);
@@ -91,14 +88,13 @@ public class PatchNotesGenerator
         // Find newly added field names
         foreach (var newFieldName in newFields.Keys)
         {
-            if (!existingFields.ContainsKey(newFieldName))
+            if (!existingFields.TryGetValue(newFieldName, out var oldField))
             {
                 result.Add($"{item.Name}: Added new field `{newFieldName}`");
             }
             else
             {
                 // Search for data type changes in schemas
-                var oldField = existingFields[newFieldName];
                 var newField = newFields[newFieldName];
                 if (oldField.DataType != newField.DataType)
                 {
@@ -141,7 +137,7 @@ public class PatchNotesGenerator
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
         {
-            EndpointItem? prevItem = null;
+            EndpointItem? prevItem;
             var name = MakeApiName(item);
             
             // First check if the API was simply renamed
@@ -231,7 +227,7 @@ public class PatchNotesGenerator
                     var parameterName = diff.PropertyName.Substring(1, diff.PropertyName.IndexOf(']') - 1);
                     var oldType = diff.Object2Value.Replace("System.", "");
                     var newType = diff.Object1Value.Replace("System.", "");
-                    if (parameterName != "body" && oldType != newType)
+                    if (parameterName != "body" && oldType != newType && !string.IsNullOrWhiteSpace(oldType))
                     {
                         differences.Add(
                             $"{MakeApiName(item)} changed the data type of the parameter `{parameterName}` from `{oldType}` to `{newType}`");

@@ -436,6 +436,20 @@ public static class Program
                 }
             }
         }
+        
+        // Do we want to generate a unified patch notes file?
+        if (options.TemplateName == null || options.TemplateName == "patchnotes")
+        {
+            if (context.Project.PatchNotes != null)
+            {
+                var newOpt = new CompletePatchNotesOptions()
+                {
+                    Folder = context.MakePath(context.Project.SwaggerSchemaFolder),
+                    PatchNotesFile = context.MakePath(context.Project.PatchNotes.OutputFile),
+                };
+                await CompletePatchNotesTask(newOpt);
+            }
+        }
 
         // Where do we want to send the documentation? 
         if (options.TemplateName == null || options.TemplateName == "readme")
