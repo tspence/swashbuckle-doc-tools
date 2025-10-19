@@ -468,6 +468,17 @@ public static class Program
                 await CompletePatchNotesTask(newOpt);
             }
         }
+        
+        // Do we want to copy the latest swagger file to a target location?
+        if (options.TemplateName == null || options.TemplateName == "copyswagger")
+        {
+            if (context.Project.CopySwagger != null)
+            {
+                var targetFile = context.MakePath(context.Project.CopySwagger.Target);
+                Console.WriteLine($"Copying swagger {context.Version4} to {targetFile}");
+                await File.WriteAllTextAsync(targetFile, context.SwaggerJson);
+            }
+        }
 
         // Where do we want to send the documentation? 
         if (options.TemplateName == null || options.TemplateName == "readme")

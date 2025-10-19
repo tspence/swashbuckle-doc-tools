@@ -54,6 +54,7 @@ public class ProjectSchema
     public LanguageSchema? Dart { get; set; }
     public ReadmeSiteSchema? Readme { get; set; }
     public PatchNotesSchema? PatchNotes { get; set; }
+    public CopySwaggerSchema? CopySwagger { get; set; }
 }
 
 public class SwaggerParameterSchema
@@ -131,4 +132,9 @@ public class WorkatoSchema
 public class PatchNotesSchema
 {
     public string? OutputFile { get; set; }
+}
+
+public class CopySwaggerSchema
+{
+    public string Target { get; set; } = string.Empty;
 }
