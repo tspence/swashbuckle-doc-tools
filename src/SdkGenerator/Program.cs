@@ -164,7 +164,7 @@ public static class Program
             return;
         }
         var patchNotes = PatchNotesGenerator.Compare(prevContext, currentContext);
-        Console.WriteLine(patchNotes.ToSummaryMarkdown());
+        Console.WriteLine(patchNotes.ToSummaryMarkdown(null, null));
     }
 
     private static Task ListEmbeddedResourcesTask(ListEmbeddedResourcesOptions arg)
@@ -233,7 +233,7 @@ public static class Program
             var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
             
             // Stack them vertically, most recent first
-            sb.Insert(0, diffs.ToSummaryMarkdown() + Environment.NewLine + Environment.NewLine);
+            sb.Insert(0, diffs.ToSummaryMarkdown(null, null) + Environment.NewLine + Environment.NewLine);
         }
         
         // Save to a comprehensive patch file
@@ -278,7 +278,7 @@ public static class Program
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
-        Console.WriteLine(diffs.ToSummaryMarkdown());
+        Console.WriteLine(diffs.ToSummaryMarkdown(null, null));
     }
 
     private static async Task CompareTask(CompareOptions options)
@@ -317,7 +317,7 @@ public static class Program
             var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
 
             // Print out human readable description
-            Console.WriteLine(diffs.ToSummaryMarkdown());
+            Console.WriteLine(diffs.ToSummaryMarkdown(options.OldFile, options.NewFile));
         }
         finally
         {

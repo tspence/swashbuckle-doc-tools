@@ -73,14 +73,14 @@ public class SwaggerDiff
     /// Convert this diff into a shortened summary of patch notes in Markdown format 
     /// </summary>
     /// <returns></returns>
-    public string ToSummaryMarkdown()
+    public string ToSummaryMarkdown(string? oldVersionName, string? newVersionName)
     {
         var sb = new StringBuilder();
         
         // Header for these patch notes
-        sb.AppendLine($"# Patch notes for {NewVersion}");
+        sb.AppendLine($"# Patch notes for {newVersionName ?? NewVersion}");
         sb.AppendLine();
-        sb.AppendLine($"These patch notes summarize the changes from version {OldVersion}.");
+        sb.AppendLine($"These patch notes summarize the changes from version {oldVersionName ?? OldVersion}.");
         sb.AppendLine();
         
         // Explain which APIs were added
