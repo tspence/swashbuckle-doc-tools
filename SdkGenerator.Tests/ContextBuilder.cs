@@ -78,4 +78,16 @@ public class ContextBuilder
         field!.DataType = newType;
         return this;
     }
+
+    public ContextBuilder AddApi(string path, HttpMethod method, string category, string name)
+    {
+        _api.Endpoints.Add(new EndpointItem()
+        {
+            Path = path,
+            Method = method.ToString().ToLower(),
+            Category = category,
+            Name = name,
+        });
+        return this;
+    }
 }
