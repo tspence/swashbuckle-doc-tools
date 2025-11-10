@@ -145,12 +145,20 @@ public static class PatchNotesGenerator
             if (pathToName.TryGetValue(thisPathName, out var prevName))
             {
                 compared.Add(prevName);
+                
+                // If name changed, document that
                 if (name != prevName)
                 {
                     diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
-                    if (nameToEndpoint.TryGetValue(prevName, out prevItem))
+                }
+                
+                // If endpoint had any meaningful changes, document those
+                if (nameToEndpoint.TryGetValue(prevName, out prevItem))
+                {
+                    var endpointChanges = GetEndpointChanges(current, item, prevItem);
+                    if (endpointChanges.Any())
                     {
-                        diff.EndpointChanges[name] = GetEndpointChanges(current, item, prevItem);
+                        diff.EndpointChanges[name] = endpointChanges;
                     }
                 }
             }
