@@ -213,4 +213,9 @@ public class GeneratorContext : IDisposable
     {
         return Project.IgnoredCategories != null && Project.IgnoredCategories.Contains(cat, StringComparer.OrdinalIgnoreCase);
     }
+    
+    public async Task<SwaggerDates> GetSwaggerDates()
+    {
+        return await SwaggerDates.FromDatesFile(Project.PatchNotes?.DatesFile); 
+    }
 }

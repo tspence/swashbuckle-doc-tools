@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SdkGenerator.Project;
 using SdkGenerator.Schema;
 
 namespace SdkGenerator.Diff;
@@ -82,7 +83,7 @@ public class SwaggerDiff
         var newName = BuildVersionName(newVersionName, NewVersion);
         
         // Header for these patch notes
-        sb.AppendLine($"# Patch notes for {newName}");
+        sb.AppendLine($"## Patch notes for {newName}");
         sb.AppendLine();
         sb.AppendLine($"These patch notes summarize the changes from version {oldName}.");
         sb.AppendLine();

@@ -77,6 +77,10 @@ public static class Program
         
         [Option('p', "patch-notes", Required = true, HelpText = "The file name for the comprehensive patch notes file")]
         public string? PatchNotesFile { get; set; }
+        
+        [Option('d', "dates-file", Required = true, HelpText = "A JSON file containing dates for each swagger version")]
+        public string? DatesFile { get; set; }
+
     }
 
     [Verb("get-patch-notes", HelpText = "Get patch notes in Markdown for the current build")]
@@ -143,6 +147,9 @@ public static class Program
         {
             return;
         }
+        
+        // Capture dates for patch notes files
+        var dates = await rootContext.GetSwaggerDates();
         
         // List all files in the swagger folder
         var allSwaggerFiles = Directory.GetFiles(rootContext.MakePath(rootContext.Project.SwaggerSchemaFolder)).ToList();
@@ -229,15 +236,44 @@ public static class Program
         }
         Console.WriteLine($"Loaded {versions.Count} swagger files. Generating patch notes...");
         
-        // Sort them based on their version numbers
+        // Sort them based on their version numbers and apply dates
+        var dates = await SwaggerDates.FromDatesFile(arg.DatesFile);
         versions.Sort(new ContextSorter());
         var sb = new StringBuilder();
+        var currentDate = DateTime.UtcNow;
+        var currentYear = DateTime.UtcNow.Year;
+        DateOnly? lastPrintedDate = null;
         for (int i = 1; i < versions.Count; i++)
         {
+            var date = dates.GetDateForVersion(versions[i].OfficialVersion);
             var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
+
+            // Insert the month marker every time it changes
+            string dateHeader = string.Empty;
+            if (lastPrintedDate != null && lastPrintedDate.Value.Year == date.Year &&
+                lastPrintedDate.Value.Month == date.Month)
+            {
+                // nothing to print
+            }
+            else
+            {
+                if (currentYear != date.Year)
+                {
+                    dateHeader = $"# Updates from {date.Year}" + Environment.NewLine + Environment.NewLine;
+                }
+                else if (lastPrintedDate == null || date.Month != lastPrintedDate.Value.Month)
+                {
+                    dateHeader = $"# {date.ToString("MMMM, yyyy")}" + Environment.NewLine + Environment.NewLine;
+
+                }
+
+                // Month header
+                lastPrintedDate = date;
+            }
             
             // Stack them vertically, most recent first
-            sb.Insert(0, diffs.ToSummaryMarkdown(null, null) + Environment.NewLine + Environment.NewLine);
+            sb.Insert(0,
+                dateHeader + diffs.ToSummaryMarkdown(null, null) + Environment.NewLine + Environment.NewLine);
         }
         
         // Save to a comprehensive patch file
@@ -251,6 +287,9 @@ public static class Program
             // Or just emit to console
             Console.WriteLine(sb.ToString());
         }
+
+        // Keep track of dates
+        await dates.SaveDatesFile(arg.DatesFile);
     }
 
     private static async Task DiffTask(DiffOptions options)
@@ -282,6 +321,7 @@ public static class Program
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
+        var dates = await newContext.GetSwaggerDates();
         Console.WriteLine(diffs.ToSummaryMarkdown(null, null));
     }
 
@@ -321,6 +361,7 @@ public static class Program
             var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
 
             // Print out human readable description
+            var dates = await newContext.GetSwaggerDates();
             var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile);
             
             // Do they also want us to send it to Slack? 
@@ -464,6 +505,7 @@ public static class Program
                 {
                     Folder = context.MakePath(context.Project.SwaggerSchemaFolder),
                     PatchNotesFile = context.MakePath(context.Project.PatchNotes.OutputFile),
+                    DatesFile = context.MakePath(context.Project.PatchNotes?.DatesFile),
                 };
                 await CompletePatchNotesTask(newOpt);
             }
