@@ -9,6 +9,7 @@ using CommandLine;
 using Newtonsoft.Json;
 using SdkGenerator.Diff;
 using SdkGenerator.Languages;
+using SdkGenerator.Links;
 using SdkGenerator.Markdown;
 using SdkGenerator.Project;
 using SdkGenerator.Slack;
@@ -80,7 +81,12 @@ public static class Program
         
         [Option('d', "dates-file", Required = true, HelpText = "A JSON file containing dates for each swagger version")]
         public string? DatesFile { get; set; }
-
+        
+        [Option('h', "host", Required = false, HelpText = "The host name of the site where documentation is hosted")]
+        public string? Host { get; set; }
+        
+        [Option('l', "link-format", Required = false, HelpText = "The format of links to use ('None', 'Fern')")]
+        public string? LinkFormat { get; set; }
     }
 
     [Verb("get-patch-notes", HelpText = "Get patch notes in Markdown for the current build")]
@@ -175,7 +181,7 @@ public static class Program
             return;
         }
         var patchNotes = PatchNotesGenerator.Compare(prevContext, currentContext);
-        Console.WriteLine(patchNotes.ToSummaryMarkdown(null, null));
+        Console.WriteLine(patchNotes.ToSummaryMarkdown(null, null, null));
     }
 
     private static Task ListEmbeddedResourcesTask(ListEmbeddedResourcesOptions arg)
@@ -203,6 +209,11 @@ public static class Program
         {
             return;
         }
+        
+        // Make the link generator
+        ILinkGenerator? linkGenerator = string.Equals(arg.LinkFormat, "fern", StringComparison.CurrentCultureIgnoreCase)
+            ? new FernLinkGenerator(arg.Host ?? string.Empty)
+            : null;
         
         // Collect all swagger files from the folder
         var versions = new List<GeneratorContext>();
@@ -240,10 +251,9 @@ public static class Program
         var dates = await SwaggerDates.FromDatesFile(arg.DatesFile);
         versions.Sort(new ContextSorter());
         var sb = new StringBuilder();
-        var currentDate = DateTime.UtcNow;
         var currentYear = DateTime.UtcNow.Year;
         DateOnly? lastPrintedDate = null;
-        for (int i = 1; i < versions.Count; i++)
+        for (int i = versions.Count - 1; i >= 1; i--)
         {
             var date = dates.GetDateForVersion(versions[i].OfficialVersion);
             var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
@@ -257,14 +267,17 @@ public static class Program
             }
             else
             {
-                if (currentYear != date.Year)
+                if (currentYear - 1 == date.Year)
                 {
                     dateHeader = $"# Updates from {date.Year}" + Environment.NewLine + Environment.NewLine;
                 }
-                else if (lastPrintedDate == null || date.Month != lastPrintedDate.Value.Month)
+                else if (currentYear - 2 > date.Year)
+                {
+                    dateHeader = $"# Older patches" + Environment.NewLine + Environment.NewLine;
+                }
+                else if (lastPrintedDate == null || (date.Year == currentYear && date.Month != lastPrintedDate.Value.Month))
                 {
                     dateHeader = $"# {date.ToString("MMMM, yyyy")}" + Environment.NewLine + Environment.NewLine;
-
                 }
 
                 // Month header
@@ -272,8 +285,7 @@ public static class Program
             }
             
             // Stack them vertically, most recent first
-            sb.Insert(0,
-                dateHeader + diffs.ToSummaryMarkdown(null, null) + Environment.NewLine + Environment.NewLine);
+            sb.Append(dateHeader + diffs.ToSummaryMarkdown(null, null, linkGenerator) + Environment.NewLine + Environment.NewLine);
         }
         
         // Save to a comprehensive patch file
@@ -322,7 +334,7 @@ public static class Program
         
         // Print out human readable description
         var dates = await newContext.GetSwaggerDates();
-        Console.WriteLine(diffs.ToSummaryMarkdown(null, null));
+        Console.WriteLine(diffs.ToSummaryMarkdown(null, null, null));
     }
 
     private static async Task CompareTask(CompareOptions options)
@@ -362,7 +374,7 @@ public static class Program
 
             // Print out human readable description
             var dates = await newContext.GetSwaggerDates();
-            var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile);
+            var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile, null);
             
             // Do they also want us to send it to Slack? 
             if (!string.IsNullOrWhiteSpace(options.SlackEndpoint))

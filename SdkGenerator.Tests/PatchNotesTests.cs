@@ -130,6 +130,7 @@ public class PatchNotesTests
         Assert.AreEqual(0, diff.EndpointChanges.Count);
         Assert.AreEqual(0, diff.SchemaChanges.Count);
         Assert.AreEqual(1, diff.Renames.Count);
-        Assert.AreEqual("Renamed 'Test.DoSomethingMethod' to 'Test.DoSomething'", diff.Renames[0]);
+        Assert.AreEqual("Test.DoSomethingMethod", diff.Renames[0].OldName);
+        Assert.AreEqual("DoSomething", diff.Renames[0].Endpoint.Name);
     }
 }

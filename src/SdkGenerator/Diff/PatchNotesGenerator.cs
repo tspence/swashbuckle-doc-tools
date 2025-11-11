@@ -149,7 +149,7 @@ public static class PatchNotesGenerator
                 // If name changed, document that
                 if (name != prevName)
                 {
-                    diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
+                    diff.Renames.Add(new SwaggerRenameInfo() { Endpoint = item, OldName = prevName });
                 }
                 
                 // If endpoint had any meaningful changes, document those
