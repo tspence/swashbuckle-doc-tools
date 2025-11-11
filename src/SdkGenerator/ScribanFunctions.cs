@@ -117,7 +117,7 @@ public static class ScribanFunctions
         templateContext.PushGlobal(scriptObject1);
         templateContext.SetValue(new ScriptVariableGlobal("api"), context.Api);
         templateContext.SetValue(new ScriptVariableGlobal("project"), context.Project);
-        templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToSummaryMarkdown(null, null));
+        templateContext.SetValue(new ScriptVariableGlobal("patch_notes"), context.PatchNotes.ToSummaryMarkdown(null, null, null));
         
         // Add in some extra things if requested
         if (extraInfo != null)

@@ -141,13 +141,25 @@ public static class PatchNotesGenerator
             var name = MakeApiName(item);
             
             // First check if the API was simply renamed
-            if (pathToName.TryGetValue(item.Path + ":" + item.Method, out var prevName) && name != prevName)
+            var thisPathName = item.Path + ":" + item.Method;
+            if (pathToName.TryGetValue(thisPathName, out var prevName))
             {
                 compared.Add(prevName);
-                diff.Renames.Add($"Renamed '{prevName}' to '{name}'");
+                
+                // If name changed, document that
+                if (name != prevName)
+                {
+                    diff.Renames.Add(new SwaggerRenameInfo() { Endpoint = item, OldName = prevName });
+                }
+                
+                // If endpoint had any meaningful changes, document those
                 if (nameToEndpoint.TryGetValue(prevName, out prevItem))
                 {
-                    diff.EndpointChanges[name] = GetEndpointChanges(current, item, prevItem);
+                    var endpointChanges = GetEndpointChanges(current, item, prevItem);
+                    if (endpointChanges.Any())
+                    {
+                        diff.EndpointChanges[name] = endpointChanges;
+                    }
                 }
             }
             else

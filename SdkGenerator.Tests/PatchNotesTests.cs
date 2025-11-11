@@ -112,4 +112,25 @@ public class PatchNotesTests
         Assert.AreEqual("SchemaTypeOne", change.Key);
         Assert.AreEqual("SchemaTypeOne: Changed the data type of the field `id` from `Guid` to `String`", change.Value.FirstOrDefault());
     }
+    
+    
+    [TestMethod]
+    public void EndpointNameChange()
+    {
+        using var v1 = new ContextBuilder()
+            .AddApi("/test/api/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddApi("/test/api/do-something", HttpMethod.Post, "Test", "DoSomething") 
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(0, diff.EndpointChanges.Count);
+        Assert.AreEqual(0, diff.SchemaChanges.Count);
+        Assert.AreEqual(1, diff.Renames.Count);
+        Assert.AreEqual("Test.DoSomethingMethod", diff.Renames[0].OldName);
+        Assert.AreEqual("DoSomething", diff.Renames[0].Endpoint.Name);
+    }
 }

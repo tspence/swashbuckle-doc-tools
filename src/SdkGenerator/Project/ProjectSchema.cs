@@ -132,6 +132,9 @@ public class WorkatoSchema
 public class PatchNotesSchema
 {
     public string? OutputFile { get; set; }
+    public string? DatesFile { get; set; }
+    public string? Host { get; set; }
+    public string? LinkFormat { get; set; }
 }
 
 public class CopySwaggerSchema

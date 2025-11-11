@@ -9,6 +9,7 @@ using CommandLine;
 using Newtonsoft.Json;
 using SdkGenerator.Diff;
 using SdkGenerator.Languages;
+using SdkGenerator.Links;
 using SdkGenerator.Markdown;
 using SdkGenerator.Project;
 using SdkGenerator.Slack;
@@ -77,6 +78,15 @@ public static class Program
         
         [Option('p', "patch-notes", Required = true, HelpText = "The file name for the comprehensive patch notes file")]
         public string? PatchNotesFile { get; set; }
+        
+        [Option('d', "dates-file", Required = true, HelpText = "A JSON file containing dates for each swagger version")]
+        public string? DatesFile { get; set; }
+        
+        [Option('h', "host", Required = false, HelpText = "The host name of the site where documentation is hosted")]
+        public string? Host { get; set; }
+        
+        [Option('l', "link-format", Required = false, HelpText = "The format of links to use ('None', 'Fern')")]
+        public string? LinkFormat { get; set; }
     }
 
     [Verb("get-patch-notes", HelpText = "Get patch notes in Markdown for the current build")]
@@ -144,6 +154,9 @@ public static class Program
             return;
         }
         
+        // Capture dates for patch notes files
+        var dates = await rootContext.GetSwaggerDates();
+        
         // List all files in the swagger folder
         var allSwaggerFiles = Directory.GetFiles(rootContext.MakePath(rootContext.Project.SwaggerSchemaFolder)).ToList();
         if (allSwaggerFiles.Count < 2)
@@ -168,7 +181,7 @@ public static class Program
             return;
         }
         var patchNotes = PatchNotesGenerator.Compare(prevContext, currentContext);
-        Console.WriteLine(patchNotes.ToSummaryMarkdown(null, null));
+        Console.WriteLine(patchNotes.ToSummaryMarkdown(null, null, null));
     }
 
     private static Task ListEmbeddedResourcesTask(ListEmbeddedResourcesOptions arg)
@@ -196,6 +209,11 @@ public static class Program
         {
             return;
         }
+        
+        // Make the link generator
+        ILinkGenerator? linkGenerator = string.Equals(arg.LinkFormat, "fern", StringComparison.CurrentCultureIgnoreCase)
+            ? new FernLinkGenerator(arg.Host ?? string.Empty)
+            : null;
         
         // Collect all swagger files from the folder
         var versions = new List<GeneratorContext>();
@@ -229,15 +247,49 @@ public static class Program
         }
         Console.WriteLine($"Loaded {versions.Count} swagger files. Generating patch notes...");
         
-        // Sort them based on their version numbers
+        // Add page header and setup version feed
+        var dates = await SwaggerDates.FromDatesFile(arg.DatesFile);
         versions.Sort(new ContextSorter());
         var sb = new StringBuilder();
-        for (int i = 1; i < versions.Count; i++)
+        sb.AppendLine("# API Patch Notes");
+        sb.AppendLine();
+        var currentYear = DateTime.UtcNow.Year;
+        DateOnly? lastPrintedDate = null;
+        
+        // Sort them based on their version numbers and apply dates
+        for (int i = versions.Count - 1; i >= 1; i--)
         {
+            var date = dates.GetDateForVersion(versions[i].OfficialVersion);
             var diffs = PatchNotesGenerator.Compare(versions[i - 1],versions[i]);
+
+            // Insert the month marker every time it changes
+            string dateHeader = string.Empty;
+            if (lastPrintedDate != null && lastPrintedDate.Value.Year == date.Year &&
+                lastPrintedDate.Value.Month == date.Month)
+            {
+                // nothing to print
+            }
+            else
+            {
+                if (currentYear - 1 == date.Year)
+                {
+                    dateHeader = $"# Updates from {date.Year}" + Environment.NewLine + Environment.NewLine;
+                }
+                else if (currentYear - 2 > date.Year)
+                {
+                    dateHeader = $"# Older patches" + Environment.NewLine + Environment.NewLine;
+                }
+                else if (lastPrintedDate == null || (date.Year == currentYear && date.Month != lastPrintedDate.Value.Month))
+                {
+                    dateHeader = $"# {date.ToString("MMMM, yyyy")}" + Environment.NewLine + Environment.NewLine;
+                }
+
+                // Month header
+                lastPrintedDate = date;
+            }
             
             // Stack them vertically, most recent first
-            sb.Insert(0, diffs.ToSummaryMarkdown(null, null) + Environment.NewLine + Environment.NewLine);
+            sb.Append(dateHeader + diffs.ToSummaryMarkdown(null, null, linkGenerator) + Environment.NewLine + Environment.NewLine);
         }
         
         // Save to a comprehensive patch file
@@ -251,6 +303,9 @@ public static class Program
             // Or just emit to console
             Console.WriteLine(sb.ToString());
         }
+
+        // Keep track of dates
+        await dates.SaveDatesFile(arg.DatesFile);
     }
 
     private static async Task DiffTask(DiffOptions options)
@@ -282,7 +337,8 @@ public static class Program
         var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
         
         // Print out human readable description
-        Console.WriteLine(diffs.ToSummaryMarkdown(null, null));
+        var dates = await newContext.GetSwaggerDates();
+        Console.WriteLine(diffs.ToSummaryMarkdown(null, null, null));
     }
 
     private static async Task CompareTask(CompareOptions options)
@@ -321,7 +377,8 @@ public static class Program
             var diffs = PatchNotesGenerator.Compare(oldContext, newContext);
 
             // Print out human readable description
-            var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile);
+            var dates = await newContext.GetSwaggerDates();
+            var diffMarkdown = diffs.ToSummaryMarkdown(options.OldFile, options.NewFile, null);
             
             // Do they also want us to send it to Slack? 
             if (!string.IsNullOrWhiteSpace(options.SlackEndpoint))
@@ -464,6 +521,9 @@ public static class Program
                 {
                     Folder = context.MakePath(context.Project.SwaggerSchemaFolder),
                     PatchNotesFile = context.MakePath(context.Project.PatchNotes.OutputFile),
+                    DatesFile = context.MakePath(context.Project.PatchNotes?.DatesFile),
+                    Host = context.Project.PatchNotes?.Host,
+                    LinkFormat = context.Project.PatchNotes?.LinkFormat,
                 };
                 await CompletePatchNotesTask(newOpt);
             }
