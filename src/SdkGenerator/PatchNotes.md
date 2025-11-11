@@ -1,3 +1,9 @@
+# 1.3.17
+November 11, 2025
+
+* Better patch notes generation - includes option to add markdown links
+* Date categorization inside patch notes
+
 # 1.3.16
 October 19, 2025
 

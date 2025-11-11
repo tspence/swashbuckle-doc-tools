@@ -247,12 +247,16 @@ public static class Program
         }
         Console.WriteLine($"Loaded {versions.Count} swagger files. Generating patch notes...");
         
-        // Sort them based on their version numbers and apply dates
+        // Add page header and setup version feed
         var dates = await SwaggerDates.FromDatesFile(arg.DatesFile);
         versions.Sort(new ContextSorter());
         var sb = new StringBuilder();
+        sb.AppendLine("# API Patch Notes");
+        sb.AppendLine();
         var currentYear = DateTime.UtcNow.Year;
         DateOnly? lastPrintedDate = null;
+        
+        // Sort them based on their version numbers and apply dates
         for (int i = versions.Count - 1; i >= 1; i--)
         {
             var date = dates.GetDateForVersion(versions[i].OfficialVersion);
@@ -518,6 +522,8 @@ public static class Program
                     Folder = context.MakePath(context.Project.SwaggerSchemaFolder),
                     PatchNotesFile = context.MakePath(context.Project.PatchNotes.OutputFile),
                     DatesFile = context.MakePath(context.Project.PatchNotes?.DatesFile),
+                    Host = context.Project.PatchNotes?.Host,
+                    LinkFormat = context.Project.PatchNotes?.LinkFormat,
                 };
                 await CompletePatchNotesTask(newOpt);
             }
