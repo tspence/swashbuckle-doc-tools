@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using KellermanSoftware.CompareNetObjects;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
@@ -208,6 +209,14 @@ public static class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, EndpointItem prevItem)
     {
+        // Detect parameter renames
+        var oldParameters = GetPathParameterList(prevItem.Path);
+        if (!item.Path.Equals(prevItem.Path, StringComparison.OrdinalIgnoreCase))
+        {
+            
+        }
+        
+        // Detect more complex differences
         var cl = new CompareLogic();
         cl.Config.IgnoreCollectionOrder = true;
         cl.Config.MaxDifferences = int.MaxValue;
@@ -248,5 +257,16 @@ public static class PatchNotesGenerator
             }
         }
         return differences;
+    }
+
+    public static List<string> GetPathParameterList(string path)
+    {
+        List<string> results = new List<string>();
+        var regex = new Regex("\\{.*?\\}");
+        foreach (var match in regex.EnumerateMatches(path))
+        {
+            results.Add(path.Substring(match.Index + 1, match.Length - 2));
+        }
+        return results;
     }
 }

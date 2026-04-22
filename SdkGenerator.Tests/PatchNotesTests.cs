@@ -133,4 +133,34 @@ public class PatchNotesTests
         Assert.AreEqual("Test.DoSomethingMethod", diff.Renames[0].OldName);
         Assert.AreEqual("DoSomething", diff.Renames[0].Endpoint.Name);
     }
+
+    [TestMethod]
+    public void TestPathParameterExtraction()
+    {
+        var xyz = PatchNotesGenerator.GetPathParameterList("/api/{one}/test/{two}");
+        Assert.AreEqual(2, xyz.Count);
+        Assert.AreEqual("one", xyz[0]);
+        Assert.AreEqual("two", xyz[1]);
+    }
+    
+    [TestMethod]
+    public void PathParameterNameChange()
+    {
+        using var v1 = new ContextBuilder()
+            .AddApi("/test/api/{myId}/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddApi("/test/api/{newId}/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(1, diff.EndpointChanges.Count);
+        Assert.AreEqual(0, diff.SchemaChanges.Count);
+        Assert.AreEqual(0, diff.Renames.Count);
+        var change = diff.EndpointChanges.FirstOrDefault();
+        Assert.AreEqual("Test.DoSomethingMethod", change.Key);
+        Assert.AreEqual("Test.DoSomethingMethod changed the parameter name 'myId' to 'newId'", change.Value.FirstOrDefault());
+    }
 }
