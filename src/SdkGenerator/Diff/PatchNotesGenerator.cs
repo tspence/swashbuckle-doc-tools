@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using KellermanSoftware.CompareNetObjects;
 using SdkGenerator.Project;
 using SdkGenerator.Schema;
@@ -208,11 +209,31 @@ public static class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, EndpointItem prevItem)
     {
+        var differences = new List<string>();
+        
+        // Detect parameter renames
+        var oldPathBreakdown = prevItem.Path.PathBreakdown();
+        var newPathBreakdown = item.Path.PathBreakdown();
+        if (oldPathBreakdown.Count != newPathBreakdown.Count)
+        {
+            differences.Add($"Breaking change: {MakeApiName(item)} path changed from `{prevItem.Path}` to `{item.Path}`");
+        }
+        else
+        {
+            for (int i = 0; i < oldPathBreakdown.Count; i++)
+            {
+                if (oldPathBreakdown[i][0] == '{' && !string.Equals(oldPathBreakdown[i], newPathBreakdown[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    differences.Add($"{MakeApiName(item)} changed the parameter name `{oldPathBreakdown[i]}` to `{newPathBreakdown[i]}`");
+                }
+            }
+        }
+        
+        // Detect more complex differences
         var cl = new CompareLogic();
         cl.Config.IgnoreCollectionOrder = true;
         cl.Config.MaxDifferences = int.MaxValue;
         var result = cl.Compare(item.Parameters.ToDictionary(pf => pf.Name), prevItem.Parameters.ToDictionary(pf => pf.Name));
-        var differences = new List<string>();
         foreach (var diff in result.Differences)
         {
             var p1 = diff.Object1 as ParameterField;

@@ -1,3 +1,8 @@
+# 1.3.18
+April 22, 2026
+
+* Patch notes improvement: Detect path parameter renames
+
 # 1.3.17
 November 11, 2025
 

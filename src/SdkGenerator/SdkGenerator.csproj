@@ -10,16 +10,15 @@
       easy-to-use markdown documentation or friendly software development kit libraries. Can be
       automated using Github Workflows.</Description>
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
-    <Copyright>Copyright 2021 - 2025</Copyright>
+    <Copyright>Copyright 2021 - 2026</Copyright>
     <PackageReleaseNotes>
-        November 11, 2025
+      April 22, 2026
 
-        * Better patch notes generation - includes option to add markdown links
-        * Date categorization inside patch notes
+      * Patch notes improvement: Detect path parameter renames
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.17</Version>
+    <Version>1.3.18</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->
@@ -28,9 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference
-        Include="CommandLineParser"
-        Version="2.9.1" />
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="CompareNETObjects" Version="4.84.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
