@@ -137,10 +137,13 @@ public class PatchNotesTests
     [TestMethod]
     public void TestPathParameterExtraction()
     {
-        var xyz = PatchNotesGenerator.GetPathParameterList("/api/{one}/test/{two}");
-        Assert.AreEqual(2, xyz.Count);
-        Assert.AreEqual("one", xyz[0]);
-        Assert.AreEqual("two", xyz[1]);
+        var elements = "/api/{one}/test/{two}/action".PathBreakdown();
+        Assert.AreEqual(5, elements.Count);
+        Assert.AreEqual("/api/", elements[0]);
+        Assert.AreEqual("{one}", elements[1]);
+        Assert.AreEqual("/test/", elements[2]);
+        Assert.AreEqual("{two}", elements[3]);
+        Assert.AreEqual("/action", elements[4]);
     }
     
     [TestMethod]
@@ -161,6 +164,6 @@ public class PatchNotesTests
         Assert.AreEqual(0, diff.Renames.Count);
         var change = diff.EndpointChanges.FirstOrDefault();
         Assert.AreEqual("Test.DoSomethingMethod", change.Key);
-        Assert.AreEqual("Test.DoSomethingMethod changed the parameter name 'myId' to 'newId'", change.Value.FirstOrDefault());
+        Assert.AreEqual("Test.DoSomethingMethod changed the parameter name `{myId}` to `{newId}`", change.Value.FirstOrDefault());
     }
 }

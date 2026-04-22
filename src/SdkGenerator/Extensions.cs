@@ -472,4 +472,32 @@ public static class Extensions
         }
         return s;
     }
+    
+    /// <summary>
+    /// Identify the elements of a Swagger URL path
+    /// </summary>
+    /// <remarks>
+    /// A path parameter appears surrounded by curly braces, e.g. `/api/{param}/action`.
+    /// This method breaks down the path into elements: `/api/`, `{param}`, and `/action`.
+    /// </remarks>
+    /// <param name="path">The path to examine.</param>
+    /// <returns>A list of parameter elements.</returns>
+    public static List<string> PathBreakdown(this string path)
+    {
+        List<string> results = new List<string>();
+        var regex = new Regex("\\{.*?\\}");
+        var p = 0;
+        foreach (var match in regex.EnumerateMatches(path))
+        {
+            results.Add(path.Substring(p, match.Index - p));
+            results.Add(path.Substring(match.Index, match.Length));
+            p = match.Index + match.Length;
+        }
+
+        if (path.Length > p)
+        {
+            results.Add(path.Substring(p));
+        }
+        return results;
+    }
 }

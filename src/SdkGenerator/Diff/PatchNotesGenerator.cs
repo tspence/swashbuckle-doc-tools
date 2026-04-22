@@ -209,11 +209,24 @@ public static class PatchNotesGenerator
 
     private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, EndpointItem prevItem)
     {
+        var differences = new List<string>();
+        
         // Detect parameter renames
-        var oldParameters = GetPathParameterList(prevItem.Path);
-        if (!item.Path.Equals(prevItem.Path, StringComparison.OrdinalIgnoreCase))
+        var oldPathBreakdown = prevItem.Path.PathBreakdown();
+        var newPathBreakdown = item.Path.PathBreakdown();
+        if (oldPathBreakdown.Count != newPathBreakdown.Count)
         {
-            
+            differences.Add($"Breaking change: {MakeApiName(item)} path changed from `{prevItem.Path}` to `{item.Path}`");
+        }
+        else
+        {
+            for (int i = 0; i < oldPathBreakdown.Count; i++)
+            {
+                if (oldPathBreakdown[i][0] == '{' && !string.Equals(oldPathBreakdown[i], newPathBreakdown[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    differences.Add($"{MakeApiName(item)} changed the parameter name `{oldPathBreakdown[i]}` to `{newPathBreakdown[i]}`");
+                }
+            }
         }
         
         // Detect more complex differences
@@ -221,7 +234,6 @@ public static class PatchNotesGenerator
         cl.Config.IgnoreCollectionOrder = true;
         cl.Config.MaxDifferences = int.MaxValue;
         var result = cl.Compare(item.Parameters.ToDictionary(pf => pf.Name), prevItem.Parameters.ToDictionary(pf => pf.Name));
-        var differences = new List<string>();
         foreach (var diff in result.Differences)
         {
             var p1 = diff.Object1 as ParameterField;
@@ -257,16 +269,5 @@ public static class PatchNotesGenerator
             }
         }
         return differences;
-    }
-
-    public static List<string> GetPathParameterList(string path)
-    {
-        List<string> results = new List<string>();
-        var regex = new Regex("\\{.*?\\}");
-        foreach (var match in regex.EnumerateMatches(path))
-        {
-            results.Add(path.Substring(match.Index + 1, match.Length - 2));
-        }
-        return results;
     }
 }
