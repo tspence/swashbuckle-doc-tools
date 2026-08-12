@@ -24,7 +24,8 @@ public static class SchemaFactory
                 Name = jsonSchema.Name,
                 // Handle fields
                 Fields = new List<SchemaField>(),
-                DescriptionMarkdown = SafeGetPropString(jsonSchema.Value, "description")
+                DescriptionMarkdown = SafeGetPropString(jsonSchema.Value, "description"),
+                Deprecated = GetBooleanElement(jsonSchema.Value, "deprecated"),
             };
 
             foreach (var prop in schemaPropertiesElement.EnumerateObject())

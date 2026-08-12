@@ -29,6 +29,7 @@ public class SchemaItem
 {
     public string Name { get; set; } = string.Empty;
     public string DescriptionMarkdown { get; set; } = string.Empty;
+    public bool Deprecated { get; set; }
     public List<SchemaField> Fields { get; set; } = new();
 }
 

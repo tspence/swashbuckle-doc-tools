@@ -182,6 +182,11 @@ public class CSharpSdk : ILanguageSdk
 
         foreach (var item in context.Api.Schemas)
         {
+            if (item.Deprecated)
+            {
+                continue;
+            }
+            
             // Is this one of the handwritten schemas?  If so, skip it
             var handwritten = (context.Project.Csharp.HandwrittenClasses ?? Enumerable.Empty<string>()).ToList();
             handwritten.Add(context.Project.Csharp.ResponseClass);
