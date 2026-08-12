@@ -135,7 +135,10 @@ public static class PatchNotesGenerator
                 nameToEndpoint[name] = [item];
             }
 
-            pathToName[item.Path + ":" + item.Method] = name;
+            if (!item.Deprecated)
+            {
+                pathToName[item.Path + ":" + item.Method] = name;
+            }
         }
 
         // Search for new or modified endpoints
@@ -168,7 +171,7 @@ public static class PatchNotesGenerator
             else
             {
                 nameToEndpoint.TryGetValue(name, out var prevItemList);
-                if (prevItemList == null)
+                if (prevItemList == null || prevItemList.All(pi => pi.Deprecated))
                 {
                     if (diff.NewEndpoints.ContainsKey(name))
                     {

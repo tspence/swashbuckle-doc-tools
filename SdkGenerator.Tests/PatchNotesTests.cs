@@ -9,17 +9,21 @@ public class PatchNotesTests
     public void AddRemoveApis()
     {
         using var v1 = new ContextBuilder()
+            .AddApi("/api/test/retrieve", HttpMethod.Get, "test", "RetrieveTest")
             .Build();
 
         using var v2 = new ContextBuilder()
-            .AddRetrieveEndpoint("test", "RetrieveTest")
+            .AddDeprecatedApi("/api/test/retrieve", HttpMethod.Get, "test", "RetrieveTest")
             .Build();
-        
-        var diff = PatchNotesGenerator.Compare(v1, v2);
-        Assert.AreEqual(1, diff.NewEndpoints.Count);
 
-        var diff2 = PatchNotesGenerator.Compare(v2, v1);
-        Assert.AreEqual(1, diff2.DeprecatedEndpoints.Count);
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(1, diff.DeprecatedEndpoints.Count);
+
+        // Try the same thing backwards - should show one new endpoint
+        var backwards = PatchNotesGenerator.Compare(v2, v1);
+        Assert.AreEqual(1, backwards.NewEndpoints.Count);
+        Assert.AreEqual(0, backwards.DeprecatedEndpoints.Count);
     }
     
     [TestMethod]
