@@ -178,7 +178,10 @@ public static class PatchNotesGenerator
                         current.LogError($"Duplicate API name in current version of API: {name}");
                     }
 
-                    diff.NewEndpoints[name] = item;
+                    if (!item.Deprecated)
+                    {
+                        diff.NewEndpoints[name] = item;
+                    }
                 }
                 else
                 {

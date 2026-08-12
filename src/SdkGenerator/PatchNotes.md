@@ -1,4 +1,10 @@
-**# 1.3.19
+# 1.3.20
+August 12, 2026
+
+* Fixed minor issue about newly-added deprecated endpoints
+* Corrected issue with DotNet enums needing comments
+
+# 1.3.19
 August 12, 2026
 
 * Significant improvements to breaking change detection; added tests
