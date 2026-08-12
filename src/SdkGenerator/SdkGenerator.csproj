@@ -12,13 +12,16 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2026</Copyright>
     <PackageReleaseNotes>
-      April 22, 2026
+      # 1.3.19
+      August 12, 2026
 
-      * Patch notes improvement: Detect path parameter renames
+      * Significant improvements to breaking change detection; added tests
+      * Better handling of deprecated-and-replaced APIs
+      * Improved patch notes handling for long lived documentation sites
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.18</Version>
+    <Version>1.3.19</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

@@ -257,6 +257,7 @@ public static class Program
         DateOnly? lastPrintedDate = null;
         
         // Sort them based on their version numbers and apply dates
+        int lastPrintedYear = currentYear;
         for (int i = versions.Count - 1; i >= 1; i--)
         {
             var date = dates.GetDateForVersion(versions[i].OfficialVersion);
@@ -271,13 +272,13 @@ public static class Program
             }
             else
             {
-                if (currentYear - 1 == date.Year)
+                if (currentYear - 1 >= date.Year)
                 {
-                    dateHeader = $"# Updates from {date.Year}" + Environment.NewLine + Environment.NewLine;
-                }
-                else if (currentYear - 2 > date.Year)
-                {
-                    dateHeader = $"# Older patches" + Environment.NewLine + Environment.NewLine;
+                    if (lastPrintedYear != date.Year)
+                    {
+                        dateHeader = $"# Updates from {date.Year}" + Environment.NewLine + Environment.NewLine;
+                        lastPrintedYear = date.Year;
+                    }
                 }
                 else if (lastPrintedDate == null || (date.Year == currentYear && date.Month != lastPrintedDate.Value.Month))
                 {
