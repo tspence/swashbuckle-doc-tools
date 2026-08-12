@@ -138,6 +138,9 @@ public class CSharpSdk : ILanguageSdk
         {
             var sb = new StringBuilder();
             sb.AppendLine(FileHeader(context.Project));
+            sb.AppendLine();
+            sb.AppendLine("#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member");
+            sb.AppendLine();
             sb.AppendLine($"namespace {context.Project.Csharp.Namespace}");
             sb.AppendLine("{");
             foreach (var item in context.Api.Enums)

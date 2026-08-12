@@ -192,4 +192,27 @@ public class PatchNotesTests
         Assert.AreEqual("Test.DoSomethingMethod", change.Key);
         Assert.AreEqual("Deprecated and replaced: The previous version of Test.DoSomethingMethod was deprecated and replaced with a new method.", change.Value.FirstOrDefault());
     }
+    
+    [TestMethod]
+    public void AddNewDeprecatedMethod()
+    {
+        // Hopefully this use case doesn't come around a lot - but we shouldn't alert people that a newly created API
+        // has been made when it's deprecated.
+        using var v1 = new ContextBuilder()
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddDeprecatedApi("/test/api/{myId}/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        
+        // This one is counter-intuitive: I only want to report when a previously existing endpoint was deprecated.
+        // Because this endpoint was newly added in a deprecated state, we shouldn't do anything or report anything,
+        // and users should just not know that it happened.
+        Assert.AreEqual(0, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(0, diff.EndpointChanges.Count);
+        Assert.AreEqual(0, diff.SchemaChanges.Count);
+        Assert.AreEqual(0, diff.Renames.Count);
+    }
 }
