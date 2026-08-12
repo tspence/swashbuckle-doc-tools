@@ -197,6 +197,7 @@ public static class PatchNotesGenerator
             var wasPreviouslyAnEndpoint = previous.Api.Endpoints.Any(pe =>
                 string.Equals(pe.Category, deprecatedItem.Category, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(pe.Name, deprecatedItem.Name, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(pe.Path, deprecatedItem.Path, StringComparison.OrdinalIgnoreCase)
                 && pe.Deprecated == false);
             if (!previous.IsIgnoredEndpoint(name, deprecatedItem.Path) && wasPreviouslyAnEndpoint)
             {
