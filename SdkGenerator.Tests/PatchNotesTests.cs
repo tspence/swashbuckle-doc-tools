@@ -9,17 +9,21 @@ public class PatchNotesTests
     public void AddRemoveApis()
     {
         using var v1 = new ContextBuilder()
+            .AddApi("/api/test/retrieve", HttpMethod.Get, "test", "RetrieveTest")
             .Build();
 
         using var v2 = new ContextBuilder()
-            .AddRetrieveEndpoint("test", "RetrieveTest")
+            .AddDeprecatedApi("/api/test/retrieve", HttpMethod.Get, "test", "RetrieveTest")
             .Build();
-        
-        var diff = PatchNotesGenerator.Compare(v1, v2);
-        Assert.AreEqual(1, diff.NewEndpoints.Count);
 
-        var diff2 = PatchNotesGenerator.Compare(v2, v1);
-        Assert.AreEqual(1, diff2.DeprecatedEndpoints.Count);
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(1, diff.DeprecatedEndpoints.Count);
+
+        // Try the same thing backwards - should show one new endpoint
+        var backwards = PatchNotesGenerator.Compare(v2, v1);
+        Assert.AreEqual(1, backwards.NewEndpoints.Count);
+        Assert.AreEqual(0, backwards.DeprecatedEndpoints.Count);
     }
     
     [TestMethod]
@@ -165,5 +169,27 @@ public class PatchNotesTests
         var change = diff.EndpointChanges.FirstOrDefault();
         Assert.AreEqual("Test.DoSomethingMethod", change.Key);
         Assert.AreEqual("Test.DoSomethingMethod changed the parameter name `{myId}` to `{newId}`", change.Value.FirstOrDefault());
+    }
+    
+    [TestMethod]
+    public void DeprecateAndReplaceTest()
+    {
+        using var v1 = new ContextBuilder()
+            .AddApi("/test/api/{myId}/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddDeprecatedApi("/test/api/{myId}/do-something", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .AddApi("/test/api/{newId}/do-something/{newParameter}", HttpMethod.Post, "Test", "DoSomethingMethod") 
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(1, diff.DeprecatedEndpoints.Count);
+        Assert.AreEqual(1, diff.EndpointChanges.Count);
+        Assert.AreEqual(0, diff.SchemaChanges.Count);
+        Assert.AreEqual(0, diff.Renames.Count);
+        var change = diff.EndpointChanges.FirstOrDefault();
+        Assert.AreEqual("Test.DoSomethingMethod", change.Key);
+        Assert.AreEqual("Deprecated and replaced: The previous version of Test.DoSomethingMethod was deprecated and replaced with a new method.", change.Value.FirstOrDefault());
     }
 }

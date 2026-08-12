@@ -1,3 +1,10 @@
+**# 1.3.19
+August 12, 2026
+
+* Significant improvements to breaking change detection; added tests
+* Better handling of deprecated-and-replaced APIs
+* Improved patch notes handling for long lived documentation sites**
+
 # 1.3.18
 April 22, 2026
 

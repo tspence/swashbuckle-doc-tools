@@ -79,6 +79,19 @@ public class ContextBuilder
         return this;
     }
 
+    public ContextBuilder AddDeprecatedApi(string path, HttpMethod method, string category, string name)
+    {
+        _api.Endpoints.Add(new EndpointItem()
+        {
+            Path = path,
+            Method = method.ToString().ToLower(),
+            Category = category,
+            Name = name,
+            Deprecated = true,
+        });
+        return this;
+    }
+
     public ContextBuilder AddApi(string path, HttpMethod method, string category, string name)
     {
         _api.Endpoints.Add(new EndpointItem()
@@ -87,6 +100,7 @@ public class ContextBuilder
             Method = method.ToString().ToLower(),
             Category = category,
             Name = name,
+            Deprecated = false,
         });
         return this;
     }

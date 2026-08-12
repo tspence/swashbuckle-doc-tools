@@ -121,24 +121,29 @@ public static class PatchNotesGenerator
         var compared = new HashSet<string>();
         
         // Handle duplicate names, a common error in manually named APIs
-        var nameToEndpoint = new Dictionary<string, EndpointItem>();
+        var nameToEndpoint = new Dictionary<string, List<EndpointItem>>();
         var pathToName = new Dictionary<string, string>();
         foreach (var item in previous.Api.Endpoints)
         {
             var name = MakeApiName(item);
-            if (nameToEndpoint.ContainsKey(name))
+            if (nameToEndpoint.TryGetValue(name, out var prevItemList))
             {
-                current.LogError($"Duplicate API name in previous version of API: {name}");
+                prevItemList.Add(item);
+            }
+            else
+            {
+                nameToEndpoint[name] = [item];
             }
 
-            nameToEndpoint[name] = item;
-            pathToName[item.Path + ":" + item.Method] = name;
+            if (!item.Deprecated)
+            {
+                pathToName[item.Path + ":" + item.Method] = name;
+            }
         }
 
         // Search for new or modified endpoints
         foreach (var item in current.Api.Endpoints)
         {
-            EndpointItem? prevItem;
             var name = MakeApiName(item);
             
             // First check if the API was simply renamed
@@ -154,9 +159,9 @@ public static class PatchNotesGenerator
                 }
                 
                 // If endpoint had any meaningful changes, document those
-                if (nameToEndpoint.TryGetValue(prevName, out prevItem))
+                if (nameToEndpoint.TryGetValue(prevName, out var prevItemList))
                 {
-                    var endpointChanges = GetEndpointChanges(current, item, prevItem);
+                    var endpointChanges = GetEndpointChanges(current, item, prevItemList);
                     if (endpointChanges.Any())
                     {
                         diff.EndpointChanges[name] = endpointChanges;
@@ -165,8 +170,8 @@ public static class PatchNotesGenerator
             }
             else
             {
-                nameToEndpoint.TryGetValue(name, out prevItem);
-                if (prevItem == null)
+                nameToEndpoint.TryGetValue(name, out var prevItemList);
+                if (prevItemList == null || prevItemList.All(pi => pi.Deprecated))
                 {
                     if (diff.NewEndpoints.ContainsKey(name))
                     {
@@ -177,7 +182,7 @@ public static class PatchNotesGenerator
                 }
                 else
                 {
-                    var changes = GetEndpointChanges(current, item, prevItem);
+                    var changes = GetEndpointChanges(current, item, prevItemList);
                     if (changes.Any())
                     {
                         diff.EndpointChanges[name] = changes;
@@ -189,10 +194,15 @@ public static class PatchNotesGenerator
         }
 
         // Search for deprecated endpoints
-        foreach (var oldItem in previous.Api.Endpoints)
+        foreach (var deprecatedItem in current.Api.Endpoints.Where(e => e.Deprecated))
         {
-            var name = MakeApiName(oldItem);
-            if (!compared.Contains(name) && !previous.IsIgnoredEndpoint(name, oldItem.Path))
+            var name = MakeApiName(deprecatedItem);
+            var wasPreviouslyAnEndpoint = previous.Api.Endpoints.Any(pe =>
+                string.Equals(pe.Category, deprecatedItem.Category, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(pe.Name, deprecatedItem.Name, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(pe.Path, deprecatedItem.Path, StringComparison.OrdinalIgnoreCase)
+                && pe.Deprecated == false);
+            if (!previous.IsIgnoredEndpoint(name, deprecatedItem.Path) && wasPreviouslyAnEndpoint)
             {
                 diff.DeprecatedEndpoints.Add(name);
             }
@@ -207,28 +217,56 @@ public static class PatchNotesGenerator
         return $"{item.Category}.{item.Name.ToProperCase()}";
     }
 
-    private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, EndpointItem prevItem)
+    private static List<string> GetEndpointChanges(GeneratorContext context, EndpointItem item, List<EndpointItem> prevItemList)
     {
-        var differences = new List<string>();
+        // If the new item is deprecated, report no changes - this is already covered by deprecation testing
+        if (item.Deprecated)
+        {
+            return [];
+        }
+
+        // Fetch the most recent non-deprecated endpoint matching this one
+        var prevItem = prevItemList.FirstOrDefault(pi => pi.Deprecated == false);
+        if (prevItem == null)
+        {
+            return [];
+        }
         
         // Detect parameter renames
-        var oldPathBreakdown = prevItem.Path.PathBreakdown();
-        var newPathBreakdown = item.Path.PathBreakdown();
-        if (oldPathBreakdown.Count != newPathBreakdown.Count)
+        var differences = new List<string>();
+        if (prevItem.Path != item.Path)
         {
-            differences.Add($"Breaking change: {MakeApiName(item)} path changed from `{prevItem.Path}` to `{item.Path}`");
-        }
-        else
-        {
-            for (int i = 0; i < oldPathBreakdown.Count; i++)
+            var oldPathBreakdown = prevItem.Path.PathBreakdown();
+            var newPathBreakdown = item.Path.PathBreakdown();
+            if (oldPathBreakdown.Count != newPathBreakdown.Count)
             {
-                if (oldPathBreakdown[i][0] == '{' && !string.Equals(oldPathBreakdown[i], newPathBreakdown[i], StringComparison.OrdinalIgnoreCase))
+                // Okay, now we need to determine if this is a "deprecate-and-replace" or if it's a breaking change
+                var isDeprecateAndReplace = context.Api.Endpoints.Any(e => e.Deprecated && e.Path == prevItem.Path);
+                if (isDeprecateAndReplace)
                 {
-                    differences.Add($"{MakeApiName(item)} changed the parameter name `{oldPathBreakdown[i]}` to `{newPathBreakdown[i]}`");
+                    differences.Add(
+                        $"Deprecated and replaced: The previous version of {MakeApiName(item)} was deprecated and replaced with a new method.");
+                }
+                else
+                {
+                    differences.Add(
+                        $"Breaking change: {MakeApiName(item)} path changed from `{prevItem.Path}` to `{item.Path}`");
+                }
+            }
+            else
+            {
+                for (int i = 0; i < oldPathBreakdown.Count; i++)
+                {
+                    if (oldPathBreakdown[i][0] == '{' && !string.Equals(oldPathBreakdown[i], newPathBreakdown[i],
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        differences.Add(
+                            $"{MakeApiName(item)} changed the parameter name `{oldPathBreakdown[i]}` to `{newPathBreakdown[i]}`");
+                    }
                 }
             }
         }
-        
+
         // Detect more complex differences
         var cl = new CompareLogic();
         cl.Config.IgnoreCollectionOrder = true;
