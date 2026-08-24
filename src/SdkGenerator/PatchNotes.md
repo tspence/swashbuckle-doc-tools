@@ -1,3 +1,9 @@
+# 1.3.21
+August 24, 2026
+
+* Issues with imports for TypeScript for deprecated fields
+* Correctly sort imports for all languages
+
 # 1.3.20
 August 12, 2026
 

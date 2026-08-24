@@ -117,7 +117,7 @@ public class PythonSdk : ILanguageSdk
                 }
 
                 // Produce imports
-                foreach (var import in BuildImports(context, item.Name, item.Fields))
+                foreach (var import in GetImports(context, item.Name, item.Fields))
                 {
                     sb.AppendLine(import);
                 }
@@ -312,7 +312,7 @@ public class PythonSdk : ILanguageSdk
         }
     }
 
-    private List<string> BuildImports(GeneratorContext context, string selfName, List<SchemaField> fields)
+    private List<string> GetImports(GeneratorContext context, string selfName, List<SchemaField> fields)
     {
         var imports = new List<string>();
         foreach (var field in fields)
@@ -323,9 +323,8 @@ public class PythonSdk : ILanguageSdk
             }
         }
 
-        imports.Sort();
         AddListImport(imports);
-        return imports.Distinct().ToList();
+        return imports.Distinct().OrderBy(i => i).ToList();
     }
 
     private List<string> BuildImports(GeneratorContext context, string cat)
