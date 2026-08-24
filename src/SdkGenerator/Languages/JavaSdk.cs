@@ -380,7 +380,7 @@ public class JavaSdk : ILanguageSdk
         }
 
         // Deduplicate the list and generate import statements
-        return (from t in types select GetImportForType(context, t)).Distinct().ToList();
+        return (from t in types select GetImportForType(context, t)).Distinct().OrderBy(i => i).ToList();
     }
 
     private string? GetImportForType(GeneratorContext context, string type)

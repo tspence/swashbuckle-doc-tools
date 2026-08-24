@@ -12,15 +12,15 @@
     <PackageTags>SDK generator swagger openapi swashbuckle</PackageTags>
     <Copyright>Copyright 2021 - 2026</Copyright>
     <PackageReleaseNotes>
-      # 1.3.20
-      August 12, 2026
+      # 1.3.21
+      August 24, 2026
 
-      * Fixed minor issue about newly-added deprecated endpoints
-      * Corrected issue with DotNet enums needing comments
+      * Issues with imports for TypeScript for deprecated fields
+      * Correctly sort imports for all languages
     </PackageReleaseNotes>
     <PackageIcon>docs/icons-puzzle.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.3.20</Version>
+    <Version>1.3.21</Version>
     <Authors>Ted Spence</Authors>
     <!-- Project Url is filled in by sourcelink in the .NET 8 SDK, but you can add it explicitly via
     package -->

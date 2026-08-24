@@ -347,14 +347,13 @@ public class TypescriptSdk : ILanguageSdk
         var imports = new List<string>();
         foreach (var field in item.Fields.EmptyIfNull())
         {
-            // Avoid adding a reference to ourselves for nested classes
-            if (field.DataType != item.Name)
+            // Avoid adding a reference to ourselves for nested classes or for deprecated fields
+            if (field.DataType != item.Name && !field.Deprecated)
             {
                 AddImport(context, field.DataType, imports);
             }
         }
-
-        return imports;
+        return imports.OrderBy(i => i).ToList();
     }
 
     public async Task Export(GeneratorContext context)
