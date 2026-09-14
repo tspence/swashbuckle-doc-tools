@@ -1,3 +1,9 @@
+# 1.3.22
+September 14, 2026
+
+* Added more unit tests for schema changes
+* Improvements to Java generator to reduce compiler warnings
+
 # 1.3.21
 August 24, 2026
 
