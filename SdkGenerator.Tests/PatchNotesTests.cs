@@ -215,4 +215,64 @@ public class PatchNotesTests
         Assert.AreEqual(0, diff.SchemaChanges.Count);
         Assert.AreEqual(0, diff.Renames.Count);
     }
+
+    public class SchemaTestV1
+    {
+        public string a { get; set; }
+        public string b { get; set; }
+        public string c { get; set; }
+    }
+    
+    public class SchemaTestV2
+    {
+        public string a { get; set; }
+        public string c { get; set; }
+        public string d { get; set; }
+    }
+    
+    [TestMethod]
+    public void AddRemoveSchemaField()
+    {
+        using var v1 = new ContextBuilder()
+            .AddSchemaWithName(typeof(SchemaTestV1), "SchemaTest")
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddSchemaWithName(typeof(SchemaTestV2), "SchemaTest")
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.NewSchemas.Count);
+        
+        // We should see one field being removed
+        Assert.AreEqual(1, diff.SchemaChanges.Count);
+        Assert.Contains("SchemaTest: Removed field `b`", diff.SchemaChanges.First().Value);
+        Assert.Contains("SchemaTest: Added new field `d`", diff.SchemaChanges.First().Value);
+    }
+    
+    public class SchemaTestV3
+    {
+        public string a { get; set; }
+        public int b { get; set; }
+        public string c { get; set; }
+    }
+    
+    [TestMethod]
+    public void SchemaFieldTypeChange()
+    {
+        using var v1 = new ContextBuilder()
+            .AddSchemaWithName(typeof(SchemaTestV1), "SchemaTest")
+            .Build();
+        using var v2 = new ContextBuilder()
+            .AddSchemaWithName(typeof(SchemaTestV3), "SchemaTest")
+            .Build();
+        
+        var diff = PatchNotesGenerator.Compare(v1, v2);
+        Assert.AreEqual(0, diff.NewEndpoints.Count);
+        Assert.AreEqual(0, diff.NewSchemas.Count);
+        
+        // We should see one field being removed
+        Assert.AreEqual(1, diff.SchemaChanges.Count);
+        Assert.AreEqual("SchemaTest: Changed the data type of the field `b` from `String` to `Int32`", diff.SchemaChanges.First().Value[0]);
+    }
 }
