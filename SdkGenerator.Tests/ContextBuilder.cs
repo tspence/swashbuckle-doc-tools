@@ -71,6 +71,26 @@ public class ContextBuilder
         return this;
     }
 
+    public ContextBuilder AddSchemaWithName(Type type, string name)
+    {
+        var fields = new List<SchemaField>();
+        foreach (var f in type.GetProperties())
+        {
+            fields.Add(new SchemaField()
+            {
+                Name = f.Name,
+                DataType = f.PropertyType.ToString()
+            });
+        }
+        _api.Schemas.Add(new SchemaItem()
+        {
+            Name = name,
+            DescriptionMarkdown = "Description",
+            Fields = fields,
+        });
+        return this;
+    }
+
     public ContextBuilder ChangeSchemaFieldType(Type type, string fieldName, string newType)
     {
         var schema = _api.Schemas.FirstOrDefault(s => s.Name == type.Name);

@@ -137,8 +137,30 @@ public class JavaSdk : ILanguageSdk
                     }
                 }
 
-                sb.AppendLine("import org.jetbrains.annotations.NotNull;");
-                sb.AppendLine("import org.jetbrains.annotations.Nullable;");
+                // Only import these if they are needed
+                var usesNotNull = false;
+                var usesNullable = false;
+                foreach (var field in item.Fields)
+                {
+                    if (field.Nullable)
+                    {
+                        usesNullable = true;
+                    }
+                    else
+                    {
+                        usesNotNull = true;
+                    }
+                }
+
+                if (usesNotNull)
+                {
+                    sb.AppendLine("import org.jetbrains.annotations.NotNull;");
+                }
+
+                if (usesNullable)
+                {
+                    sb.AppendLine("import org.jetbrains.annotations.Nullable;");
+                }
 
                 // Add class and header
                 sb.AppendLine();
@@ -156,6 +178,14 @@ public class JavaSdk : ILanguageSdk
                             $"    private {FixupType(context, field.DataType, field.IsArray, field.Nullable)} {field.Name.ToCamelCase().ToVariableName(_reserved)};");
                     }
                 }
+                
+                // Now add the constructor
+                sb.AppendLine();
+                sb.AppendLine("    /**");
+                sb.AppendLine("     * Primary constructor");
+                sb.AppendLine("     */");
+                sb.AppendLine($"    public {item.Name}() {{");
+                sb.AppendLine("    }");
 
                 // Next all the getters/setters
                 sb.AppendLine();
